@@ -18,33 +18,31 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
     <meta name="generator" content={Astro.generator} />
     <title>{title} · KOSTKA TCG</title>
   </head>
-  <body id="top">
-    <header class="sticky top-0 z-50 border-b border-kostka-dark/10 bg-kostka-white/95 backdrop-blur">
+  <body id="top" class="bg-kostka-bg text-kostka-white">
+    <header class="sticky top-0 z-50 border-b border-white/10 bg-kostka-bg/90 backdrop-blur">
       <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <a href="/" class="flex items-center gap-2">
-          <img src="/images/logo-full.svg" alt="KOSTKA TCG" class="h-10 w-auto" />
+          <img src="/images/logo-full-white.svg" alt="KOSTKA TCG" class="h-9 w-auto" />
         </a>
-        <ul class="hidden items-center gap-6 text-sm font-medium md:flex">
-          <li><a href="/o-nas" class="hover:text-kostka-cyan">O nás</a></li>
-          <li><a href="/turnaje" class="hover:text-kostka-cyan">Turnaje</a></li>
-          <li><a href="/faq" class="hover:text-kostka-cyan">FAQ</a></li>
-          <li><a href="/kontakt" class="hover:text-kostka-cyan">Kontakt</a></li>
+        <ul class="hidden items-center gap-7 text-xs font-semibold uppercase tracking-wide md:flex">
+          <li><a href="/o-nas" class="text-white/70 hover:text-kostka-cyan">O nás</a></li>
+          <li><a href="/turnaje" class="text-white/70 hover:text-kostka-cyan">Turnaje</a></li>
+          <li><a href="/turnaje?tab=liga" class="text-white/70 hover:text-kostka-cyan">Liga</a></li>
+          <li><a href="/faq" class="text-white/70 hover:text-kostka-cyan">FAQ</a></li>
+          <li><a href="/kontakt" class="text-white/70 hover:text-kostka-cyan">Kontakt</a></li>
         </ul>
-        <div class="flex items-center gap-2 sm:gap-4">
-          <a href="/prihlaseni" class="hidden text-sm font-semibold text-kostka-dark hover:text-kostka-cyan sm:block">
+        <div class="flex items-center gap-2 sm:gap-3">
+          <a
+            href="/prihlaseni"
+            class="hidden rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 hover:border-kostka-cyan hover:text-kostka-cyan sm:block"
+          >
             Přihlásit se
           </a>
           <a
-            href="/registrace"
-            class="rounded-full border border-kostka-dark/20 px-4 py-2 text-sm font-semibold text-kostka-dark hover:border-kostka-cyan hover:text-kostka-cyan"
-          >
-            Registrovat se
-          </a>
-          <a
             href="/turnaje"
-            class="hidden rounded-full bg-kostka-cyan px-5 py-2 text-sm font-semibold text-white hover:opacity-90 lg:inline-block"
+            class="rounded-full bg-kostka-cyan px-5 py-2 text-xs font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
           >
-            Rezervovat termín
+            Zarezervuj termín
           </a>
         </div>
       </nav>
@@ -57,23 +55,58 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
     <a
       href="#top"
       aria-label="Zpět nahoru"
-      class="fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-kostka-dark text-white shadow-lg hover:bg-kostka-cyan"
+      class="fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-kostka-surface text-kostka-cyan shadow-lg shadow-black/40 hover:bg-kostka-cyan hover:text-kostka-bg"
     >
       ↑
     </a>
 
-    <footer class="mt-24 border-t border-kostka-dark/10 bg-kostka-dark text-white/80">
-      <div class="mx-auto max-w-6xl px-4 py-10 text-sm">
-        <p class="font-semibold text-white">KOSTKA TCG</p>
-        <p>Dolní 782/65, 700 30 Ostrava-Jih-Zábřeh</p>
-        <p class="mt-2">
-          <a href="mailto:info@kostkatcg.cz" class="hover:text-kostka-cyan">info@kostkatcg.cz</a>
-          ·
-          <a href="tel:+420773334488" class="hover:text-kostka-cyan">+420 773 334 488</a>
-        </p>
-        <p class="mt-4">
-          <a href="/gdpr" class="hover:text-kostka-cyan">Ochrana osobních údajů</a>
-        </p>
+    <footer class="mt-24 border-t border-white/10 bg-kostka-surface">
+      <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <img src="/images/logo-full-white.svg" alt="KOSTKA TCG" class="h-9 w-auto" />
+          <p class="mt-4 text-sm text-white/60">Dolní 782/65</p>
+          <p class="text-sm text-white/60">700 30 Ostrava-Jih-Zábřeh</p>
+          <p class="mt-3 text-sm">
+            <a href="tel:+420773334488" class="text-white/60 hover:text-kostka-cyan">+420 773 334 488</a>
+          </p>
+          <p class="text-sm">
+            <a href="mailto:info@kostkatcg.cz" class="text-white/60 hover:text-kostka-cyan">info@kostkatcg.cz</a>
+          </p>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-cyan">Navigace</p>
+          <ul class="mt-4 space-y-2 text-sm text-white/60">
+            <li><a href="/o-nas" class="hover:text-kostka-cyan">O nás</a></li>
+            <li><a href="/turnaje" class="hover:text-kostka-cyan">Turnaje</a></li>
+            <li><a href="/turnaje?tab=liga" class="hover:text-kostka-cyan">Liga</a></li>
+            <li><a href="/faq" class="hover:text-kostka-cyan">FAQ</a></li>
+            <li><a href="/kontakt" class="hover:text-kostka-cyan">Kontakt</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-cyan">Můj účet</p>
+          <ul class="mt-4 space-y-2 text-sm text-white/60">
+            <li><a href="/prihlaseni" class="hover:text-kostka-cyan">Přihlásit se</a></li>
+            <li><a href="/registrace" class="hover:text-kostka-cyan">Registrovat se</a></li>
+            <li><a href="/profil" class="hover:text-kostka-cyan">Můj profil</a></li>
+          </ul>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-cyan">Právní informace</p>
+          <ul class="mt-4 space-y-2 text-sm text-white/60">
+            <li><a href="/gdpr" class="hover:text-kostka-cyan">GDPR</a></li>
+            <li><a href="/gdpr" class="hover:text-kostka-cyan">Zásady ochrany osobních údajů</a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div class="border-t border-white/10">
+        <div class="mx-auto max-w-6xl px-4 py-5 text-xs text-white/40">
+          © {new Date().getFullYear()} KOSTKA TCG. Všechna práva vyhrazena.
+        </div>
       </div>
     </footer>
   </body>

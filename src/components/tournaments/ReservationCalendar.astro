@@ -14,16 +14,16 @@ const days = Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1);
 const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 ---
 
-<div class="rounded-2xl border border-kostka-dark/10 bg-white p-6 shadow-sm">
+<div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
   <div class="flex items-center justify-between">
-    <p class="font-bold text-kostka-dark">{MONTH_LABEL}</p>
-    <div class="flex gap-1 text-kostka-dark/40">
-      <span class="grid h-7 w-7 place-items-center rounded-full border border-kostka-dark/10">‹</span>
-      <span class="grid h-7 w-7 place-items-center rounded-full border border-kostka-dark/10">›</span>
+    <p class="font-bold text-white">{MONTH_LABEL}</p>
+    <div class="flex gap-1 text-white/40">
+      <span class="grid h-7 w-7 place-items-center rounded-full border border-white/10">‹</span>
+      <span class="grid h-7 w-7 place-items-center rounded-full border border-white/10">›</span>
     </div>
   </div>
 
-  <div class="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-kostka-dark/40">
+  <div class="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-white/40">
     {weekdayLabels.map((d) => <span>{d}</span>)}
   </div>
 
@@ -37,9 +37,9 @@ const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
           <span
             class:list={[
               "relative grid h-9 place-items-center rounded-full",
-              isToday && "bg-kostka-dark font-bold text-white",
+              isToday && "bg-kostka-cyan font-bold text-kostka-bg",
               !isToday && hasEvent && "font-semibold text-kostka-cyan",
-              !isToday && !hasEvent && "text-kostka-dark/70",
+              !isToday && !hasEvent && "text-white/70",
             ]}
           >
             {day}
@@ -52,8 +52,8 @@ const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
     }
   </div>
 
-  <div class="mt-5 flex items-center gap-4 border-t border-kostka-dark/10 pt-4 text-xs text-kostka-dark/50">
+  <div class="mt-5 flex items-center gap-4 border-t border-white/10 pt-4 text-xs text-white/50">
     <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-kostka-cyan"></span> Volný termín</span>
-    <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-kostka-dark"></span> Dnes</span>
+    <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-white"></span> Dnes</span>
   </div>
 </div>

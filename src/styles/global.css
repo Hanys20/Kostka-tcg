@@ -15,10 +15,15 @@
   --color-kostka-cyan: #00b4d4;
   --color-kostka-dark: #36363f;
   --color-kostka-white: #ffffff;
+
+  /* Dark UI surfaces – whole site runs on a dark base with cyan accents */
+  --color-kostka-bg: #0a0c11;
+  --color-kostka-surface: #12151d;
+  --color-kostka-surface-2: #181c26;
 }
 
 body {
   font-family: var(--font-sans);
-  background-color: var(--color-kostka-white);
-  color: var(--color-kostka-dark);
+  background-color: var(--color-kostka-bg);
+  color: var(--color-kostka-white);
 }

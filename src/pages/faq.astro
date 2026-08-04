@@ -31,21 +31,21 @@ const faqs = [
 
 <Layout title="FAQ">
   <section class="mx-auto max-w-3xl px-4 py-20">
-    <h1 class="text-3xl font-black text-kostka-dark md:text-4xl">Časté dotazy</h1>
-    <div class="mt-8 divide-y divide-kostka-dark/10">
+    <h1 class="text-3xl font-black text-white md:text-4xl">Časté dotazy</h1>
+    <div class="mt-8 divide-y divide-white/10">
       {
         faqs.map((item) => (
           <details class="group py-4">
-            <summary class="cursor-pointer list-none font-semibold text-kostka-dark marker:content-none">
+            <summary class="cursor-pointer list-none font-semibold text-white marker:content-none">
               {item.q}
             </summary>
-            <p class="mt-2 text-kostka-dark/70">{item.a}</p>
+            <p class="mt-2 text-white/70">{item.a}</p>
           </details>
         ))
       }
     </div>
 
-    <p class="mt-10 text-kostka-dark/60">
+    <p class="mt-10 text-white/60">
       Nenašli jste odpověď? <a href="/kontakt" class="font-semibold text-kostka-cyan hover:underline">Napište nám</a>.
     </p>
   </section>

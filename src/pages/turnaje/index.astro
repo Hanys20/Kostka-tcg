@@ -11,30 +11,30 @@ const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tou
 
 <Layout title="Turnaje a liga">
   <section class="mx-auto max-w-6xl px-4 py-16">
-    <h1 class="text-3xl font-black text-kostka-dark md:text-4xl">Turnaje a liga</h1>
-    <p class="mt-3 max-w-2xl text-kostka-dark/60">
+    <h1 class="text-3xl font-black text-white md:text-4xl">Turnaje a liga</h1>
+    <p class="mt-3 max-w-2xl text-white/60">
       Rezervace je možná i bez účtu – stačí jméno, e-mail a nick. Platí se na místě, bez
       platební brány.
     </p>
 
-    <div class="mt-8 flex flex-wrap gap-2 border-b border-kostka-dark/10 text-sm font-semibold">
+    <div class="mt-8 flex flex-wrap gap-2 border-b border-white/10 text-sm font-semibold">
       <button class="border-b-2 border-kostka-cyan px-1 pb-3 text-kostka-cyan">Nadcházející</button>
-      <button class="px-1 pb-3 text-kostka-dark/50">Proběhlé</button>
-      <button class="px-1 pb-3 text-kostka-dark/50">Liga</button>
-      <button class="px-1 pb-3 text-kostka-dark/50">Turnaje</button>
+      <button class="px-1 pb-3 text-white/50">Proběhlé</button>
+      <button class="px-1 pb-3 text-white/50">Liga</button>
+      <button class="px-1 pb-3 text-white/50">Turnaje</button>
     </div>
 
     <div class="mt-10 grid gap-8 lg:grid-cols-[380px_1fr]">
       <ReservationCalendar />
       <div class="space-y-10">
         <div>
-          <h2 class="text-xl font-bold text-kostka-dark">Liga (pravidelné hraní)</h2>
+          <h2 class="text-xl font-bold text-white">Liga (pravidelné hraní)</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2">
             {upcomingLeague.map((event) => <TournamentCard event={event} />)}
           </div>
         </div>
         <div>
-          <h2 class="text-xl font-bold text-kostka-dark">Turnaje a prerelease</h2>
+          <h2 class="text-xl font-bold text-white">Turnaje a prerelease</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2">
             {upcomingTournamentOnly.map((event) => <TournamentCard event={event} />)}
           </div>
@@ -43,9 +43,9 @@ const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tou
     </div>
   </section>
 
-  <section class="bg-kostka-dark/[0.03] py-16">
+  <section class="bg-kostka-surface/40 py-16">
     <div class="mx-auto max-w-6xl px-4">
-      <h2 class="text-2xl font-bold text-kostka-dark md:text-3xl">Proběhlé turnaje</h2>
+      <h2 class="text-2xl font-bold text-white md:text-3xl">Proběhlé turnaje</h2>
       <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {pastTournaments.map((event) => <PastTournamentCard event={event} />)}
       </div>

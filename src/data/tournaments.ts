@@ -123,7 +123,7 @@ export const pastTournaments: PastTournamentEntry[] = [
 ];
 
 export const gameBadgeColors: Record<TournamentEntry["game"], string> = {
-  Pokémon: "bg-yellow-100 text-yellow-800",
-  Lorcana: "bg-purple-100 text-purple-800",
+  Pokémon: "bg-yellow-400/10 text-yellow-300",
+  Lorcana: "bg-purple-400/10 text-purple-300",
   Riftbound: "bg-kostka-cyan/10 text-kostka-cyan",
 };

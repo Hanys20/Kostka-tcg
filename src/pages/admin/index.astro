@@ -15,19 +15,19 @@ const selectedEvent = upcomingTournaments[1];
 <Layout title="Administrace">
   <section class="mx-auto max-w-6xl px-4 py-16">
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <h1 class="text-3xl font-black text-kostka-dark md:text-4xl">Administrace turnajů</h1>
-      <button class="rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+      <h1 class="text-3xl font-black text-white md:text-4xl">Administrace turnajů</h1>
+      <button class="rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
         + Nový termín
       </button>
     </div>
-    <p class="mt-2 text-kostka-dark/60">
+    <p class="mt-2 text-white/60">
       Přístupné pouze pro roli <code>admin</code>. Slouží k vypisování termínů, správě
       přihlášených hráčů a zápisu výsledků.
     </p>
 
-    <div class="mt-8 overflow-x-auto rounded-2xl border border-kostka-dark/10">
+    <div class="mt-8 overflow-x-auto rounded-2xl border border-white/10">
       <table class="w-full text-left text-sm">
-        <thead class="bg-kostka-dark/[0.03] text-kostka-dark/50">
+        <thead class="bg-white/[0.03] text-white/50">
           <tr>
             <th class="px-4 py-3 font-semibold">Termín</th>
             <th class="px-4 py-3 font-semibold">Hra</th>
@@ -37,14 +37,14 @@ const selectedEvent = upcomingTournaments[1];
             <th class="px-4 py-3"></th>
           </tr>
         </thead>
-        <tbody class="divide-y divide-kostka-dark/10">
+        <tbody class="divide-y divide-white/10">
           {
             upcomingTournaments.map((e) => (
               <tr class={e.slug === selectedEvent.slug ? "bg-kostka-cyan/5" : ""}>
-                <td class="px-4 py-3 font-medium text-kostka-dark">{e.title} · {e.date}</td>
-                <td class="px-4 py-3 text-kostka-dark/60">{e.game}</td>
-                <td class="px-4 py-3 text-kostka-dark/60">{e.type === "league" ? "Liga" : "Turnaj"}</td>
-                <td class="px-4 py-3 text-kostka-dark/60">{e.spotsTaken}/{e.spotsTotal}</td>
+                <td class="px-4 py-3 font-medium text-white">{e.title} · {e.date}</td>
+                <td class="px-4 py-3 text-white/60">{e.game}</td>
+                <td class="px-4 py-3 text-white/60">{e.type === "league" ? "Liga" : "Turnaj"}</td>
+                <td class="px-4 py-3 text-white/60">{e.spotsTaken}/{e.spotsTotal}</td>
                 <td class="px-4 py-3"><span class="rounded-full bg-kostka-cyan/10 px-2.5 py-0.5 text-xs font-semibold text-kostka-cyan">Nadcházející</span></td>
                 <td class="px-4 py-3 text-right"><a href="#detail" class="font-semibold text-kostka-cyan hover:underline">Spravovat</a></td>
               </tr>
@@ -53,11 +53,11 @@ const selectedEvent = upcomingTournaments[1];
           {
             pastTournaments.map((e) => (
               <tr class="opacity-60">
-                <td class="px-4 py-3 font-medium text-kostka-dark">{e.title} · {e.date}</td>
-                <td class="px-4 py-3 text-kostka-dark/60">{e.game}</td>
-                <td class="px-4 py-3 text-kostka-dark/60">{e.type === "league" ? "Liga" : "Turnaj"}</td>
-                <td class="px-4 py-3 text-kostka-dark/60">{e.participants} hráčů</td>
-                <td class="px-4 py-3"><span class="rounded-full bg-kostka-dark/10 px-2.5 py-0.5 text-xs font-semibold text-kostka-dark/60">Proběhlo</span></td>
+                <td class="px-4 py-3 font-medium text-white">{e.title} · {e.date}</td>
+                <td class="px-4 py-3 text-white/60">{e.game}</td>
+                <td class="px-4 py-3 text-white/60">{e.type === "league" ? "Liga" : "Turnaj"}</td>
+                <td class="px-4 py-3 text-white/60">{e.participants} hráčů</td>
+                <td class="px-4 py-3"><span class="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-white/60">Proběhlo</span></td>
                 <td class="px-4 py-3 text-right"><a href="#detail" class="font-semibold text-kostka-cyan hover:underline">Zobrazit</a></td>
               </tr>
             ))
@@ -67,10 +67,10 @@ const selectedEvent = upcomingTournaments[1];
     </div>
 
     <div id="detail" class="mt-12 scroll-mt-24">
-      <h2 class="text-xl font-bold text-kostka-dark">
+      <h2 class="text-xl font-bold text-white">
         Detail termínu – {selectedEvent.title} ({selectedEvent.date})
       </h2>
-      <p class="mt-1 text-sm text-kostka-dark/50">
+      <p class="mt-1 text-sm text-white/50">
         Přihlášení hráči, ruční přidání/odebrání a zápis výher, proher a remíz.
       </p>
 
@@ -78,16 +78,16 @@ const selectedEvent = upcomingTournaments[1];
         <input
           type="text"
           placeholder="Jméno hráče pro ruční přidání"
-          class="rounded-xl border border-kostka-dark/15 px-4 py-2.5 text-sm outline-none focus:border-kostka-cyan"
+          class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
         />
-        <button class="rounded-full bg-kostka-dark px-5 py-2.5 text-sm font-semibold text-white hover:bg-kostka-cyan">
+        <button class="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-kostka-cyan hover:text-kostka-bg">
           + Přidat hráče
         </button>
       </div>
 
-      <div class="mt-6 overflow-x-auto rounded-2xl border border-kostka-dark/10">
+      <div class="mt-6 overflow-x-auto rounded-2xl border border-white/10">
         <table class="w-full text-left text-sm">
-          <thead class="bg-kostka-dark/[0.03] text-kostka-dark/50">
+          <thead class="bg-white/[0.03] text-white/50">
             <tr>
               <th class="px-4 py-3 font-semibold">Hráč</th>
               <th class="px-4 py-3 font-semibold">Nick</th>
@@ -97,23 +97,23 @@ const selectedEvent = upcomingTournaments[1];
               <th class="px-4 py-3"></th>
             </tr>
           </thead>
-          <tbody class="divide-y divide-kostka-dark/10">
+          <tbody class="divide-y divide-white/10">
             {
               players.map((p) => (
                 <tr>
-                  <td class="px-4 py-3 font-medium text-kostka-dark">{p.name}</td>
-                  <td class="px-4 py-3 text-kostka-dark/60">@{p.nick}</td>
+                  <td class="px-4 py-3 font-medium text-white">{p.name}</td>
+                  <td class="px-4 py-3 text-white/60">@{p.nick}</td>
                   <td class="px-4 py-3">
-                    <input type="number" value={p.wins} class="w-16 rounded-lg border border-kostka-dark/15 px-2 py-1 text-sm" />
+                    <input type="number" value={p.wins} class="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-sm text-white" />
                   </td>
                   <td class="px-4 py-3">
-                    <input type="number" value={p.losses} class="w-16 rounded-lg border border-kostka-dark/15 px-2 py-1 text-sm" />
+                    <input type="number" value={p.losses} class="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-sm text-white" />
                   </td>
                   <td class="px-4 py-3">
-                    <input type="number" value={p.draws} class="w-16 rounded-lg border border-kostka-dark/15 px-2 py-1 text-sm" />
+                    <input type="number" value={p.draws} class="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-sm text-white" />
                   </td>
                   <td class="px-4 py-3 text-right">
-                    <button class="font-semibold text-red-500 hover:underline">Odebrat</button>
+                    <button class="font-semibold text-red-400 hover:underline">Odebrat</button>
                   </td>
                 </tr>
               ))
@@ -122,7 +122,7 @@ const selectedEvent = upcomingTournaments[1];
         </table>
       </div>
 
-      <button class="mt-4 rounded-full bg-kostka-cyan px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90">
+      <button class="mt-4 rounded-full bg-kostka-cyan px-6 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
         Uložit výsledky
       </button>
     </div>

@@ -4,28 +4,28 @@ import Layout from "../layouts/Layout.astro";
 
 <Layout title="Kontakt">
   <section class="mx-auto max-w-6xl px-4 py-20">
-    <h1 class="text-3xl font-black text-kostka-dark md:text-4xl">Kontakt</h1>
-    <p class="mt-3 max-w-xl text-kostka-dark/60">
+    <h1 class="text-3xl font-black text-white md:text-4xl">Kontakt</h1>
+    <p class="mt-3 max-w-xl text-white/60">
       Máte dotaz k turnaji, rezervaci nebo se chcete jen zastavit? Ozvěte se.
     </p>
 
     <div class="mt-10 grid gap-10 md:grid-cols-2">
       <div>
-        <dl class="space-y-4 text-kostka-dark/80">
+        <dl class="space-y-4 text-white/80">
           <div>
-            <dt class="font-semibold text-kostka-dark">Pobočka</dt>
+            <dt class="font-semibold text-white">Pobočka</dt>
             <dd>Dolní 782/65, 700 30 Ostrava-Jih-Zábřeh</dd>
           </div>
           <div>
-            <dt class="font-semibold text-kostka-dark">E-mail</dt>
+            <dt class="font-semibold text-white">E-mail</dt>
             <dd><a class="hover:text-kostka-cyan" href="mailto:info@kostkatcg.cz">info@kostkatcg.cz</a></dd>
           </div>
           <div>
-            <dt class="font-semibold text-kostka-dark">Telefon</dt>
+            <dt class="font-semibold text-white">Telefon</dt>
             <dd><a class="hover:text-kostka-cyan" href="tel:+420773334488">+420 773 334 488</a></dd>
           </div>
           <div>
-            <dt class="font-semibold text-kostka-dark">Otevírací doba</dt>
+            <dt class="font-semibold text-white">Otevírací doba</dt>
             <dd>Út–Ne 15:00–22:00 (mimo termíny turnajů dle kalendáře)</dd>
           </div>
         </dl>
@@ -34,28 +34,28 @@ import Layout from "../layouts/Layout.astro";
           <input
             type="text"
             placeholder="Jméno"
-            class="w-full rounded-xl border border-kostka-dark/15 px-4 py-2.5 text-sm outline-none focus:border-kostka-cyan"
+            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
           />
           <input
             type="email"
             placeholder="E-mail"
-            class="w-full rounded-xl border border-kostka-dark/15 px-4 py-2.5 text-sm outline-none focus:border-kostka-cyan"
+            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
           />
           <textarea
             placeholder="Zpráva"
             rows="4"
-            class="w-full rounded-xl border border-kostka-dark/15 px-4 py-2.5 text-sm outline-none focus:border-kostka-cyan"
+            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
           ></textarea>
           <button
             type="submit"
-            class="rounded-full bg-kostka-cyan px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+            class="rounded-full bg-kostka-cyan px-6 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90"
           >
             Odeslat zprávu
           </button>
         </form>
       </div>
 
-      <div class="grid min-h-[320px] place-items-center rounded-2xl border border-kostka-dark/10 bg-kostka-dark/[0.03] text-sm text-kostka-dark/40">
+      <div class="grid min-h-[320px] place-items-center rounded-2xl border border-white/10 bg-kostka-surface text-sm text-white/40">
         Mapa (Google Maps embed – doplní se)
       </div>
     </div>

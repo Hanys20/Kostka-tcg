@@ -10,32 +10,32 @@ const spotsLeft = event.spotsTotal - event.spotsTaken;
 const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
 ---
 
-<article class="flex flex-col rounded-2xl border border-kostka-dark/10 bg-white p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md">
+<article class="flex flex-col rounded-2xl border border-white/10 bg-kostka-surface p-5 transition hover:-translate-y-0.5 hover:border-kostka-cyan/40">
   <div class="flex items-center justify-between">
     <span class={`rounded-full px-3 py-1 text-xs font-semibold ${gameBadgeColors[event.game]}`}>
       {event.game}
     </span>
-    <span class="text-xs font-semibold uppercase tracking-wide text-kostka-dark/40">
+    <span class="text-xs font-semibold uppercase tracking-wide text-white/40">
       {event.type === "league" ? "Liga" : "Turnaj"}
     </span>
   </div>
 
-  <h3 class="mt-3 text-lg font-bold text-kostka-dark">{event.title}</h3>
-  <p class="mt-1 text-sm text-kostka-dark/60">{event.date} · {event.time}</p>
+  <h3 class="mt-3 text-lg font-bold text-white">{event.title}</h3>
+  <p class="mt-1 text-sm text-white/50">{event.date} · {event.time}</p>
 
   <div class="mt-4">
-    <div class="flex items-center justify-between text-xs text-kostka-dark/50">
+    <div class="flex items-center justify-between text-xs text-white/40">
       <span>Obsazenost</span>
       <span>{event.spotsTaken}/{event.spotsTotal}</span>
     </div>
-    <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-kostka-dark/10">
+    <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
       <div class="h-full rounded-full bg-kostka-cyan" style={`width: ${percentFull}%`}></div>
     </div>
   </div>
 
   <a
     href={`/turnaje/${event.slug}`}
-    class="mt-5 inline-flex items-center justify-center rounded-full bg-kostka-dark px-4 py-2 text-sm font-semibold text-white hover:bg-kostka-cyan"
+    class="mt-5 inline-flex items-center justify-center rounded-full bg-kostka-cyan px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90"
   >
     {spotsLeft > 0 ? "Rezervovat místo" : "Obsazeno – náhradník"}
   </a>

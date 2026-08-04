@@ -20,7 +20,7 @@ const values = [
       widths={[640, 1600]}
       sizes="100vw"
     />
-    <div class="absolute inset-0 bg-kostka-dark/70"></div>
+    <div class="absolute inset-0 bg-kostka-bg/80"></div>
     <div class="relative mx-auto max-w-4xl px-4 py-24 text-center text-white">
       <h1 class="text-4xl font-black md:text-5xl">O nás</h1>
       <p class="mt-4 text-lg text-white/80">Herna pro hráče, od hráčů pro hráče.</p>
@@ -28,13 +28,13 @@ const values = [
   </section>
 
   <section class="mx-auto max-w-4xl px-4 py-16">
-    <p class="text-lg text-kostka-dark/70">
+    <p class="text-lg text-white/70">
       KOSTKA TCG je herna pro hráče sběratelských karetních her (Lorcana, Pokémon, Riftbound)
       v Ostravě. Vznikla, protože v regionu byla jen jedna herna – chtěli jsme dostupnější
       a přátelštější místo, kam se dá zajít na pravidelnou ligu, jednorázový turnaj nebo
       prerelease nové sady.
     </p>
-    <p class="mt-4 text-lg text-kostka-dark/70">
+    <p class="mt-4 text-lg text-white/70">
       Nejsme korporát ani nejlevnější bazar – jsme parta hráčů, která herní komunitu v Ostravě
       buduje od nuly. Proto i web stavíme kolem toho, co hráči skutečně potřebují: přehledné
       termíny, snadnou rezervaci a historii vašich výsledků.
@@ -45,9 +45,9 @@ const values = [
     <div class="grid gap-6 md:grid-cols-3">
       {
         values.map((v) => (
-          <div class="rounded-2xl border border-kostka-dark/10 p-6">
-            <h3 class="font-bold text-kostka-dark">{v.title}</h3>
-            <p class="mt-2 text-sm text-kostka-dark/60">{v.text}</p>
+          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
+            <h3 class="font-bold text-white">{v.title}</h3>
+            <p class="mt-2 text-sm text-white/50">{v.text}</p>
           </div>
         ))
       }
@@ -58,11 +58,11 @@ const values = [
     <Image src={teamCouch} alt="Tým KOSTKA TCG" class="w-full rounded-2xl object-cover" widths={[600, 1200]} sizes="100vw" />
   </section>
 
-  <section class="bg-kostka-dark py-16 text-center text-white">
+  <section class="border-t border-white/10 bg-kostka-surface py-16 text-center text-white">
     <h2 class="text-2xl font-bold md:text-3xl">Přijďte si zahrát</h2>
     <a
       href="/turnaje"
-      class="mt-6 inline-flex rounded-full bg-kostka-cyan px-8 py-3 font-semibold text-white hover:opacity-90"
+      class="mt-6 inline-flex rounded-full bg-kostka-cyan px-8 py-3 font-semibold text-kostka-bg hover:opacity-90"
     >
       Zarezervovat termín
     </a>
