@@ -1,0 +1,61 @@
+---
+import "../styles/global.css";
+
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro hráče. Turnaje a ligy Lorcana, Pokémon a Riftbound v Ostravě." } = Astro.props;
+---
+
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content={description} />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title} · KOSTKA TCG</title>
+  </head>
+  <body>
+    <header class="sticky top-0 z-50 bg-kostka-white/95 backdrop-blur border-b border-kostka-dark/10">
+      <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+        <a href="/" class="flex items-center gap-2">
+          <img src="/images/logo-full.svg" alt="KOSTKA TCG" class="h-10 w-auto" />
+        </a>
+        <ul class="hidden items-center gap-6 text-sm font-medium md:flex">
+          <li><a href="/o-nas" class="hover:text-kostka-cyan">O nás</a></li>
+          <li><a href="/turnaje" class="hover:text-kostka-cyan">Turnaje</a></li>
+          <li><a href="/faq" class="hover:text-kostka-cyan">FAQ</a></li>
+          <li><a href="/kontakt" class="hover:text-kostka-cyan">Kontakt</a></li>
+        </ul>
+        <a
+          href="/turnaje"
+          class="rounded-full bg-kostka-cyan px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Rezervovat termín
+        </a>
+      </nav>
+    </header>
+
+    <main>
+      <slot />
+    </main>
+
+    <footer class="mt-24 border-t border-kostka-dark/10 bg-kostka-dark text-white/80">
+      <div class="mx-auto max-w-6xl px-4 py-10 text-sm">
+        <p class="font-semibold text-white">KOSTKA TCG</p>
+        <p>Dolní 782/65, 700 30 Ostrava-Jih-Zábřeh</p>
+        <p class="mt-2">
+          <a href="mailto:info@kostkatcg.cz" class="hover:text-kostka-cyan">info@kostkatcg.cz</a>
+          ·
+          <a href="tel:+420773334488" class="hover:text-kostka-cyan">+420 773 334 488</a>
+        </p>
+        <p class="mt-4">
+          <a href="/gdpr" class="hover:text-kostka-cyan">Ochrana osobních údajů</a>
+        </p>
+      </div>
+    </footer>
+  </body>
+</html>

@@ -1,0 +1,18 @@
+---
+import Layout from "../../layouts/Layout.astro";
+---
+
+<Layout title="Turnaje a liga">
+  <section class="mx-auto max-w-6xl px-4 py-20">
+    <h1 class="text-3xl font-black text-kostka-dark md:text-4xl">Turnaje a liga</h1>
+    <div class="mt-8 flex gap-4 border-b border-kostka-dark/10 text-sm font-semibold">
+      <button class="border-b-2 border-kostka-cyan px-1 pb-3 text-kostka-cyan">Nadcházející</button>
+      <button class="px-1 pb-3 text-kostka-dark/50">Proběhlé</button>
+      <button class="px-1 pb-3 text-kostka-dark/50">Liga</button>
+    </div>
+    <p class="mt-8 text-kostka-dark/60">
+      Seznam termínů se natáhne ze Supabase (tabulka <code>events</code>). Rezervace je možná
+      přihlášeně i jako host (jméno, e-mail, nick) – bez platební brány, platba na místě.
+    </p>
+  </section>
+</Layout>

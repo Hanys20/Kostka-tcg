@@ -1,0 +1,24 @@
+@import "tailwindcss";
+
+@font-face {
+  font-family: "Raleway";
+  src: url("/fonts/Raleway-VariableFont_wght.ttf") format("truetype-variations");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@theme {
+  --font-sans: "Raleway", ui-sans-serif, system-ui, sans-serif;
+
+  /* Brand colors, taken from the KOSTKA TCG logo (client-materials/Logo) */
+  --color-kostka-cyan: #00b4d4;
+  --color-kostka-dark: #36363f;
+  --color-kostka-white: #ffffff;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--color-kostka-white);
+  color: var(--color-kostka-dark);
+}
