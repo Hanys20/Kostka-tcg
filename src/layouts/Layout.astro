@@ -17,12 +17,43 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
     <meta name="description" content={description} />
     <meta name="generator" content={Astro.generator} />
     <title>{title} · KOSTKA TCG</title>
+    <script is:inline>
+      (function () {
+        const STORAGE_KEY = "kostka-theme";
+        const root = document.documentElement;
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+        function getSystemTheme() {
+          return media.matches ? "dark" : "light";
+        }
+
+        function applyTheme(mode) {
+          const resolved = mode === "light" || mode === "dark" ? mode : getSystemTheme();
+          root.setAttribute("data-theme", resolved);
+          root.dataset.themeMode = mode || "auto";
+
+          const select = document.getElementById("theme-select");
+          if (select) {
+            select.value = mode || "auto";
+          }
+        }
+
+        const saved = localStorage.getItem(STORAGE_KEY) || "auto";
+        applyTheme(saved);
+
+        media.addEventListener("change", () => {
+          if ((localStorage.getItem(STORAGE_KEY) || "auto") === "auto") {
+            applyTheme("auto");
+          }
+        });
+      })();
+    </script>
   </head>
   <body id="top" class="bg-kostka-bg text-kostka-white">
     <header class="sticky top-0 z-50 border-b border-white/10 bg-kostka-bg/90 backdrop-blur">
       <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <a href="/" class="flex items-center gap-2">
-          <img src="/images/logo-full-white.svg" alt="KOSTKA TCG" class="h-12 w-auto" />
+          <img src="/images/logo-full.svg" alt="KOSTKA TCG" class="h-12 w-auto" />
         </a>
         <ul class="hidden items-center gap-7 text-xs font-semibold uppercase tracking-wide md:flex">
           <li><a href="/o-nas" class="text-white/70 hover:text-kostka-cyan">O nás</a></li>
@@ -32,6 +63,14 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           <li><a href="/kontakt" class="text-white/70 hover:text-kostka-cyan">Kontakt</a></li>
         </ul>
         <div class="flex items-center gap-2 sm:gap-3">
+          <label class="hidden items-center gap-2 rounded-full border border-white/15 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 lg:flex">
+            <span>Motiv</span>
+            <select id="theme-select" class="bg-transparent text-white outline-none">
+              <option value="auto">Dědit</option>
+              <option value="dark">Tmavý</option>
+              <option value="light">Světlý</option>
+            </select>
+          </label>
           <a
             href="/prihlaseni"
             class="hidden rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 hover:border-kostka-cyan hover:text-kostka-cyan sm:block"
@@ -52,6 +91,42 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
       <slot />
     </main>
 
+    <script is:inline>
+      (function () {
+        const STORAGE_KEY = "kostka-theme";
+        const select = document.getElementById("theme-select");
+        const root = document.documentElement;
+        const media = window.matchMedia("(prefers-color-scheme: dark)");
+
+        function getSystemTheme() {
+          return media.matches ? "dark" : "light";
+        }
+
+        function applyTheme(mode) {
+          const resolved = mode === "light" || mode === "dark" ? mode : getSystemTheme();
+          root.setAttribute("data-theme", resolved);
+          root.dataset.themeMode = mode || "auto";
+          if (select) {
+            select.value = mode || "auto";
+          }
+        }
+
+        if (select) {
+          select.addEventListener("change", (event) => {
+            const value = event.target.value;
+            localStorage.setItem(STORAGE_KEY, value);
+            applyTheme(value);
+          });
+        }
+
+        media.addEventListener("change", () => {
+          if ((localStorage.getItem(STORAGE_KEY) || "auto") === "auto") {
+            applyTheme("auto");
+          }
+        });
+      })();
+    </script>
+
     <a
       href="#top"
       aria-label="Zpět nahoru"
@@ -63,7 +138,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
     <footer class="mt-24 border-t border-white/10 bg-kostka-surface">
       <div class="mx-auto grid max-w-6xl gap-10 px-4 py-14 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <img src="/images/logo-full-white.svg" alt="KOSTKA TCG" class="h-9 w-auto" />
+          <img src="/images/logo-full.svg" alt="KOSTKA TCG" class="h-9 w-auto" />
           <p class="mt-4 text-sm text-white/60">Dolní 782/65</p>
           <p class="text-sm text-white/60">700 30 Ostrava-Jih-Zábřeh</p>
           <p class="mt-3 text-sm">
