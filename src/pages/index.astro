@@ -1,36 +1,262 @@
 ---
+import { Image } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
+import TournamentCard from "../components/tournaments/TournamentCard.astro";
+import PastTournamentCard from "../components/tournaments/PastTournamentCard.astro";
+import ReservationCalendar from "../components/tournaments/ReservationCalendar.astro";
+import { upcomingTournaments, pastTournaments } from "../data/tournaments";
+
+import heroBoard from "../assets/gallery/hero-board.jpg";
+import teamCouch from "../assets/gallery/team-couch.jpg";
+import teamTower from "../assets/gallery/team-tower.jpg";
+import gamesStack from "../assets/gallery/games-stack.jpg";
+import cardGame from "../assets/gallery/card-game.jpg";
+import teamSofa from "../assets/gallery/team-sofa.jpg";
+
+const usps = [
+  {
+    title: "Lepší ceny",
+    text: "Karty, boostery a účast na turnajích za ceny, které dávají smysl – bez přirážek navíc.",
+  },
+  {
+    title: "Osobní přístup",
+    text: "Známe naše hráče jménem. Poradíme s výběrem balíčku i s pravidly, ať jste nový nebo ostřílený.",
+  },
+  {
+    title: "Přátelská atmosféra",
+    text: "Herna pro hráče, od hráčů pro hráče – bez zbytečné soutěživosti mimo stůl.",
+  },
+];
+
+const faqPreview = [
+  {
+    q: "Jak zarezervuji místo na turnaji?",
+    a: "Na stránce Turnaje vyberte termín a odešlete rezervaci – stačí jméno, e-mail a nick, přihlášení uživatelé mají údaje předvyplněné.",
+  },
+  {
+    q: "Musím platit předem?",
+    a: "Ne, účastnický poplatek se platí až na místě před začátkem turnaje.",
+  },
+  {
+    q: "Jaký je rozdíl mezi ligou a turnajem?",
+    a: "Liga se hraje pravidelně (každý týden), turnaje jsou jednorázové akce a prerelease nových sad.",
+  },
+];
 ---
 
 <Layout title="Herna pro hráče, od hráčů pro hráče">
-  <section class="mx-auto max-w-6xl px-4 py-20 text-center">
-    <h1 class="text-4xl font-black tracking-tight text-kostka-dark md:text-6xl">
-      Herna pro hráče, <span class="text-kostka-cyan">od hráčů pro hráče</span>
-    </h1>
-    <p class="mx-auto mt-6 max-w-2xl text-lg text-kostka-dark/70">
-      Turnaje a ligy Lorcana, Pokémon a Riftbound v Ostravě. Lepší ceny, osobní přístup,
-      přátelská atmosféra.
-    </p>
-    <div class="mt-10 flex justify-center gap-4">
-      <a
-        href="/turnaje"
-        class="rounded-full bg-kostka-cyan px-8 py-3 font-semibold text-white hover:opacity-90"
-      >
-        Zarezervovat termín turnaje
+  <!-- HERO -->
+  <section class="relative overflow-hidden">
+    <Image
+      src={heroBoard}
+      alt="Hraní deskových a karetních her v herně KOSTKA TCG"
+      class="absolute inset-0 h-full w-full object-cover"
+      widths={[640, 1024, 1600]}
+      sizes="100vw"
+    />
+    <div class="absolute inset-0 bg-gradient-to-t from-kostka-dark via-kostka-dark/80 to-kostka-dark/40"></div>
+
+    <div class="relative mx-auto max-w-6xl px-4 py-24 text-center md:py-32">
+      <span class="inline-flex items-center gap-2 rounded-full border border-white/20 px-4 py-1 text-xs font-semibold uppercase tracking-wide text-white/80">
+        Lorcana · Pokémon · Riftbound
+      </span>
+      <h1 class="mt-6 text-4xl font-black tracking-tight text-white md:text-6xl">
+        Herna pro hráče, <span class="text-kostka-cyan">od hráčů pro hráče</span>
+      </h1>
+      <p class="mx-auto mt-6 max-w-2xl text-lg text-white/80">
+        Turnaje, ligy a prerelease akce v Ostravě. Lepší ceny, osobní přístup a přátelská
+        atmosféra – bez zbytečných keců.
+      </p>
+      <div class="mt-10 flex flex-wrap justify-center gap-4">
+        <a
+          href="/turnaje"
+          class="rounded-full bg-kostka-cyan px-8 py-3 font-semibold text-white hover:opacity-90"
+        >
+          Zarezervovat termín turnaje
+        </a>
+        <a
+          href="/o-nas"
+          class="rounded-full border border-white/30 px-8 py-3 font-semibold text-white hover:border-kostka-cyan hover:text-kostka-cyan"
+        >
+          O nás
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- USP -->
+  <section class="mx-auto max-w-6xl px-4 py-16">
+    <div class="grid gap-6 md:grid-cols-3">
+      {
+        usps.map((item) => (
+          <div class="rounded-2xl border border-kostka-dark/10 p-6">
+            <div class="grid h-10 w-10 place-items-center rounded-full bg-kostka-cyan/10 text-kostka-cyan">
+              <img src="/images/logo-icon.svg" alt="" class="h-5 w-5" />
+            </div>
+            <h3 class="mt-4 font-bold text-kostka-dark">{item.title}</h3>
+            <p class="mt-2 text-sm text-kostka-dark/60">{item.text}</p>
+          </div>
+        ))
+      }
+    </div>
+  </section>
+
+  <!-- REZERVAČNÍ KALENDÁŘ -->
+  <section class="bg-kostka-dark/[0.03] py-16">
+    <div class="mx-auto max-w-6xl px-4">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <h2 class="text-2xl font-bold text-kostka-dark md:text-3xl">Vyberte si termín</h2>
+          <p class="mt-2 text-kostka-dark/60">
+            Rezervace funguje i bez účtu – stačí jméno, e-mail a nick. Platí se až na místě.
+          </p>
+        </div>
+        <div class="flex gap-2 rounded-full border border-kostka-dark/10 bg-white p-1 text-sm font-semibold">
+          <span class="rounded-full bg-kostka-dark px-4 py-1.5 text-white">Vše</span>
+          <span class="rounded-full px-4 py-1.5 text-kostka-dark/50">Liga</span>
+          <span class="rounded-full px-4 py-1.5 text-kostka-dark/50">Turnaje</span>
+        </div>
+      </div>
+
+      <div class="mt-8 grid gap-6 lg:grid-cols-[380px_1fr]">
+        <ReservationCalendar />
+
+        <div class="space-y-4">
+          {
+            upcomingTournaments.slice(0, 4).map((event) => (
+              <div class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-kostka-dark/10 bg-white px-5 py-4">
+                <div>
+                  <p class="font-semibold text-kostka-dark">
+                    {event.title} <span class="font-normal text-kostka-dark/40">· {event.game}</span>
+                  </p>
+                  <p class="text-sm text-kostka-dark/50">{event.date} · {event.time}</p>
+                </div>
+                <a
+                  href={`/turnaje/${event.slug}`}
+                  class="rounded-full bg-kostka-cyan px-4 py-2 text-sm font-semibold text-white hover:opacity-90"
+                >
+                  Rezervovat
+                </a>
+              </div>
+            ))
+          }
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- NADCHÁZEJÍCÍ TURNAJE -->
+  <section class="mx-auto max-w-6xl px-4 py-16">
+    <div class="flex flex-wrap items-end justify-between gap-4">
+      <h2 class="text-2xl font-bold text-kostka-dark md:text-3xl">Nadcházející turnaje a liga</h2>
+      <a href="/turnaje" class="text-sm font-semibold text-kostka-cyan hover:underline">
+        Zobrazit všechny →
       </a>
-      <a
-        href="/o-nas"
-        class="rounded-full border border-kostka-dark/20 px-8 py-3 font-semibold text-kostka-dark hover:border-kostka-cyan hover:text-kostka-cyan"
-      >
-        O nás
+    </div>
+    <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+      {upcomingTournaments.map((event) => <TournamentCard event={event} />)}
+    </div>
+  </section>
+
+  <!-- PROBĚHLÉ TURNAJE -->
+  <section class="bg-kostka-dark/[0.03] py-16">
+    <div class="mx-auto max-w-6xl px-4">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <h2 class="text-2xl font-bold text-kostka-dark md:text-3xl">Předešlé turnaje</h2>
+        <a href="/turnaje?tab=probehle" class="text-sm font-semibold text-kostka-cyan hover:underline">
+          Celá historie →
+        </a>
+      </div>
+      <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+        {pastTournaments.map((event) => <PastTournamentCard event={event} />)}
+      </div>
+    </div>
+  </section>
+
+  <!-- GALERIE -->
+  <section class="mx-auto max-w-6xl px-4 py-16">
+    <h2 class="text-2xl font-bold text-kostka-dark md:text-3xl">Ze hry i z turnajů</h2>
+    <div class="mt-8 grid grid-cols-2 gap-3 md:grid-cols-4">
+      <Image src={cardGame} alt="Hráčka u karetní hry v KOSTKA TCG" class="col-span-2 row-span-2 h-full w-full rounded-2xl object-cover" widths={[400, 800]} sizes="(min-width: 768px) 400px, 50vw" />
+      <Image src={teamTower} alt="Tým KOSTKA TCG s věží krabic her" class="h-full w-full rounded-2xl object-cover" widths={[300, 600]} sizes="300px" />
+      <Image src={gamesStack} alt="Naskládané krabice her v herně" class="h-full w-full rounded-2xl object-cover" widths={[300, 600]} sizes="300px" />
+      <Image src={teamCouch} alt="Tým KOSTKA TCG na gauči s hrami" class="h-full w-full rounded-2xl object-cover" widths={[300, 600]} sizes="300px" />
+      <Image src={teamSofa} alt="Tým KOSTKA TCG při turnaji" class="h-full w-full rounded-2xl object-cover" widths={[300, 600]} sizes="300px" />
+    </div>
+  </section>
+
+  <!-- O NÁS TEASER -->
+  <section class="mx-auto max-w-6xl px-4 py-16">
+    <div class="grid items-center gap-10 md:grid-cols-2">
+      <div>
+        <h2 class="text-2xl font-bold text-kostka-dark md:text-3xl">Kdo je KOSTKA TCG</h2>
+        <p class="mt-4 text-kostka-dark/70">
+          Jsme parta hráčů z Ostravy, kterou nebavilo, že v okolí je jen jedna herna. Tak jsme
+          si otevřeli vlastní – s prostorem pro pravidelnou ligu, jednorázové turnaje
+          i prerelease akce nových sad Lorcana, Pokémon a Riftbound.
+        </p>
+        <a
+          href="/o-nas"
+          class="mt-6 inline-flex items-center gap-2 font-semibold text-kostka-cyan hover:underline"
+        >
+          Více o nás →
+        </a>
+      </div>
+      <Image src={teamCouch} alt="Tým KOSTKA TCG" class="w-full rounded-2xl object-cover" widths={[400, 800]} sizes="(min-width: 768px) 50vw, 100vw" />
+    </div>
+  </section>
+
+  <!-- FAQ TEASER -->
+  <section class="bg-kostka-dark/[0.03] py-16">
+    <div class="mx-auto max-w-3xl px-4">
+      <h2 class="text-2xl font-bold text-kostka-dark md:text-3xl">Časté dotazy</h2>
+      <div class="mt-8 divide-y divide-kostka-dark/10">
+        {
+          faqPreview.map((item) => (
+            <details class="group py-4">
+              <summary class="cursor-pointer list-none font-semibold text-kostka-dark marker:content-none">
+                {item.q}
+              </summary>
+              <p class="mt-2 text-kostka-dark/70">{item.a}</p>
+            </details>
+          ))
+        }
+      </div>
+      <a href="/faq" class="mt-6 inline-block text-sm font-semibold text-kostka-cyan hover:underline">
+        Všechny otázky →
       </a>
     </div>
   </section>
 
+  <!-- KONTAKT TEASER -->
   <section class="mx-auto max-w-6xl px-4 py-16">
-    <h2 class="text-2xl font-bold text-kostka-dark">Nadcházející turnaje a ligy</h2>
-    <p class="mt-2 text-kostka-dark/60">
-      Zde se po napojení na Supabase zobrazí přehled nadcházejících termínů (liga i turnaje).
-    </p>
+    <div class="grid gap-10 rounded-3xl bg-kostka-dark p-10 text-white md:grid-cols-2 md:p-14">
+      <div>
+        <h2 class="text-2xl font-bold md:text-3xl">Najdete nás v Ostravě</h2>
+        <dl class="mt-6 space-y-2 text-white/70">
+          <div>
+            <dt class="inline font-semibold text-white">Adresa: </dt>
+            <dd class="inline">Dolní 782/65, 700 30 Ostrava-Jih-Zábřeh</dd>
+          </div>
+          <div>
+            <dt class="inline font-semibold text-white">E-mail: </dt>
+            <dd class="inline">info@kostkatcg.cz</dd>
+          </div>
+          <div>
+            <dt class="inline font-semibold text-white">Telefon: </dt>
+            <dd class="inline">+420 773 334 488</dd>
+          </div>
+        </dl>
+        <a
+          href="/kontakt"
+          class="mt-6 inline-flex items-center gap-2 rounded-full bg-kostka-cyan px-6 py-2.5 text-sm font-semibold text-white hover:opacity-90"
+        >
+          Kontakt a mapa →
+        </a>
+      </div>
+      <div class="grid place-items-center rounded-2xl border border-white/10 bg-white/5 text-sm text-white/40">
+        <span>Mapa (Google Maps embed – doplní se)</span>
+      </div>
+    </div>
   </section>
 </Layout>

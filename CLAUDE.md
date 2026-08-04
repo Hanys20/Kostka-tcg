@@ -113,7 +113,10 @@ src/
   components/{ui,auth,tournaments,admin}/  – React ostrůvky
   layouts/Layout.astro                     – hlavní layout (header/nav/footer)
   pages/                                   – Astro stránky dle mapy stránek výše
+  pages/turnaje/[slug].astro               – detail turnaje/ligy + rezervační formulář (statické routy)
+  data/tournaments.ts                      – mock data pro turnaje/ligu/výsledky (nahradit Supabase dotazem)
   lib/supabase.ts                          – Supabase klient
+  assets/gallery/                          – fotky klienta zpracované přes astro:assets (optimalizace)
   styles/global.css                        – Tailwind + brand @theme + Raleway @font-face
 public/
   fonts/Raleway-VariableFont_wght.ttf
@@ -135,9 +138,26 @@ client-materials/                          – originální podklady od klienta 
 ## Stav projektu
 
 - Scaffolding hotový (Astro + React + Tailwind v4 + Cloudflare adaptér + Supabase klient,
-  placeholder stránky, návrh DB migrace). Skutečný obsah, texty a doladění designu jsou
-  další krok.
-- Git repozitář zatím jen lokální, bez GitHub remote/pushe (čeká na založení repa klientem/
-  uživatelem).
+  návrh DB migrace).
+- **Vizuální nastřel homepage a podstránek hotový** (statický mockup, na mock datech
+  z `src/data/tournaments.ts`, bez napojení na Supabase – nic zatím reálně nefunguje):
+  - Homepage (`src/pages/index.astro`): hero s fotkou, USP, rezervační kalendář
+    (`ReservationCalendar.astro`) + nejbližší termíny, nadcházející turnaje
+    (`TournamentCard.astro`), předešlé turnaje (`PastTournamentCard.astro`), galerie
+    z fotek klienta, teaser O nás, teaser FAQ, kontakt/mapa placeholder.
+  - Header (`Layout.astro`): sticky menu, odkazy „Přihlásit se" (`/prihlaseni`) a
+    „Registrovat se" (`/registrace`), tlačítko „zpět nahoru".
+  - `/turnaje` – plný kalendář + rozdělení Liga / Turnaje a prerelease + proběhlé.
+  - `/turnaje/[slug]` – detail termínu s rezervačním formulářem (host i přihlášený).
+  - `/profil` – karta hráče, statistiky, historie výsledků, nastavení (mock data).
+  - `/admin` – tabulka termínů, detail termínu se seznamem hráčů a zápisem
+    výher/proher/remíz (mock data, needituje se).
+  - `/o-nas`, `/kontakt`, `/faq`, `/gdpr` doplněny o obsah.
+  - Fotky použité v designu jsou v `src/assets/gallery/` (přes `astro:assets` – automatická
+    optimalizace/responsive srcset při buildu, odpovídá požadavku „rychlé
+    načítání/optimalizace obrázků" z dotazníku).
+- **Další krok:** až se odsouhlasí vizuál, napojit reálná data na Supabase (nahradit
+  `src/data/tournaments.ts`), zprovoznit auth (přihlášení/registrace) a formuláře.
+- Git repozitář lokální i na GitHubu: `https://github.com/Hanys20/Kostka-tcg`.
 - Supabase projekt zatím nezaložen – `.env.example` obsahuje placeholder proměnné
   `PUBLIC_SUPABASE_URL` a `PUBLIC_SUPABASE_ANON_KEY`.

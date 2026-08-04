@@ -1,0 +1,59 @@
+---
+import { upcomingTournaments } from "../../data/tournaments";
+
+// Statický nastřel kalendáře pro srpen 2026 – po napojení na Supabase
+// se dny s termíny natáhnou dotazem na `events`.
+const MONTH_LABEL = "Srpen 2026";
+const DAYS_IN_MONTH = 31;
+const FIRST_WEEKDAY = 5; // srpen 2026 začíná v sobotu (Po=0 ... Ne=6)
+const TODAY = 4;
+
+const eventDays = new Set(upcomingTournaments.map((e) => e.day));
+const leadingBlanks = Array.from({ length: FIRST_WEEKDAY });
+const days = Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1);
+const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
+---
+
+<div class="rounded-2xl border border-kostka-dark/10 bg-white p-6 shadow-sm">
+  <div class="flex items-center justify-between">
+    <p class="font-bold text-kostka-dark">{MONTH_LABEL}</p>
+    <div class="flex gap-1 text-kostka-dark/40">
+      <span class="grid h-7 w-7 place-items-center rounded-full border border-kostka-dark/10">‹</span>
+      <span class="grid h-7 w-7 place-items-center rounded-full border border-kostka-dark/10">›</span>
+    </div>
+  </div>
+
+  <div class="mt-4 grid grid-cols-7 gap-1 text-center text-xs font-semibold text-kostka-dark/40">
+    {weekdayLabels.map((d) => <span>{d}</span>)}
+  </div>
+
+  <div class="mt-1 grid grid-cols-7 gap-1 text-center text-sm">
+    {leadingBlanks.map(() => <span></span>)}
+    {
+      days.map((day) => {
+        const hasEvent = eventDays.has(day);
+        const isToday = day === TODAY;
+        return (
+          <span
+            class:list={[
+              "relative grid h-9 place-items-center rounded-full",
+              isToday && "bg-kostka-dark font-bold text-white",
+              !isToday && hasEvent && "font-semibold text-kostka-cyan",
+              !isToday && !hasEvent && "text-kostka-dark/70",
+            ]}
+          >
+            {day}
+            {hasEvent && !isToday && (
+              <span class="absolute bottom-1 h-1 w-1 rounded-full bg-kostka-cyan" />
+            )}
+          </span>
+        );
+      })
+    }
+  </div>
+
+  <div class="mt-5 flex items-center gap-4 border-t border-kostka-dark/10 pt-4 text-xs text-kostka-dark/50">
+    <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-kostka-cyan"></span> Volný termín</span>
+    <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-kostka-dark"></span> Dnes</span>
+  </div>
+</div>

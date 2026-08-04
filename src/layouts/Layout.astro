@@ -18,8 +18,8 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
     <meta name="generator" content={Astro.generator} />
     <title>{title} · KOSTKA TCG</title>
   </head>
-  <body>
-    <header class="sticky top-0 z-50 bg-kostka-white/95 backdrop-blur border-b border-kostka-dark/10">
+  <body id="top">
+    <header class="sticky top-0 z-50 border-b border-kostka-dark/10 bg-kostka-white/95 backdrop-blur">
       <nav class="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
         <a href="/" class="flex items-center gap-2">
           <img src="/images/logo-full.svg" alt="KOSTKA TCG" class="h-10 w-auto" />
@@ -30,18 +30,37 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           <li><a href="/faq" class="hover:text-kostka-cyan">FAQ</a></li>
           <li><a href="/kontakt" class="hover:text-kostka-cyan">Kontakt</a></li>
         </ul>
-        <a
-          href="/turnaje"
-          class="rounded-full bg-kostka-cyan px-5 py-2 text-sm font-semibold text-white hover:opacity-90"
-        >
-          Rezervovat termín
-        </a>
+        <div class="flex items-center gap-2 sm:gap-4">
+          <a href="/prihlaseni" class="hidden text-sm font-semibold text-kostka-dark hover:text-kostka-cyan sm:block">
+            Přihlásit se
+          </a>
+          <a
+            href="/registrace"
+            class="rounded-full border border-kostka-dark/20 px-4 py-2 text-sm font-semibold text-kostka-dark hover:border-kostka-cyan hover:text-kostka-cyan"
+          >
+            Registrovat se
+          </a>
+          <a
+            href="/turnaje"
+            class="hidden rounded-full bg-kostka-cyan px-5 py-2 text-sm font-semibold text-white hover:opacity-90 lg:inline-block"
+          >
+            Rezervovat termín
+          </a>
+        </div>
       </nav>
     </header>
 
     <main>
       <slot />
     </main>
+
+    <a
+      href="#top"
+      aria-label="Zpět nahoru"
+      class="fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full bg-kostka-dark text-white shadow-lg hover:bg-kostka-cyan"
+    >
+      ↑
+    </a>
 
     <footer class="mt-24 border-t border-kostka-dark/10 bg-kostka-dark text-white/80">
       <div class="mx-auto max-w-6xl px-4 py-10 text-sm">

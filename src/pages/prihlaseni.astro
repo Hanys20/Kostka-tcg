@@ -1,0 +1,43 @@
+---
+import Layout from "../layouts/Layout.astro";
+---
+
+<Layout title="Přihlášení">
+  <section class="mx-auto flex min-h-[70vh] max-w-md flex-col justify-center px-4 py-16">
+    <h1 class="text-3xl font-black text-kostka-dark">Přihlásit se</h1>
+    <p class="mt-2 text-kostka-dark/60">
+      Přihlášením uvidíte svou kartu hráče a nemusíte při rezervaci vyplňovat údaje znovu.
+    </p>
+
+    <form class="mt-8 space-y-4">
+      <div>
+        <label class="text-sm font-semibold text-kostka-dark" for="email">E-mail</label>
+        <input
+          id="email"
+          type="email"
+          placeholder="jan@email.cz"
+          class="mt-1 w-full rounded-xl border border-kostka-dark/15 px-4 py-2.5 outline-none focus:border-kostka-cyan"
+        />
+      </div>
+      <div>
+        <label class="text-sm font-semibold text-kostka-dark" for="password">Heslo</label>
+        <input
+          id="password"
+          type="password"
+          placeholder="••••••••"
+          class="mt-1 w-full rounded-xl border border-kostka-dark/15 px-4 py-2.5 outline-none focus:border-kostka-cyan"
+        />
+      </div>
+      <button
+        type="submit"
+        class="w-full rounded-full bg-kostka-cyan px-6 py-3 font-semibold text-white hover:opacity-90"
+      >
+        Přihlásit se
+      </button>
+    </form>
+
+    <p class="mt-6 text-center text-sm text-kostka-dark/60">
+      Ještě nemáte účet? <a href="/registrace" class="font-semibold text-kostka-cyan hover:underline">Zaregistrujte se</a>
+    </p>
+  </section>
+</Layout>
