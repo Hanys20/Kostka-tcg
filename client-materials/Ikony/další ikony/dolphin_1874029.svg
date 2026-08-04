@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!-- Created with Inkscape (http://www.inkscape.org/) -->
+
+<svg
+   version="1.1"
+   id="svg495"
+   xml:space="preserve"
+   width="682.66669"
+   height="682.66669"
+   viewBox="0 0 682.66669 682.66669"
+   xmlns="http://www.w3.org/2000/svg"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs499"><clipPath
+       clipPathUnits="userSpaceOnUse"
+       id="clipPath509"><path
+         d="M 0,512 H 512 V 0 H 0 Z"
+         id="path507" /></clipPath></defs><g
+     id="g501"
+     transform="matrix(1.3333333,0,0,-1.3333333,0,682.66667)"><g
+       id="g503"><g
+         id="g505"
+         clip-path="url(#clipPath509)"><g
+           id="g511"
+           transform="translate(497,256)"><path
+             d="m 0,0 c 0,-97.605 -79.128,-176.733 -176.733,-176.733 53.26,0 96.4,43.163 96.4,96.4 0,53.236 -43.14,96.4 -96.4,96.4 h -48.201 c -10.122,-20.228 -10.122,-44.039 0,-64.267 H -241 c -35.508,0 -64.267,28.775 -64.267,64.267 h -144.6 C -467.62,16.067 -482,30.455 -482,48.2 c 0,17.746 14.38,32.133 32.133,32.133 h 32.134 c 0,62.114 50.369,112.467 112.466,112.467 h 16.067 c 20.083,30.109 53.903,48.2 90.054,48.2 h 54.546 l -32.133,-64.267 C -79.128,176.733 0,97.613 0,0.016 Z"
+             style="fill:none;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+             id="path513" /></g><g
+           id="g515"
+           transform="translate(320.2666,79.2505)"><path
+             d="m 0,0 c 0,-35.483 -28.759,-64.25 -64.267,-64.25 h -48.2 v 0.008 c 0,23.73 13.095,45.524 33.981,56.691 8.033,4.249 14.219,7.567 14.219,7.567 0,0 -6.186,3.318 -14.219,7.567 -20.886,11.167 -33.981,32.961 -33.981,56.692 v 0.008 h 48.2 C -28.759,64.283 0,35.516 0,0.032 Z"
+             style="fill:none;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+             id="path517" /></g><g
+           id="g519"
+           transform="translate(191.7334,304.2002)"><path
+             d="M 0,0 V -32.133"
+             style="fill:none;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+             id="path521" /></g><g
+           id="g523"
+           transform="translate(320.2666,432.7334)"><path
+             d="M 0,0 H -32.133"
+             style="fill:none;stroke:#000000;stroke-width:30;stroke-linecap:round;stroke-linejoin:round;stroke-miterlimit:10;stroke-dasharray:none;stroke-opacity:1"
+             id="path525" /></g></g></g></g></svg>
