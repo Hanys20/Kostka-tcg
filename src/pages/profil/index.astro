@@ -11,10 +11,14 @@ const player = {
 const history = [
   { title: "Pokémon turnaj", date: "30. 7. 2026", result: "2. místo", record: "3V / 1P / 0R" },
   { title: "Lorcana liga", date: "18. 7. 2026", result: "5. místo", record: "2V / 2P / 1R" },
-  { title: "Riftbound prerelease", date: "2. 7. 2026", result: "1. místo 🏆", record: "4V / 0P / 0R" },
+  { title: "Riftbound prerelease", date: "2. 7. 2026", result: "1. místo", record: "4V / 0P / 0R" },
 ];
 
-const achievements = ["🏆 První výhra", "🔥 3 turnaje v řadě", "🎴 Prerelease veterán"];
+const achievements = [
+  { icon: "/images/icons/trophy.svg", text: "První výhra" },
+  { icon: "/images/icons/fire.svg", text: "3 turnaje v řadě" },
+  { icon: "/images/icons/cards_8531719.svg", text: "Prerelease veterán" },
+];
 ---
 
 <Layout title="Můj profil">
@@ -54,8 +58,9 @@ const achievements = ["🏆 První výhra", "🔥 3 turnaje v řadě", "🎴 Pre
       <div class="mt-3 flex flex-wrap gap-2">
         {
           achievements.map((a) => (
-            <span class="rounded-full bg-kostka-cyan/10 px-4 py-1.5 text-sm font-semibold text-kostka-cyan">
-              {a}
+            <span class="inline-flex items-center gap-2 rounded-full bg-kostka-cyan/10 px-4 py-1.5 text-sm font-semibold text-kostka-cyan">
+              <img src={a.icon} alt="" class="h-4 w-4 flex-none" />
+              {a.text}
             </span>
           ))
         }

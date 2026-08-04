@@ -11,8 +11,13 @@ import teamTower from "../assets/gallery/team-tower.jpg";
 import gamesStack from "../assets/gallery/games-stack.jpg";
 import cardGame from "../assets/gallery/card-game.jpg";
 import teamSofa from "../assets/gallery/team-sofa.jpg";
+import heroBoard from "../assets/gallery/hero-board.jpg";
 
-const games = ["Lorcana", "Pokémon", "Riftbound"];
+const games = [
+  { name: "Lorcana", logo: "/images/games/lorcana.png" },
+  { name: "Pokémon TCG", logo: "/images/games/pokemon-tcg.svg" },
+  { name: "Riftbound", logo: "/images/games/riftbound.png" },
+];
 
 const usps = [
   {
@@ -66,10 +71,15 @@ const faqPreview = [
 
     <div class="relative mx-auto grid max-w-6xl items-center gap-12 px-4 pb-16 pt-16 md:pb-24 md:pt-20 lg:grid-cols-[1.1fr_0.9fr]">
       <div>
-        <h1 class="text-5xl font-black uppercase leading-[0.95] tracking-tight text-white md:text-6xl">
-          Herna<br />
-          pro hráče,<br />
-          od hráčů <span class="text-kostka-cyan">pro hráče.</span>
+        <div class="flex items-center gap-3">
+          <span class="h-[3px] w-14 flex-none rounded-full bg-kostka-cyan"></span>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">
+            Herna pro hráče TCG v Ostravě
+          </p>
+        </div>
+        <h1 class="mt-5 text-5xl font-black uppercase leading-[1.05] tracking-tight text-white md:text-6xl">
+          Od hráčů<br />
+          <span class="text-kostka-cyan">pro hráče.</span>
         </h1>
         <p class="mt-6 max-w-md text-lg text-white/70">
           Místo, kde se potkávají hráči TCG. Turnaje, ligy, nové přátelství
@@ -89,27 +99,30 @@ const faqPreview = [
             Jak to funguje
           </a>
         </div>
-        <div class="mt-10 flex flex-wrap gap-3">
+        <div class="mt-10 flex flex-wrap items-center gap-3">
           {
             games.map((game) => (
-              <span class="rounded-full border border-white/15 px-4 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/60">
-                {game}
+              <span class="flex h-12 items-center rounded-xl bg-white px-4 shadow-lg shadow-black/20">
+                <img src={game.logo} alt={game.name} class="h-6 w-auto object-contain sm:h-7" />
               </span>
             ))
           }
         </div>
       </div>
 
-      <div class="relative mx-auto hidden aspect-square w-full max-w-sm lg:block">
-        <img
-          src="/images/icons/dice-hero-white.svg"
-          alt=""
-          class="absolute left-2 top-6 h-24 w-24 rotate-[-18deg] opacity-20"
-        />
-        <img
-          src="/images/icons/dice-hero-cyan.svg"
-          alt=""
-          class="absolute inset-0 m-auto h-56 w-56 rotate-12 drop-shadow-[0_0_60px_rgba(0,180,212,0.55)]"
+      <div class="relative mx-auto aspect-[4/5] w-full max-w-sm lg:aspect-[4/5]">
+        <div
+          class="absolute inset-0 translate-x-4 translate-y-4 bg-kostka-cyan/25"
+          style="clip-path: polygon(14% 0, 100% 0, 100% 100%, 0% 100%)"
+        >
+        </div>
+        <Image
+          src={heroBoard}
+          alt="Hráči u stolní hry v KOSTKA TCG"
+          class="relative h-full w-full object-cover"
+          style="clip-path: polygon(14% 0, 100% 0, 100% 100%, 0% 100%)"
+          widths={[400, 800]}
+          sizes="(min-width: 1024px) 24rem, 80vw"
         />
       </div>
     </div>
@@ -147,8 +160,9 @@ const faqPreview = [
     <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
       {upcomingTournaments.slice(0, 3).map((event) => <TournamentCard event={event} />)}
     </div>
-    <p class="mt-8 text-center text-sm text-white/40">
-      📅 Pravidelně přidáváme nové turnaje a ligy. Sledujte nás a buďte u toho!
+    <p class="mt-8 flex items-center justify-center gap-2 text-center text-sm text-white/40">
+      <img src="/images/icons/calendar.svg" alt="" class="h-4 w-4 flex-none" />
+      Pravidelně přidáváme nové turnaje a ligy. Sledujte nás a buďte u toho!
     </p>
   </section>
 
@@ -175,7 +189,11 @@ const faqPreview = [
           {
             aboutPoints.map((point) => (
               <li class="flex items-center gap-3 text-sm text-white/70">
-                <span class="grid h-5 w-5 flex-none place-items-center rounded-full bg-kostka-cyan/15 text-xs text-kostka-cyan">✓</span>
+                <span class="grid h-5 w-5 flex-none place-items-center rounded-full bg-kostka-cyan/15 text-kostka-cyan">
+                  <svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polyline points="3.5,8.5 6.5,11.5 12.5,4.5" />
+                  </svg>
+                </span>
                 {point}
               </li>
             ))

@@ -39,8 +39,9 @@ const { event, isPast } = Astro.props;
         </p>
         {
           isPast && "winner" in event && (
-            <p class="mt-4 rounded-xl bg-kostka-cyan/10 p-4 font-semibold text-white">
-              🏆 Vítěz: {event.winner}
+            <p class="mt-4 flex items-center gap-2 rounded-xl bg-kostka-cyan/10 p-4 font-semibold text-white">
+              <img src="/images/icons/trophy.svg" alt="" class="h-5 w-5 flex-none" />
+              Vítěz: {event.winner}
             </p>
           )
         }
