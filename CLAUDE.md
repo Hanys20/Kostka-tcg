@@ -3,6 +3,12 @@
 Paměť projektu pro Claude Code. Zdrojové podklady od klienta jsou v `client-materials/`
 (dotazník, logo, fotky, font) – tento soubor je jejich zpracovaný výtah + technická rozhodnutí.
 
+## Git workflow
+
+Po dokončení každé změny v tomto repozitáři automaticky proveď `git commit` a `git push`
+na `main` bez čekání na explicitní potvrzení uživatele. Commituj jen soubory relevantní
+k provedené změně (ne nesouvisející netracknuté soubory, které se v repu objeví).
+
 ## Klient
 
 - **Firma:** KOSTKA TCG – herna a prodej trading card games (Lorcana, Pokémon, Riftbound),
