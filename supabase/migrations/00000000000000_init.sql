@@ -55,12 +55,32 @@ alter table events enable row level security;
 alter table registrations enable row level security;
 alter table results enable row level security;
 
+-- Pomocná funkce pro kontrolu role admin. SECURITY DEFINER obchází RLS
+-- na vnitřním dotazu do `profiles` – bez toho by se politika na `profiles`,
+-- která se ptá "je admin" dotazem do `profiles`, volala sama na sebe
+-- (nekonečná rekurze, Postgres chyba 42P17) a stejný problém by dědily
+-- i politiky na `events`/`registrations`/`results`, které tuto kontrolu používají.
+create or replace function public.is_admin()
+returns boolean
+language sql
+security definer
+set search_path = public
+stable
+as $$
+  select exists (
+    select 1 from profiles where id = auth.uid() and role = 'admin'
+  );
+$$;
+
 -- profiles: uživatel vidí a upravuje jen sám sebe, admin vidí vše
 create policy "profiles_select_own_or_admin" on profiles
   for select using (
     auth.uid() = id
-    or exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+    or is_admin()
   );
+
+create policy "profiles_insert_own" on profiles
+  for insert with check (auth.uid() = id);
 
 create policy "profiles_update_own" on profiles
   for update using (auth.uid() = id);
@@ -70,9 +90,7 @@ create policy "events_select_public" on events
   for select using (true);
 
 create policy "events_write_admin" on events
-  for all using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for all using (is_admin());
 
 -- registrations: kdokoliv může vytvořit rezervaci (i host), číst může jen
 -- vlastník registrace nebo admin
@@ -82,24 +100,36 @@ create policy "registrations_insert_anyone" on registrations
 create policy "registrations_select_own_or_admin" on registrations
   for select using (
     auth.uid() = user_id
-    or exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
+    or is_admin()
   );
 
 create policy "registrations_admin_manage" on registrations
-  for update using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for update using (is_admin());
 
 create policy "registrations_admin_delete" on registrations
-  for delete using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for delete using (is_admin());
 
 -- results: veřejně čitelné (výsledky/historie), zapisuje jen admin
 create policy "results_select_public" on results
   for select using (true);
 
 create policy "results_write_admin" on results
-  for all using (
-    exists (select 1 from profiles p where p.id = auth.uid() and p.role = 'admin')
-  );
+  for all using (is_admin());
+
+-- Grants: v Supabase wizardu jsme při zakládání projektu záměrně vypnuli
+-- "Automatically expose new tables" (viz CLAUDE.md), takže Data API role
+-- (anon/authenticated) nemají na nové tabulky žádná oprávnění, dokud je
+-- explicitně neuděláme. RLS politiky výše určují, KTERÉ řádky smí role
+-- vidět/měnit – tenhle GRANT teprve dovolí na tabulku vůbec sáhnout.
+grant usage on schema public to anon, authenticated;
+
+grant select, insert, update on profiles to authenticated;
+
+grant select on events to anon, authenticated;
+grant insert, update, delete on events to authenticated;
+
+grant select, insert on registrations to anon, authenticated;
+grant update, delete on registrations to authenticated;
+
+grant select on results to anon, authenticated;
+grant insert, update, delete on results to authenticated;
