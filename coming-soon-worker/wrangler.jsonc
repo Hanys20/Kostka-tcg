@@ -1,0 +1,17 @@
+{
+  "$schema": "../node_modules/wrangler/config-schema.json",
+  "name": "kostka-tcg-coming-soon",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-08-04",
+  // Requests to these hostnames hit this worker first. Adjust to match
+  // whichever hostnames actually point at the site (remove www if unused).
+  "routes": [
+    { "pattern": "kostkatcg.cz/*", "zone_name": "kostkatcg.cz" },
+    { "pattern": "www.kostkatcg.cz/*", "zone_name": "kostkatcg.cz" }
+  ],
+  // Binds to the real site's worker by name so unlocked visitors reach the
+  // actual deployment without hardcoding a *.workers.dev / *.pages.dev URL.
+  "services": [
+    { "binding": "ORIGIN", "service": "kostka-tcg" }
+  ]
+}
