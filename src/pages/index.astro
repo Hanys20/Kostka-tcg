@@ -70,67 +70,56 @@ const faqPreview = [
   <section class="relative overflow-hidden">
     <div class="pointer-events-none absolute -top-32 right-0 h-[32rem] w-[32rem] rounded-full bg-kostka-cyan/20 blur-[120px]"></div>
 
-    <div class="relative mx-auto grid max-w-6xl items-stretch gap-12 px-4 pb-16 pt-16 md:pb-24 md:pt-20 lg:grid-cols-[1.1fr_0.9fr]">
-      <div>
-        <div class="flex items-center gap-3">
-          <span class="h-[3px] w-14 flex-none rounded-full bg-kostka-cyan"></span>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">
-            Herna pro hráče TCG v Ostravě
-          </p>
-        </div>
-        <h1 class="mt-5 text-5xl font-black uppercase leading-[1.05] tracking-tight text-white md:text-6xl">
+    <div class="relative mx-auto max-w-6xl px-4 pb-16 pt-16 md:pb-24 md:pt-20">
+      <div class="flex items-center gap-3">
+        <span class="h-[3px] w-14 flex-none rounded-full bg-kostka-cyan"></span>
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">
+          Herna pro hráče TCG v Ostravě
+        </p>
+      </div>
+
+      <div class="mt-5 max-w-4xl">
+        <h1 class="text-5xl font-black uppercase leading-[1.05] tracking-tight text-white md:text-6xl">
           Od hráčů<br />
           <span class="text-kostka-cyan">pro hráče.</span>
         </h1>
-        <p class="mt-6 max-w-md text-lg text-white/70">
+        <p class="mt-6 max-w-2xl text-lg text-white/70">
           Místo, kde se potkávají hráči TCG. Turnaje, ligy, nové přátelství
           a skvělá atmosféra v Ostravě.
         </p>
-        <div class="mt-8 flex flex-wrap gap-4">
-          <a
-            href="/turnaje"
-            class="rounded-full bg-kostka-cyan px-8 py-3 text-sm font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
-          >
-            Nadcházející turnaje
-          </a>
-          <a
-            href="/o-nas"
-            class="rounded-full border border-white/20 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white hover:border-kostka-cyan hover:text-kostka-cyan"
-          >
-            Jak to funguje
-          </a>
-        </div>
-        <div class="mt-10 rounded-3xl border border-white/10 bg-kostka-surface/50 p-5 backdrop-blur-sm">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">Vyber si svou hru</p>
-          <div class="mt-4 grid gap-3 sm:grid-cols-3">
-            {
-              games.map((game) => (
-                <a
-                  href={game.href}
-                  class="group flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 transition duration-300 hover:border-kostka-cyan/60 hover:bg-kostka-cyan/10 hover:shadow-[0_0_22px_rgba(0,180,212,0.28)]"
-                >
-                  <img src={game.logo} alt={game.name} class="h-6 w-auto object-contain sm:h-7" />
-                </a>
-              ))
-            }
-          </div>
-        </div>
       </div>
 
-      <div class="mx-auto flex w-full max-w-xl flex-col items-stretch justify-center gap-4 rounded-3xl border border-white/10 bg-kostka-surface/40 p-6 backdrop-blur-sm lg:mx-0 lg:h-full lg:max-w-none">
-        <div class="rounded-2xl border border-kostka-cyan/30 bg-kostka-cyan/10 p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Pravidelně</p>
-          <h2 class="mt-2 text-2xl font-black text-white">Karty, liga, turnaje a komunita.</h2>
-        </div>
-        <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+      <div class="mt-8 flex flex-wrap gap-4">
+        <a
+          href="/turnaje"
+          class="rounded-full bg-kostka-cyan px-8 py-3 text-sm font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
+        >
+          Nadcházející turnaje
+        </a>
+        <a
+          href="/o-nas"
+          class="rounded-full border border-white/20 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white hover:border-kostka-cyan hover:text-kostka-cyan"
+        >
+          Jak to funguje
+        </a>
+      </div>
+
+      <div class="mt-12">
+        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">Vyber si svou hru</p>
+        <div class="mt-4 grid gap-4 md:grid-cols-3">
           {
             games.map((game) => (
               <a
                 href={game.href}
-                class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition duration-300 hover:border-kostka-cyan/60 hover:bg-kostka-cyan/10"
+                class="group flex min-h-32 flex-col justify-between rounded-2xl border border-white/10 bg-kostka-surface/50 p-5 transition duration-300 hover:-translate-y-0.5 hover:border-kostka-cyan/60 hover:bg-kostka-cyan/5 hover:shadow-[0_0_22px_rgba(0,180,212,0.18)]"
               >
-                <img src={game.logo} alt={game.name} class="h-8 w-auto object-contain" />
-                <span class="text-sm font-semibold text-white">{game.name}</span>
+                <div class="flex h-20 items-center rounded-xl bg-white/3 px-4">
+                  <img src={game.logo} alt={game.name} class="max-h-12 w-auto object-contain" />
+                </div>
+                <div class="mt-4">
+                  <p class="text-lg font-bold text-white transition group-hover:text-kostka-cyan">{game.name}</p>
+                  <p class="mt-1 text-sm text-white/50">Přejít na stránku hry</p>
+                </div>
               </a>
             ))
           }
