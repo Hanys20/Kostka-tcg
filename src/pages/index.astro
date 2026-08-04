@@ -15,9 +15,9 @@ import heroBoard from "../assets/gallery/hero-board.jpg";
 import teamGroup from "../assets/gallery/team-group.jpg";
 
 const games = [
-  { name: "Lorcana", logo: "/images/games/lorcana.png" },
-  { name: "Pokémon TCG", logo: "/images/games/pokemon-tcg.svg" },
-  { name: "Riftbound", logo: "/images/games/riftbound.png" },
+  { name: "Lorcana", logo: "/images/games/lorcana.png", href: "/lorcana" },
+  { name: "Pokémon TCG", logo: "/images/games/pokemon-tcg.svg", href: "/pokemon-tcg" },
+  { name: "Riftbound", logo: "/images/games/riftbound.png", href: "/riftbound" },
 ];
 
 const usps = [
@@ -100,26 +100,41 @@ const faqPreview = [
             Jak to funguje
           </a>
         </div>
-        <div class="mt-10 flex flex-wrap items-center gap-3">
-          {
-            games.map((game) => (
-              <span class="flex h-12 items-center rounded-xl bg-white px-4 shadow-lg shadow-black/20">
-                <img src={game.logo} alt={game.name} class="h-6 w-auto object-contain sm:h-7" />
-              </span>
-            ))
-          }
+        <div class="mt-10 rounded-3xl border border-white/10 bg-kostka-surface/50 p-5 backdrop-blur-sm">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/55">Vyber si svou hru</p>
+          <div class="mt-4 grid gap-3 sm:grid-cols-3">
+            {
+              games.map((game) => (
+                <a
+                  href={game.href}
+                  class="group flex h-14 items-center justify-center rounded-2xl border border-white/10 bg-white/5 px-4 transition duration-300 hover:border-kostka-cyan/60 hover:bg-kostka-cyan/10 hover:shadow-[0_0_22px_rgba(0,180,212,0.28)]"
+                >
+                  <img src={game.logo} alt={game.name} class="h-6 w-auto object-contain sm:h-7" />
+                </a>
+              ))
+            }
+          </div>
         </div>
       </div>
 
-      <div class="mx-auto w-full max-w-xl lg:mx-0 lg:h-full lg:max-w-none">
-        <Image
-          src={teamGroup}
-          alt="Tým KOSTKA TCG s deskovými hrami"
-          class="h-72 w-full rounded-2xl object-cover sm:h-96 lg:h-full"
-          widths={[500, 900, 1300]}
-          sizes="(min-width: 1024px) 36rem, 90vw"
-          loading="eager"
-        />
+      <div class="mx-auto flex w-full max-w-xl flex-col items-stretch justify-center gap-4 rounded-3xl border border-white/10 bg-kostka-surface/40 p-6 backdrop-blur-sm lg:mx-0 lg:h-full lg:max-w-none">
+        <div class="rounded-2xl border border-kostka-cyan/30 bg-kostka-cyan/10 p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Pravidelně</p>
+          <h2 class="mt-2 text-2xl font-black text-white">Karty, liga, turnaje a komunita.</h2>
+        </div>
+        <div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+          {
+            games.map((game) => (
+              <a
+                href={game.href}
+                class="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/5 px-4 py-3 transition duration-300 hover:border-kostka-cyan/60 hover:bg-kostka-cyan/10"
+              >
+                <img src={game.logo} alt={game.name} class="h-8 w-auto object-contain" />
+                <span class="text-sm font-semibold text-white">{game.name}</span>
+              </a>
+            ))
+          }
+        </div>
       </div>
     </div>
 

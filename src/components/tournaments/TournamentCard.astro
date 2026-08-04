@@ -10,8 +10,9 @@ const spotsLeft = event.spotsTotal - event.spotsTaken;
 const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
 ---
 
-<article class="flex flex-col rounded-2xl border border-white/10 bg-kostka-surface p-5 transition hover:-translate-y-0.5 hover:border-kostka-cyan/40">
-  <div class="flex items-center justify-between">
+<article class="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-cyan/40">
+  <div class="pointer-events-none absolute inset-0 rounded-2xl border border-transparent transition-all duration-500 group-hover:border-kostka-cyan/70 group-hover:shadow-[0_0_0_1px_rgba(0,180,212,0.5),0_0_28px_rgba(0,180,212,0.35),0_0_56px_rgba(0,180,212,0.2)]"></div>
+  <div class="relative flex items-center justify-between">
     <span class={`rounded-full px-3 py-1 text-xs font-semibold ${gameBadgeColors[event.game]}`}>
       {event.game}
     </span>
