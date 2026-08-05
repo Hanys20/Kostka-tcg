@@ -1,20 +1,31 @@
 ---
 import { upcomingTournaments } from "../../data/tournaments";
 
-// Statický nastřel kalendáře pro srpen 2026 – po napojení na Supabase
-// se dny s termíny natáhnou dotazem na `events`.
 const MONTH_LABEL = "Srpen 2026";
 const DAYS_IN_MONTH = 31;
-const FIRST_WEEKDAY = 5; // srpen 2026 začíná v sobotu (Po=0 ... Ne=6)
+const FIRST_WEEKDAY = 5;
 const TODAY = 4;
+const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 
-const eventDays = new Set(upcomingTournaments.map((e) => e.day));
+const eventMap = new Map<number, (typeof upcomingTournaments)[number]>();
+for (const event of upcomingTournaments) {
+  eventMap.set(event.day, event);
+}
+
+const calendarPayload = JSON.stringify(
+  upcomingTournaments.map((event) => ({
+    day: event.day,
+    title: event.title,
+    slug: event.slug,
+    registrationUrl: event.registrationUrl || `/turnaje/${event.slug}`,
+  })),
+);
+
 const leadingBlanks = Array.from({ length: FIRST_WEEKDAY });
 const days = Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1);
-const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 ---
 
-<div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
+<div class="rounded-2xl border border-white/10 bg-kostka-surface p-6" data-calendar-root>
   <div class="flex items-center justify-between">
     <p class="font-bold text-white">{MONTH_LABEL}</p>
     <div class="flex gap-1 text-white/40">
@@ -31,21 +42,27 @@ const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
     {leadingBlanks.map(() => <span></span>)}
     {
       days.map((day) => {
-        const hasEvent = eventDays.has(day);
+        const event = eventMap.get(day);
         const isToday = day === TODAY;
-        return (
-          <span
-            class:list={[
-              "relative grid h-9 place-items-center rounded-full",
-              isToday && "bg-kostka-cyan font-bold text-kostka-bg",
-              !isToday && hasEvent && "font-semibold text-kostka-cyan",
-              !isToday && !hasEvent && "text-white/70",
-            ]}
+        const textClasses = isToday ? "bg-kostka-cyan font-bold text-kostka-bg" : event ? "font-semibold text-kostka-cyan" : "text-white/70";
+
+        return event ? (
+          <a
+            href={event.registrationUrl || `/turnaje/${event.slug}`}
+            data-calendar-day={day}
+            class:list={["relative grid h-9 place-items-center rounded-full transition hover:text-kostka-cyan", textClasses]}
+            target={event.registrationUrl?.startsWith("http") ? "_blank" : undefined}
+            rel={event.registrationUrl?.startsWith("http") ? "noreferrer" : undefined}
           >
             {day}
-            {hasEvent && !isToday && (
-              <span class="absolute bottom-1 h-1 w-1 rounded-full bg-kostka-cyan" />
-            )}
+            <span class="absolute bottom-1 h-1 w-1 rounded-full bg-kostka-cyan" />
+          </a>
+        ) : (
+          <span
+            data-calendar-day={day}
+            class:list={["relative grid h-9 place-items-center rounded-full", textClasses]}
+          >
+            {day}
           </span>
         );
       })
@@ -57,3 +74,11 @@ const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
     <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-white"></span> Dnes</span>
   </div>
 </div>
+
+<script is:inline>
+  window.__KOSTKA_CALENDAR_EVENTS__ = window.__KOSTKA_CALENDAR_EVENTS__ || [];
+  window.__KOSTKA_CALENDAR_EVENTS__ = [
+    ...window.__KOSTKA_CALENDAR_EVENTS__,
+    ...JSON.parse(`$${calendarPayload}`),
+  ];
+</script>

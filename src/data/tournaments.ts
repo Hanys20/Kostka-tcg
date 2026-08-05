@@ -13,6 +13,7 @@ export interface TournamentEntry {
   day: number; // den v měsíci (pro kalendář, srpen 2026)
   spotsTaken: number;
   spotsTotal: number;
+  registrationUrl?: string;
 }
 
 export interface PastTournamentEntry {
@@ -126,4 +127,10 @@ export const gameBadgeColors: Record<TournamentEntry["game"], string> = {
   Pokémon: "bg-yellow-400/10 text-yellow-300",
   Lorcana: "bg-purple-400/10 text-purple-300",
   Riftbound: "bg-kostka-cyan/10 text-kostka-cyan",
+};
+
+export const gameRegistrationUrls: Record<TournamentEntry["game"], string> = {
+  Lorcana: "https://www.ravensburgerplayhub.com/",
+  Pokémon: "https://www.pokemon.com/us/play-pokemon/",
+  Riftbound: "https://www.riftbound.com/",
 };

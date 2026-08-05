@@ -1,130 +1,246 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { upcomingTournaments, pastTournaments } from "../../data/tournaments";
+import { upcomingTournaments, pastTournaments, gameRegistrationUrls } from "../../data/tournaments";
 
-const players = [
-  { name: "Jan Novák", nick: "JanTCG", wins: 2, losses: 1, draws: 0 },
-  { name: "Tereza Krejčí", nick: "TeryK", wins: 3, losses: 0, draws: 0 },
-  { name: "Marek Svoboda", nick: "MarekS", wins: 1, losses: 2, draws: 0 },
-  { name: "Petra Vlčková", nick: "PeťaV", wins: 1, losses: 1, draws: 1 },
+const defaultEvents = [
+  ...upcomingTournaments.map((event) => ({
+    ...event,
+    registrationUrl: event.registrationUrl || gameRegistrationUrls[event.game],
+  })),
+  ...pastTournaments.map((event) => ({
+    ...event,
+    registrationUrl: gameRegistrationUrls[event.game],
+  })),
 ];
 
-const selectedEvent = upcomingTournaments[1];
+const defaultEventsJson = JSON.stringify(defaultEvents);
 ---
 
 <Layout title="Administrace">
   <section class="mx-auto max-w-6xl px-4 py-16">
     <div class="flex flex-wrap items-center justify-between gap-4">
-      <h1 class="text-3xl font-black text-white md:text-4xl">Administrace turnajů</h1>
-      <button class="rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
-        + Nový termín
+      <div>
+        <h1 class="text-3xl font-black text-white md:text-4xl">Administrace turnajů</h1>
+        <p class="mt-2 text-white/60">
+          Jednoduchý prototyp admin rozhraní pro přidávání turnajů a lig s přístupem pro admina.
+        </p>
+      </div>
+      <button id="logout-button" type="button" class="hidden rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:border-kostka-cyan hover:text-kostka-cyan">
+        Odhlásit se
       </button>
     </div>
-    <p class="mt-2 text-white/60">
-      Přístupné pouze pro roli <code>admin</code>. Slouží k vypisování termínů, správě
-      přihlášených hráčů a zápisu výsledků.
-    </p>
 
-    <div class="mt-8 overflow-x-auto rounded-2xl border border-white/10">
-      <table class="w-full text-left text-sm">
-        <thead class="bg-white/[0.03] text-white/50">
-          <tr>
-            <th class="px-4 py-3 font-semibold">Termín</th>
-            <th class="px-4 py-3 font-semibold">Hra</th>
-            <th class="px-4 py-3 font-semibold">Typ</th>
-            <th class="px-4 py-3 font-semibold">Obsazenost</th>
-            <th class="px-4 py-3 font-semibold">Stav</th>
-            <th class="px-4 py-3"></th>
-          </tr>
-        </thead>
-        <tbody class="divide-y divide-white/10">
-          {
-            upcomingTournaments.map((e) => (
-              <tr class={e.slug === selectedEvent.slug ? "bg-kostka-cyan/5" : ""}>
-                <td class="px-4 py-3 font-medium text-white">{e.title} · {e.date}</td>
-                <td class="px-4 py-3 text-white/60">{e.game}</td>
-                <td class="px-4 py-3 text-white/60">{e.type === "league" ? "Liga" : "Turnaj"}</td>
-                <td class="px-4 py-3 text-white/60">{e.spotsTaken}/{e.spotsTotal}</td>
-                <td class="px-4 py-3"><span class="rounded-full bg-kostka-cyan/10 px-2.5 py-0.5 text-xs font-semibold text-kostka-cyan">Nadcházející</span></td>
-                <td class="px-4 py-3 text-right"><a href="#detail" class="font-semibold text-kostka-cyan hover:underline">Spravovat</a></td>
-              </tr>
-            ))
-          }
-          {
-            pastTournaments.map((e) => (
-              <tr class="opacity-60">
-                <td class="px-4 py-3 font-medium text-white">{e.title} · {e.date}</td>
-                <td class="px-4 py-3 text-white/60">{e.game}</td>
-                <td class="px-4 py-3 text-white/60">{e.type === "league" ? "Liga" : "Turnaj"}</td>
-                <td class="px-4 py-3 text-white/60">{e.participants} hráčů</td>
-                <td class="px-4 py-3"><span class="rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-semibold text-white/60">Proběhlo</span></td>
-                <td class="px-4 py-3 text-right"><a href="#detail" class="font-semibold text-kostka-cyan hover:underline">Zobrazit</a></td>
-              </tr>
-            ))
-          }
-        </tbody>
-      </table>
-    </div>
-
-    <div id="detail" class="mt-12 scroll-mt-24">
-      <h2 class="text-xl font-bold text-white">
-        Detail termínu – {selectedEvent.title} ({selectedEvent.date})
-      </h2>
-      <p class="mt-1 text-sm text-white/50">
-        Přihlášení hráči, ruční přidání/odebrání a zápis výher, proher a remíz.
-      </p>
-
-      <div class="mt-4 flex flex-wrap gap-3">
-        <input
-          type="text"
-          placeholder="Jméno hráče pro ruční přidání"
-          class="rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
-        />
-        <button class="rounded-full bg-white/10 px-5 py-2.5 text-sm font-semibold text-white hover:bg-kostka-cyan hover:text-kostka-bg">
-          + Přidat hráče
+    <div id="auth-card" class="mx-auto mt-8 max-w-md rounded-2xl border border-white/10 bg-kostka-surface p-6">
+      <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Přihlášení</p>
+      <h2 class="mt-2 text-2xl font-bold text-white">Admin login</h2>
+      <p class="mt-2 text-sm text-white/50">Nick: <strong>admin</strong> · Heslo: <strong>admin123</strong></p>
+      <form id="login-form" class="mt-6 space-y-3">
+        <input id="admin-nick" type="text" placeholder="Nick" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
+        <input id="admin-password" type="password" placeholder="Heslo" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
+        <button type="submit" class="w-full rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+          Přihlásit se
         </button>
-      </div>
+      </form>
+      <p id="login-message" class="mt-3 text-sm text-red-300"></p>
+    </div>
 
-      <div class="mt-6 overflow-x-auto rounded-2xl border border-white/10">
-        <table class="w-full text-left text-sm">
-          <thead class="bg-white/[0.03] text-white/50">
-            <tr>
-              <th class="px-4 py-3 font-semibold">Hráč</th>
-              <th class="px-4 py-3 font-semibold">Nick</th>
-              <th class="px-4 py-3 font-semibold">Výhry</th>
-              <th class="px-4 py-3 font-semibold">Prohry</th>
-              <th class="px-4 py-3 font-semibold">Remízy</th>
-              <th class="px-4 py-3"></th>
-            </tr>
-          </thead>
-          <tbody class="divide-y divide-white/10">
-            {
-              players.map((p) => (
+    <div id="admin-panel" class="hidden">
+      <div class="mt-8 grid gap-8 lg:grid-cols-[420px_1fr]">
+        <div class="rounded-2xl border border-white/10 bg-kostka-surface p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Přidat událost</p>
+          <h2 class="mt-2 text-xl font-bold text-white">Turnaj / liga</h2>
+          <form id="event-form" class="mt-4 space-y-3">
+            <input id="event-title" type="text" placeholder="Název události" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
+            <select id="event-type" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan">
+              <option value="tournament">Turnaj</option>
+              <option value="league">Liga</option>
+            </select>
+            <select id="event-game" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan">
+              <option value="Lorcana">Lorcana</option>
+              <option value="Pokémon">Pokémon</option>
+              <option value="Riftbound">Riftbound</option>
+            </select>
+            <input id="event-date" type="date" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan" required />
+            <div class="grid gap-3 sm:grid-cols-2">
+              <input id="event-start" type="time" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan" required />
+              <input id="event-end" type="time" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan" required />
+            </div>
+            <input id="event-capacity" type="number" min="1" placeholder="Počet volných míst" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
+            <input id="event-url" type="url" placeholder="Registrace / odkaz na stránku hry (volitelné)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
+            <button type="submit" class="w-full rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+              Uložit událost
+            </button>
+          </form>
+          <p id="admin-message" class="mt-3 text-sm text-kostka-cyan"></p>
+        </div>
+
+        <div class="rounded-2xl border border-white/10 bg-kostka-surface p-5">
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Seznam událostí</p>
+              <h2 class="mt-2 text-xl font-bold text-white">Nadcházející a proběhlé termíny</h2>
+            </div>
+          </div>
+
+          <div class="mt-4 overflow-x-auto rounded-2xl border border-white/10">
+            <table class="w-full text-left text-sm">
+              <thead class="bg-white/[0.03] text-white/50">
                 <tr>
-                  <td class="px-4 py-3 font-medium text-white">{p.name}</td>
-                  <td class="px-4 py-3 text-white/60">@{p.nick}</td>
-                  <td class="px-4 py-3">
-                    <input type="number" value={p.wins} class="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-sm text-white" />
-                  </td>
-                  <td class="px-4 py-3">
-                    <input type="number" value={p.losses} class="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-sm text-white" />
-                  </td>
-                  <td class="px-4 py-3">
-                    <input type="number" value={p.draws} class="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1 text-sm text-white" />
-                  </td>
-                  <td class="px-4 py-3 text-right">
-                    <button class="font-semibold text-red-400 hover:underline">Odebrat</button>
-                  </td>
+                  <th class="px-4 py-3 font-semibold">Název</th>
+                  <th class="px-4 py-3 font-semibold">Typ</th>
+                  <th class="px-4 py-3 font-semibold">Hra</th>
+                  <th class="px-4 py-3 font-semibold">Datum</th>
+                  <th class="px-4 py-3 font-semibold">Volná místa</th>
+                  <th class="px-4 py-3"></th>
                 </tr>
-              ))
-            }
-          </tbody>
-        </table>
+              </thead>
+              <tbody id="event-list" class="divide-y divide-white/10"></tbody>
+            </table>
+          </div>
+        </div>
       </div>
-
-      <button class="mt-4 rounded-full bg-kostka-cyan px-6 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
-        Uložit výsledky
-      </button>
     </div>
   </section>
+
+  <script is:inline>
+    const ADMIN_NICK = "admin";
+    const ADMIN_PASSWORD = "admin123";
+    const STORAGE_KEY = "kostka-admin-events";
+    const SESSION_KEY = "kostka-admin-session";
+    const DEFAULT_EVENTS = ${defaultEventsJson};
+
+    const loginCard = document.getElementById("auth-card");
+    const adminPanel = document.getElementById("admin-panel");
+    const logoutButton = document.getElementById("logout-button");
+    const loginForm = document.getElementById("login-form");
+    const eventForm = document.getElementById("event-form");
+    const loginMessage = document.getElementById("login-message");
+    const adminMessage = document.getElementById("admin-message");
+    const eventList = document.getElementById("event-list");
+
+    function getSavedEvents() {
+      try {
+        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
+        return Array.isArray(stored) && stored.length ? stored : DEFAULT_EVENTS;
+      } catch {
+        return DEFAULT_EVENTS;
+      }
+    }
+
+    function saveEvents(events) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
+    }
+
+    function formatDate(value) {
+      return new Date(value + "T00:00:00").toLocaleDateString("cs-CZ", {
+        day: "numeric",
+        month: "numeric",
+        year: "numeric",
+      });
+    }
+
+    function slugify(value) {
+      return value
+        .toLowerCase()
+        .normalize("NFD")
+        .replace(/[\u0300-\u036f]/g, "")
+        .replace(/[^a-z0-9\s-]/g, "")
+        .trim()
+        .replace(/\s+/g, "-")
+        .slice(0, 40);
+    }
+
+    function renderEvents() {
+      const events = getSavedEvents();
+      eventList.innerHTML = events.map((event) => `
+        <tr>
+          <td class="px-4 py-3 font-medium text-white">${event.title}</td>
+          <td class="px-4 py-3 text-white/60">${event.type === "league" ? "Liga" : "Turnaj"}</td>
+          <td class="px-4 py-3 text-white/60">${event.game}</td>
+          <td class="px-4 py-3 text-white/60">${formatDate(event.date)}</td>
+          <td class="px-4 py-3 text-white/60">${event.spotsTotal}</td>
+          <td class="px-4 py-3 text-right">
+            <a href="${event.registrationUrl || `/turnaje/${event.slug}`}" class="font-semibold text-kostka-cyan hover:underline" target="_blank" rel="noreferrer">Odkaz</a>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function showAdmin() {
+      loginCard.classList.add("hidden");
+      adminPanel.classList.remove("hidden");
+      logoutButton.classList.remove("hidden");
+      renderEvents();
+    }
+
+    function hideAdmin() {
+      loginCard.classList.remove("hidden");
+      adminPanel.classList.add("hidden");
+      logoutButton.classList.add("hidden");
+      localStorage.removeItem(SESSION_KEY);
+    }
+
+    if (localStorage.getItem(SESSION_KEY) === "active") {
+      showAdmin();
+    }
+
+    loginForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const nick = document.getElementById("admin-nick").value.trim();
+      const password = document.getElementById("admin-password").value.trim();
+
+      if (nick === ADMIN_NICK && password === ADMIN_PASSWORD) {
+        localStorage.setItem(SESSION_KEY, "active");
+        showAdmin();
+        loginMessage.textContent = "";
+      } else {
+        loginMessage.textContent = "Špatný nick nebo heslo.";
+      }
+    });
+
+    logoutButton.addEventListener("click", () => {
+      hideAdmin();
+    });
+
+    eventForm.addEventListener("submit", (event) => {
+      event.preventDefault();
+
+      const title = document.getElementById("event-title").value.trim();
+      const type = document.getElementById("event-type").value;
+      const game = document.getElementById("event-game").value;
+      const date = document.getElementById("event-date").value;
+      const startTime = document.getElementById("event-start").value;
+      const endTime = document.getElementById("event-end").value;
+      const capacity = Number(document.getElementById("event-capacity").value);
+      const customUrl = document.getElementById("event-url").value.trim();
+      const payload = new Date(date + "T00:00:00");
+
+      const slug = slugify(`${title}-${date}`);
+      const registrationUrl = customUrl || DEFAULT_EVENTS.find((item) => item.game === game)?.registrationUrl || "https://www.ravensburgerplayhub.com/";
+
+      const newEvent = {
+        slug,
+        title,
+        game,
+        type,
+        date: payload.toLocaleDateString("cs-CZ", {
+          day: "numeric",
+          month: "numeric",
+          year: "numeric",
+        }),
+        time: `${startTime}–${endTime}`,
+        day: payload.getDate(),
+        spotsTaken: 0,
+        spotsTotal: capacity,
+        registrationUrl,
+      };
+
+      const events = getSavedEvents();
+      saveEvents([newEvent, ...events]);
+      renderEvents();
+      eventForm.reset();
+      adminMessage.textContent = "Událost byla uložena.";
+    });
+  </script>
 </Layout>
+

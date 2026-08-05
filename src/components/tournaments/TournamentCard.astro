@@ -8,6 +8,8 @@ interface Props {
 const { event } = Astro.props;
 const spotsLeft = event.spotsTotal - event.spotsTaken;
 const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
+const actionHref = event.registrationUrl || `/turnaje/${event.slug}`;
+const actionLabel = event.registrationUrl ? "Registrovat se" : spotsLeft > 0 ? "Rezervovat místo" : "Obsazeno – náhradník";
 ---
 
 <article class="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-cyan/40">
@@ -35,9 +37,9 @@ const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
   </div>
 
   <a
-    href={`/turnaje/${event.slug}`}
+    href={actionHref}
     class="mt-5 inline-flex items-center justify-center rounded-full bg-kostka-cyan px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90"
   >
-    {spotsLeft > 0 ? "Rezervovat místo" : "Obsazeno – náhradník"}
+    {actionLabel}
   </a>
 </article>
