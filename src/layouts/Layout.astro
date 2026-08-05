@@ -22,6 +22,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
         const STORAGE_KEY = "kostka-theme";
         const root = document.documentElement;
         const media = window.matchMedia("(prefers-color-scheme: dark)");
+        const toggle = document.getElementById("theme-toggle");
 
         function getSystemTheme() {
           return media.matches ? "dark" : "light";
@@ -30,19 +31,31 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
         function applyTheme(mode) {
           const resolved = mode === "light" || mode === "dark" ? mode : getSystemTheme();
           root.setAttribute("data-theme", resolved);
-          root.dataset.themeMode = mode || "auto";
+          root.dataset.themeMode = resolved;
 
-          const select = document.getElementById("theme-select");
-          if (select) {
-            select.value = mode || "auto";
+          if (toggle) {
+            const isDark = resolved === "dark";
+            toggle.setAttribute("aria-label", isDark ? "Přepnout do světlého motivu" : "Přepnout do tmavého motivu");
+            toggle.classList.toggle("text-kostka-cyan", !isDark);
+            toggle.classList.toggle("text-amber-300", isDark);
           }
         }
 
-        const saved = localStorage.getItem(STORAGE_KEY) || "auto";
+        const saved = localStorage.getItem(STORAGE_KEY) || "dark";
         applyTheme(saved);
 
+        if (toggle) {
+          toggle.addEventListener("click", () => {
+            const current = root.getAttribute("data-theme") === "light" ? "light" : "dark";
+            const next = current === "dark" ? "light" : "dark";
+            localStorage.setItem(STORAGE_KEY, next);
+            applyTheme(next);
+          });
+        }
+
         media.addEventListener("change", () => {
-          if ((localStorage.getItem(STORAGE_KEY) || "auto") === "auto") {
+          const savedTheme = localStorage.getItem(STORAGE_KEY);
+          if (!savedTheme || savedTheme === "auto") {
             applyTheme("auto");
           }
         });
@@ -64,28 +77,24 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           <li><a href="/kontakt" class="text-white/70 hover:text-kostka-cyan">Kontakt</a></li>
         </ul>
         <div class="flex items-center gap-2 sm:gap-3">
-          <div class="hidden items-center gap-2 rounded-full border border-white/15 bg-white/5 px-2 py-2 lg:flex">
-            <label class="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-white/80">
-              <span class="grid h-6 w-6 place-items-center rounded-full bg-kostka-cyan/15 text-kostka-cyan">
-                <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M12 3v2.2"></path>
-                  <path d="M12 18.8V21"></path>
-                  <path d="M4.93 4.93l1.56 1.56"></path>
-                  <path d="M17.51 17.51l1.56 1.56"></path>
-                  <path d="M3 12h2.2"></path>
-                  <path d="M18.8 12H21"></path>
-                  <path d="M4.93 19.07l1.56-1.56"></path>
-                  <path d="M17.51 6.49l1.56-1.56"></path>
-                  <circle cx="12" cy="12" r="4.2"></circle>
-                </svg>
-              </span>
-              <select id="theme-select" class="theme-select bg-transparent text-white outline-none">
-                <option value="auto">Systém</option>
-                <option value="dark">Tmavý</option>
-                <option value="light">Světlý</option>
-              </select>
-            </label>
-          </div>
+          <button
+            id="theme-toggle"
+            type="button"
+            aria-label="Přepnout motiv"
+            class="hidden h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-kostka-cyan transition hover:border-kostka-cyan hover:bg-kostka-cyan/10 lg:grid"
+          >
+            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 3v2.2"></path>
+              <path d="M12 18.8V21"></path>
+              <path d="M4.93 4.93l1.56 1.56"></path>
+              <path d="M17.51 17.51l1.56 1.56"></path>
+              <path d="M3 12h2.2"></path>
+              <path d="M18.8 12H21"></path>
+              <path d="M4.93 19.07l1.56-1.56"></path>
+              <path d="M17.51 6.49l1.56-1.56"></path>
+              <circle cx="12" cy="12" r="4.2"></circle>
+            </svg>
+          </button>
 
           <div class="hidden items-center rounded-full border border-white/15 bg-white/5 p-1 lg:flex">
             <button
@@ -128,7 +137,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
       (function () {
         const THEME_STORAGE_KEY = "kostka-theme";
         const LANGUAGE_STORAGE_KEY = "kostka-language";
-        const select = document.getElementById("theme-select");
+        const toggle = document.getElementById("theme-toggle");
         const root = document.documentElement;
         const media = window.matchMedia("(prefers-color-scheme: dark)");
 
@@ -139,9 +148,13 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
         function applyTheme(mode) {
           const resolved = mode === "light" || mode === "dark" ? mode : getSystemTheme();
           root.setAttribute("data-theme", resolved);
-          root.dataset.themeMode = mode || "auto";
-          if (select) {
-            select.value = mode || "auto";
+          root.dataset.themeMode = resolved;
+
+          if (toggle) {
+            const isDark = resolved === "dark";
+            toggle.setAttribute("aria-label", isDark ? "Přepnout do světlého motivu" : "Přepnout do tmavého motivu");
+            toggle.classList.toggle("text-kostka-cyan", !isDark);
+            toggle.classList.toggle("text-amber-300", isDark);
           }
         }
 
@@ -159,17 +172,18 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           });
         }
 
-        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "auto";
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
         const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) || "cs";
 
         applyTheme(savedTheme);
         applyLanguage(savedLanguage);
 
-        if (select) {
-          select.addEventListener("change", (event) => {
-            const value = event.target.value;
-            localStorage.setItem(THEME_STORAGE_KEY, value);
-            applyTheme(value);
+        if (toggle) {
+          toggle.addEventListener("click", () => {
+            const current = root.getAttribute("data-theme") === "light" ? "light" : "dark";
+            const next = current === "dark" ? "light" : "dark";
+            localStorage.setItem(THEME_STORAGE_KEY, next);
+            applyTheme(next);
           });
         }
 
@@ -182,7 +196,8 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
         });
 
         media.addEventListener("change", () => {
-          if ((localStorage.getItem(THEME_STORAGE_KEY) || "auto") === "auto") {
+          const stored = localStorage.getItem(THEME_STORAGE_KEY);
+          if (!stored || stored === "auto") {
             applyTheme("auto");
           }
         });
