@@ -3,8 +3,10 @@ import Layout from "../../layouts/Layout.astro";
 import TournamentCard from "../../components/tournaments/TournamentCard.astro";
 import PastTournamentCard from "../../components/tournaments/PastTournamentCard.astro";
 import ReservationCalendar from "../../components/tournaments/ReservationCalendar.astro";
-import { upcomingTournaments, pastTournaments } from "../../data/tournaments";
+import { getUpcomingTournaments, getPastTournaments } from "../../data/tournaments";
 
+const upcomingTournaments = await getUpcomingTournaments();
+const pastTournaments = await getPastTournaments();
 const upcomingLeague = upcomingTournaments.filter((e) => e.type === "league");
 const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tournament");
 ---

@@ -1,8 +1,11 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { upcomingTournaments, pastTournaments } from "../../data/tournaments";
+import { getUpcomingTournaments, getPastTournaments } from "../../data/tournaments";
 
-export function getStaticPaths() {
+const upcomingTournaments = await getUpcomingTournaments();
+const pastTournaments = await getPastTournaments();
+
+export async function getStaticPaths() {
   return [
     ...upcomingTournaments.map((event) => ({ params: { slug: event.slug }, props: { event, isPast: false } })),
     ...pastTournaments.map((event) => ({ params: { slug: event.slug }, props: { event, isPast: true } })),

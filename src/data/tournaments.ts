@@ -1,32 +1,35 @@
-// Ukázková (mock) data pro nastřel homepage a stránky Turnaje.
-// Po napojení na Supabase nahradit dotazem na tabulku `events` / `results`.
+import { supabase } from "../lib/supabase";
 
 export type EventType = "tournament" | "league";
+export type GameName = "Pokémon" | "Lorcana" | "Riftbound";
 
 export interface TournamentEntry {
+  id?: string;
   slug: string;
   title: string;
-  game: "Pokémon" | "Lorcana" | "Riftbound";
+  game: GameName;
   type: EventType;
-  date: string; // human-readable, cs
+  date: string;
   time: string;
-  day: number; // den v měsíci (pro kalendář, srpen 2026)
+  day: number;
   spotsTaken: number;
   spotsTotal: number;
   registrationUrl?: string;
+  description?: string;
+  startsAt?: string;
 }
 
 export interface PastTournamentEntry {
   slug: string;
   title: string;
-  game: "Pokémon" | "Lorcana" | "Riftbound";
+  game: GameName;
   type: EventType;
   date: string;
   participants: number;
   winner: string;
 }
 
-export const upcomingTournaments: TournamentEntry[] = [
+const fallbackUpcomingTournaments: TournamentEntry[] = [
   {
     slug: "pokemon-liga-6-8",
     title: "Pokémon liga",
@@ -84,7 +87,7 @@ export const upcomingTournaments: TournamentEntry[] = [
   },
 ];
 
-export const pastTournaments: PastTournamentEntry[] = [
+const fallbackPastTournaments: PastTournamentEntry[] = [
   {
     slug: "pokemon-turnaj-30-7",
     title: "Pokémon turnaj",
@@ -122,6 +125,109 @@ export const pastTournaments: PastTournamentEntry[] = [
     winner: "Petra V.",
   },
 ];
+
+const toSlug = (value: string) =>
+  value
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 60);
+
+const formatDate = (isoDate: string) =>
+  new Date(isoDate).toLocaleDateString("cs-CZ", {
+    weekday: "short",
+    day: "numeric",
+    month: "numeric",
+    year: "numeric",
+  });
+
+const formatTime = (isoDate: string) =>
+  new Date(isoDate).toLocaleTimeString("cs-CZ", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+const normalizeEventRow = (row: any): TournamentEntry => {
+  const startsAt = new Date(row.starts_at);
+  const dateLabel = formatDate(row.starts_at);
+  const timeLabel = formatTime(row.starts_at);
+  const day = startsAt.getDate();
+  const capacity = Number(row.capacity ?? 12);
+
+  return {
+    id: row.id,
+    slug: row.slug || toSlug(`${row.title}-${row.starts_at}`),
+    title: row.title,
+    game: row.game,
+    type: row.type,
+    date: dateLabel,
+    time: timeLabel,
+    day,
+    spotsTaken: 0,
+    spotsTotal: capacity,
+    registrationUrl: row.registration_url || gameRegistrationUrls[row.game],
+    description: row.description,
+    startsAt: row.starts_at,
+  };
+};
+
+const isSupabaseReady = () => {
+  return Boolean(import.meta.env.PUBLIC_SUPABASE_URL && import.meta.env.PUBLIC_SUPABASE_ANON_KEY);
+};
+
+export async function getUpcomingTournaments(): Promise<TournamentEntry[]> {
+  if (!isSupabaseReady()) {
+    return fallbackUpcomingTournaments;
+  }
+
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, slug, title, type, game, starts_at, capacity, description, status, registration_url")
+    .eq("status", "upcoming")
+    .order("starts_at", { ascending: true });
+
+  if (error || !data?.length) {
+    return fallbackUpcomingTournaments;
+  }
+
+  return data.map(normalizeEventRow);
+}
+
+export async function getPastTournaments(): Promise<PastTournamentEntry[]> {
+  if (!isSupabaseReady()) {
+    return fallbackPastTournaments;
+  }
+
+  const now = new Date().toISOString();
+  const { data, error } = await supabase
+    .from("events")
+    .select("id, slug, title, type, game, starts_at, capacity, description, status, registration_url")
+    .or(`status.eq.past,status.eq.cancelled`)
+    .lt("starts_at", now)
+    .order("starts_at", { ascending: false });
+
+  if (error || !data?.length) {
+    return fallbackPastTournaments;
+  }
+
+  return data.map((row) => ({
+    slug: row.slug || toSlug(`${row.title}-${row.starts_at}`),
+    title: row.title,
+    game: row.game,
+    type: row.type,
+    date: formatDate(row.starts_at),
+    participants: 0,
+    winner: "—",
+  }));
+}
+
+export async function getAllEventData() {
+  const [upcoming, past] = await Promise.all([getUpcomingTournaments(), getPastTournaments()]);
+  return { upcoming, past };
+}
 
 export const gameBadgeColors: Record<TournamentEntry["game"], string> = {
   Pokémon: "bg-yellow-400/10 text-yellow-300",
