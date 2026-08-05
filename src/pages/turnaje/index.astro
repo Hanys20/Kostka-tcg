@@ -18,22 +18,22 @@ const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tou
     </p>
 
     <div class="mt-8 flex flex-wrap gap-2 border-b border-white/10 text-sm font-semibold">
-      <button class="border-b-2 border-kostka-cyan px-1 pb-3 text-kostka-cyan">Nadcházející</button>
-      <button class="px-1 pb-3 text-white/50">Proběhlé</button>
-      <button class="px-1 pb-3 text-white/50">Liga</button>
-      <button class="px-1 pb-3 text-white/50">Turnaje</button>
+      <a href="#nadchazejici" class="border-b-2 border-kostka-cyan px-1 pb-3 text-kostka-cyan">Nadcházející</a>
+      <a href="#probihle" class="px-1 pb-3 text-white/50">Proběhlé</a>
+      <a href="#liga" class="px-1 pb-3 text-white/50">Liga</a>
+      <a href="#turnaje" class="px-1 pb-3 text-white/50">Turnaje</a>
     </div>
 
     <div class="mt-10 grid gap-8 lg:grid-cols-[380px_1fr]">
       <ReservationCalendar />
       <div class="space-y-10">
-        <div>
-          <h2 class="text-xl font-bold text-white">Liga (pravidelné hraní)</h2>
+        <div id="nadchazejici">
+          <h2 id="liga" class="text-xl font-bold text-white">Liga (pravidelné hraní)</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2">
             {upcomingLeague.map((event) => <TournamentCard event={event} />)}
           </div>
         </div>
-        <div>
+        <div id="turnaje">
           <h2 class="text-xl font-bold text-white">Turnaje a prerelease</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2">
             {upcomingTournamentOnly.map((event) => <TournamentCard event={event} />)}
@@ -43,7 +43,7 @@ const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tou
     </div>
   </section>
 
-  <section class="bg-kostka-surface/40 py-16">
+  <section id="probihle" class="bg-kostka-surface/40 py-16">
     <div class="mx-auto max-w-6xl px-4">
       <h2 class="text-2xl font-bold text-white md:text-3xl">Proběhlé turnaje</h2>
       <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">

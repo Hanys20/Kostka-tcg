@@ -24,22 +24,18 @@ const usps = [
   {
     title: "Přátelská atmosféra",
     text: "Herna, kde je každý vítán – bez zbytečné soutěživosti mimo stůl.",
-    icon: "/images/icons/dice_152508.svg",
   },
   {
     title: "Lepší ceny",
     text: "Karty, boostery a účast na turnajích za ceny, které dávají smysl.",
-    icon: "/images/icons/diamond_9210709.svg",
   },
   {
     title: "Turnaje a liga",
     text: "Pravidelná liga, jednorázové turnaje i prerelease nových sad.",
-    icon: "/images/icons/cup_14510402.svg",
   },
   {
     title: "Komunita hráčů",
     text: "Spojujeme hráče Lorcany, Pokémonu i Riftboundu v Ostravě.",
-    icon: "/images/icons/cards_8531719.svg",
   },
 ];
 
@@ -79,13 +75,13 @@ const faqPreview = [
       </div>
 
       <div class="mt-5 max-w-4xl">
-        <h1 class="text-5xl font-black uppercase leading-[1.05] tracking-tight text-white md:text-6xl">
+        <h1 class="text-5xl font-black uppercase leading-[1.05] tracking-tight text-white md:text-6xl lg:text-[5.4rem]">
           Od hráčů<br />
           <span class="text-kostka-cyan">pro hráče.</span>
         </h1>
-        <p class="mt-6 max-w-2xl text-lg text-white/70">
-          Místo, kde se potkávají hráči TCG. Turnaje, ligy, nové přátelství
-          a skvělá atmosféra v Ostravě.
+        <p class="mt-6 max-w-2xl text-base text-white/70 sm:text-lg">
+          Vítáme hráče Lorcany, Pokémonu i Riftboundu. V KOSTKA TCG najdete
+          pravidelné ligy, turnaje, přátelskou komunitu a místo, kam se rádi vracíte.
         </p>
       </div>
 
@@ -105,7 +101,10 @@ const faqPreview = [
       </div>
 
       <div class="mt-12">
-        <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">Vyber si svou hru</p>
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <p class="text-xs font-semibold uppercase tracking-[0.24em] text-white/55">Vyber si svou hru</p>
+          <p class="text-sm text-white/50">Lorcana, Pokémon TCG i Riftbound – vše na jednom místě.</p>
+        </div>
         <div class="mt-4 grid gap-4 md:grid-cols-3">
           {
             games.map((game) => (
@@ -129,13 +128,13 @@ const faqPreview = [
 
     <!-- USP strip -->
     <div class="relative mx-auto max-w-6xl px-4 pb-16 md:pb-24">
-      <div class="grid gap-8 rounded-2xl border border-white/10 bg-kostka-surface/60 p-8 sm:grid-cols-2 lg:grid-cols-4">
+      <div class="grid gap-4 rounded-2xl border border-white/10 bg-kostka-surface/60 p-4 sm:grid-cols-2 lg:grid-cols-4">
         {
           usps.map((item) => (
-            <div>
-              <img src={item.icon} alt="" class="h-8 w-8" />
-              <h3 class="mt-4 font-bold text-white">{item.title}</h3>
-              <p class="mt-2 text-sm text-white/50">{item.text}</p>
+            <div class="rounded-2xl border border-white/6 bg-white/[0.02] p-5 transition duration-300 hover:border-kostka-cyan/50 hover:bg-kostka-cyan/[0.04]">
+              <div class="h-px w-10 rounded-full bg-kostka-cyan"></div>
+              <h3 class="mt-4 text-lg font-bold text-white">{item.title}</h3>
+              <p class="mt-2 text-sm text-white/55">{item.text}</p>
             </div>
           ))
         }
@@ -149,6 +148,9 @@ const faqPreview = [
       <div>
         <p class="text-xs font-semibold uppercase tracking-wide text-kostka-cyan">Nadcházející turnaje</p>
         <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">Co nás čeká?</h2>
+        <p class="mt-2 max-w-2xl text-sm text-white/55 md:text-base">
+          Pravidelné ligy, jednorázové turnaje a prerelease nových sad. Všechny termíny najdeš v jednom přehledu.
+        </p>
       </div>
       <a
         href="/turnaje"
@@ -181,9 +183,9 @@ const faqPreview = [
         <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">
           Herna pro hráče, od hráčů pro hráče.
         </h2>
-        <p class="mt-4 text-white/60">
+        <p class="mt-4 text-base text-white/60">
           KOSTKA TCG vznikla z vášně pro trading card games a komunitu, která kolem nich vzniká.
-          Chceme vytvořit místo, kam se budete rádi vracet – na turnaje, ligy i jen tak si zahrát.
+          Chceme vytvořit místo, kam se budete rádi vracet – na turnaje, ligy, prerelease i jen tak si zahrát.
         </p>
         <ul class="mt-6 space-y-3">
           {

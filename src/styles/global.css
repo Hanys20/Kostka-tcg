@@ -48,6 +48,36 @@ body {
   color: var(--kostka-text);
 }
 
+.logo-header-dark,
+.logo-footer-dark {
+  display: block;
+}
+
+.logo-header-light,
+.logo-footer-light {
+  display: none;
+}
+
+html[data-theme="light"] .logo-header-dark,
+html[data-theme="light"] .logo-footer-dark {
+  display: none;
+}
+
+html[data-theme="light"] .logo-header-light,
+html[data-theme="light"] .logo-footer-light {
+  display: block;
+}
+
+.theme-select {
+  color: var(--kostka-text);
+  background: transparent;
+}
+
+.theme-select option {
+  color: #0a0c11;
+  background: #ffffff;
+}
+
 html[data-theme="light"] .text-white,
 html[data-theme="light"] [class*="text-white/"],
 html[data-theme="light"] .text-kostka-white {

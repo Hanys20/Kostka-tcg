@@ -30,33 +30,24 @@ import Layout from "../layouts/Layout.astro";
           </div>
         </dl>
 
-        <form class="mt-8 space-y-3">
-          <input
-            type="text"
-            placeholder="Jméno"
-            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
-          />
-          <input
-            type="email"
-            placeholder="E-mail"
-            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
-          />
-          <textarea
-            placeholder="Zpráva"
-            rows="4"
-            class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
-          ></textarea>
-          <button
-            type="submit"
-            class="rounded-full bg-kostka-cyan px-6 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90"
-          >
-            Odeslat zprávu
-          </button>
-        </form>
+        <div class="mt-8 grid gap-3 sm:grid-cols-2">
+          <a href="mailto:info@kostkatcg.cz" class="rounded-2xl border border-white/15 bg-white/5 px-4 py-4 text-sm font-semibold text-white transition hover:border-kostka-cyan hover:text-kostka-cyan">
+            Napište nám
+          </a>
+          <a href="tel:+420773334488" class="rounded-2xl border border-white/15 bg-white/5 px-4 py-4 text-sm font-semibold text-white transition hover:border-kostka-cyan hover:text-kostka-cyan">
+            Zavolejte nám
+          </a>
+        </div>
       </div>
 
-      <div class="grid min-h-[320px] place-items-center rounded-2xl border border-white/10 bg-kostka-surface text-sm text-white/40">
-        Mapa (Google Maps embed – doplní se)
+      <div class="overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface">
+        <iframe
+          title="Mapa KOSTKA TCG"
+          src="https://www.google.com/maps?q=Doln%C3%AD%20782%2F65%2C%20700%2030%20Ostrava-Jih-Z%C3%A1b%C5%99eh&z=15&output=embed"
+          class="h-[320px] w-full border-0"
+          loading="lazy"
+          referrerpolicy="no-referrer-when-downgrade"
+        ></iframe>
       </div>
     </div>
   </section>
