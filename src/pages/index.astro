@@ -5,6 +5,8 @@ import TournamentCard from "../components/tournaments/TournamentCard.astro";
 import PastTournamentCard from "../components/tournaments/PastTournamentCard.astro";
 import { getUpcomingTournaments, getPastTournaments } from "../data/tournaments";
 
+export const prerender = false;
+
 const upcomingTournaments = await getUpcomingTournaments();
 const pastTournaments = await getPastTournaments();
 
@@ -163,7 +165,9 @@ const faqPreview = [
       </a>
     </div>
     <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
-      {upcomingTournaments.slice(0, 3).map((event) => <TournamentCard event={event} />)}
+      {upcomingTournaments.length
+        ? upcomingTournaments.slice(0, 3).map((event) => <TournamentCard event={event} />)
+        : <p class="text-sm text-white/50">Zatím tu nejsou žádné naplánované termíny.</p>}
     </div>
     <p class="mt-8 flex items-center justify-center gap-2 text-center text-sm text-white/40">
       <img src="/images/icons/calendar.svg" alt="" class="h-4 w-4 flex-none" />
@@ -241,7 +245,9 @@ const faqPreview = [
       </a>
     </div>
     <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {pastTournaments.map((event) => <PastTournamentCard event={event} />)}
+      {pastTournaments.length
+        ? pastTournaments.map((event) => <PastTournamentCard event={event} />)
+        : <p class="text-sm text-white/50">Zatím tu nejsou žádné proběhlé turnaje.</p>}
     </div>
   </section>
 

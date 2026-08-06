@@ -1,20 +1,17 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { getUpcomingTournaments, getPastTournaments } from "../../data/tournaments";
+import { getEventBySlug } from "../../data/tournaments";
 
-export async function getStaticPaths() {
-  const [upcomingTournaments, pastTournaments] = await Promise.all([
-    getUpcomingTournaments(),
-    getPastTournaments(),
-  ]);
+export const prerender = false;
 
-  return [
-    ...upcomingTournaments.map((event) => ({ params: { slug: event.slug }, props: { event, isPast: false } })),
-    ...pastTournaments.map((event) => ({ params: { slug: event.slug }, props: { event, isPast: true } })),
-  ];
+const { slug } = Astro.params;
+const result = slug ? await getEventBySlug(slug) : null;
+
+if (!result) {
+  return Astro.redirect("/turnaje");
 }
 
-const { event, isPast } = Astro.props;
+const { event, isPast } = result;
 const showExternalRegistration = !isPast && event.type === "tournament" && Boolean(event.registrationUrl);
 const spotsLeft = event.spotsTotal - event.spotsTaken;
 const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);

@@ -5,6 +5,8 @@ import PastTournamentCard from "../../components/tournaments/PastTournamentCard.
 import ReservationCalendar from "../../components/tournaments/ReservationCalendar.astro";
 import { getUpcomingTournaments, getPastTournaments } from "../../data/tournaments";
 
+export const prerender = false;
+
 const upcomingTournaments = await getUpcomingTournaments();
 const pastTournaments = await getPastTournaments();
 const upcomingLeague = upcomingTournaments.filter((e) => e.type === "league");
@@ -39,13 +41,13 @@ const tabHref = {
         <div id="nadchazejici">
           <h2 id="liga" class="text-xl font-bold text-white">Liga (pravidelné hraní)</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2">
-            {upcomingLeague.map((event) => <TournamentCard event={event} />)}
+            {upcomingLeague.length ? upcomingLeague.map((event) => <TournamentCard event={event} />) : <p class="text-sm text-white/50">Zatím tu nejsou žádné termíny ligy.</p>}
           </div>
         </div>
         <div id="turnaje">
           <h2 class="text-xl font-bold text-white">Turnaje a prerelease</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2">
-            {upcomingTournamentOnly.map((event) => <TournamentCard event={event} />)}
+            {upcomingTournamentOnly.length ? upcomingTournamentOnly.map((event) => <TournamentCard event={event} />) : <p class="text-sm text-white/50">Zatím tu nejsou žádné naplánované turnaje.</p>}
           </div>
         </div>
       </div>
@@ -56,7 +58,7 @@ const tabHref = {
     <div class="mx-auto max-w-6xl px-4">
       <h2 class="text-2xl font-bold text-white md:text-3xl">Proběhlé turnaje</h2>
       <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {pastTournaments.map((event) => <PastTournamentCard event={event} />)}
+        {pastTournaments.length ? pastTournaments.map((event) => <PastTournamentCard event={event} />) : <p class="text-sm text-white/50">Zatím tu nejsou žádné proběhlé turnaje.</p>}
       </div>
     </div>
   </section>

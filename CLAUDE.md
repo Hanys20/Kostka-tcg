@@ -126,8 +126,8 @@ src/
   components/{ui,auth,tournaments,admin}/  – React ostrůvky
   layouts/Layout.astro                     – hlavní layout (header/nav/footer)
   pages/                                   – Astro stránky dle mapy stránek výše
-  pages/turnaje/[slug].astro               – detail turnaje/ligy + rezervační formulář (statické routy)
-  data/tournaments.ts                      – mock data pro turnaje/ligu/výsledky (nahradit Supabase dotazem)
+  pages/turnaje/[slug].astro               – detail turnaje/ligy + rezervační formulář (SSR podle slugu, ne statické cesty)
+  data/tournaments.ts                      – čtení turnajů/lig ze Supabase (žádná mock data, viz Stav projektu)
   lib/supabase.ts                          – Supabase klient
   assets/gallery/                          – fotky klienta zpracované přes astro:assets (optimalizace)
   styles/global.css                        – Tailwind + brand @theme + Raleway @font-face
@@ -155,8 +155,9 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
 
 - Scaffolding hotový (Astro + React + Tailwind v4 + Cloudflare adaptér + Supabase klient,
   návrh DB migrace).
-- **Vizuální nastřel homepage a podstránek hotový** (statický mockup, na mock datech
-  z `src/data/tournaments.ts`, bez napojení na Supabase – nic zatím reálně nefunguje):
+- **Vizuální nastřel homepage a podstránek hotový.** Homepage, `/turnaje` a detail
+  turnaje jsou od 2026-08-06 živě napojené na Supabase (viz níže) – zbytek
+  (`/profil`, `/admin` mimo eventy) pořád na mock datech, dokud nepřibude auth:
   - Homepage (`src/pages/index.astro`): hero s fotkou, USP, rezervační kalendář
     (`ReservationCalendar.astro`) + nejbližší termíny, nadcházející turnaje
     (`TournamentCard.astro`), předešlé turnaje (`PastTournamentCard.astro`), galerie
@@ -184,9 +185,24 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   Pozn.: `00000000000000_init.sql` byl přejmenován na `00000000000000_initial_schema.sql`
   – Supabase CLI soubor s názvem přesně `init` při `db push` přeskakuje.
 - Tabulka `events` má v produkci aspoň 1 turnaj s PlayHub odkazem (ověřeno
-  2026-08-06 přes worker – viz níže), web mimo to pořád běží i na fallback
-  mock datech z `src/data/tournaments.ts`, dokud přes `/admin` nepřibudou
-  další ostré termíny.
+  2026-08-06 přes worker – viz níže).
+- **2026-08-06: odstraněna mock data turnajů/lig a homepage/`/turnaje`/detail
+  turnaje přepojeny na živé čtení ze Supabase.** Původně `src/data/tournaments.ts`
+  vracel fallback mock pole, kdykoliv Supabase dotaz selhal nebo vrátil prázdno
+  – to smazáno, teď při prázdné/chybové odpovědi vrací `[]` a stránky ukážou
+  „Zatím tu nejsou žádné termíny…“. Skutečná příčina, proč se nově vytvořený
+  turnaj z `/admin` neobjevoval na veřejné stránce, ale byla jiná: `index.astro`,
+  `turnaje/index.astro` a `turnaje/[slug].astro` neměly `export const
+  prerender = false`, takže je Astro (output `static` + Cloudflare adaptér)
+  prerenderoval jen při buildu – nová data z admin API (zapisuje do Supabase
+  za běhu) se propsala až po dalším git push/deploy. Přidán `prerender = false`
+  na všechny tři, takže se teď načítají živě při každém requestu (SSR).
+  `turnaje/[slug].astro` navíc přestal používat `getStaticPaths` (neslučitelné
+  s `prerender = false`) a místo toho dotahuje konkrétní událost podle
+  `Astro.params.slug` přes novou `getEventBySlug()` – neznámý slug přesměruje
+  na `/turnaje`. Ověřeno end-to-end přes běžící dev server: vytvoření/smazání
+  turnaje přes `/api/admin/events` se ihned projeví na `/` i `/turnaje` bez
+  rebuildu.
 - **`workers/playhub-refresh/` je od 2026-08-06 nasazený na Cloudflare** –
   `wrangler deploy` proběhl (`https://kostka-tcg-playhub-refresh.kostka-tcg.workers.dev`,
   cron `*/15 * * * *`), secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
