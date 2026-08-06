@@ -183,13 +183,25 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   (jen pro `supabase link`/`db push`, k Data API se nepoužívá).
   Pozn.: `00000000000000_init.sql` byl přejmenován na `00000000000000_initial_schema.sql`
   – Supabase CLI soubor s názvem přesně `init` při `db push` přeskakuje.
-- Tabulka `events` je v produkci zatím prázdná – web běží na fallback mock datech
-  z `src/data/tournaments.ts`, dokud se přes `/admin` nezaloží první ostré termíny.
-- **`workers/playhub-refresh/` je napsaný, ale nenasazený na Cloudflare** – Supabase
-  strana je hotová, chybí ještě `wrangler login` na Cloudflare účtu klienta a
-  nastavení secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `REFRESH_TOKEN`,
-  viz README v adresáři) + `wrangler deploy`. Do té doby se obsazenost/cena turnajů
-  z PlayHubu neobnovuje automaticky, jen při ručním (re)importu přes administraci.
+- Tabulka `events` má v produkci aspoň 1 turnaj s PlayHub odkazem (ověřeno
+  2026-08-06 přes worker – viz níže), web mimo to pořád běží i na fallback
+  mock datech z `src/data/tournaments.ts`, dokud přes `/admin` nepřibudou
+  další ostré termíny.
+- **`workers/playhub-refresh/` je od 2026-08-06 nasazený na Cloudflare** –
+  `wrangler deploy` proběhl (`https://kostka-tcg-playhub-refresh.kostka-tcg.workers.dev`,
+  cron `*/15 * * * *`), secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`,
+  `REFRESH_TOKEN`) nastavené přes `wrangler secret put`. Ověřeno ručním
+  zavoláním s tokenem + `wrangler tail`: worker se připojí na Supabase, najde
+  turnaje s PlayHub odkazem a projde refresh. Obsazenost/cena turnajů
+  z PlayHubu se tedy teď obnovuje automaticky každých 15 minut, ne jen při
+  ručním (re)importu přes administraci.
+  Past: **pozor na `wrangler` v `workers/playhub-refresh/` bez `--config
+  wrangler.toml`** – v kořeni repa je `.wrangler/deploy/config.json` (vytváří
+  ho Astro Cloudflare adaptér při buildu hlavního webu) a wrangler ho najde
+  při hledání nahoru stromem adresářů, takže příkazy jako `deployments list`/
+  `secret list` bez explicitního `--config` tiše přesměruje na hlavní Pages
+  projekt `kostka-tcg` místo na tenhle worker. Vždy používat
+  `--config wrangler.toml` v tomto adresáři.
 - **Admin (`/admin`) je od 2026-08-06 plně napojený na Supabase** – `/api/admin/events`
   má teď GET/POST/PATCH/DELETE (dřív jen POST), seznam událostí se načítá živě
   z DB (ne z localStorage/mock dat) a u každého řádku jsou tlačítka Upravit/Smazat.
