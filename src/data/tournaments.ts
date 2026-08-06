@@ -17,6 +17,7 @@ export interface TournamentEntry {
   registrationUrl?: string;
   description?: string;
   startsAt?: string;
+  price?: string;
 }
 
 export interface PastTournamentEntry {
@@ -166,11 +167,14 @@ const normalizeEventRow = (row: any): TournamentEntry => {
     date: dateLabel,
     time: timeLabel,
     day,
-    spotsTaken: 0,
+    spotsTaken: row.type === "tournament" ? Number(row.spots_taken ?? 0) : 0,
     spotsTotal: capacity,
-    registrationUrl: row.registration_url || gameRegistrationUrls[row.game],
+    // Liga si drží vlastní registraci na naší stránce – externí odkaz na PlayHub
+    // dává smysl jen u turnajů/prerelease, kde se hráč registruje tam.
+    registrationUrl: row.type === "tournament" ? row.registration_url || gameRegistrationUrls[row.game] : undefined,
     description: row.description,
     startsAt: row.starts_at,
+    price: row.type === "tournament" ? row.price || undefined : undefined,
   };
 };
 
@@ -185,7 +189,7 @@ export async function getUpcomingTournaments(): Promise<TournamentEntry[]> {
 
   const { data, error } = await supabase
     .from("events")
-    .select("id, slug, title, type, game, starts_at, capacity, description, status, registration_url")
+    .select("id, slug, title, type, game, starts_at, capacity, description, status, registration_url, price, spots_taken")
     .eq("status", "upcoming")
     .order("starts_at", { ascending: true });
 

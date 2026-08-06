@@ -76,7 +76,7 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
               <input id="event-start" type="time" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan" required />
               <input id="event-end" type="time" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan" required />
             </div>
-            <input id="event-capacity" type="number" min="1" placeholder="Počet volných míst" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
+            <input id="event-capacity" type="number" min="1" placeholder="Kapacita (celkový počet míst)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
             <input id="event-price" type="text" placeholder="Cena za turnaj (volitelné)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
             <input id="event-url" type="url" placeholder="Registrace / odkaz na stránku hry (volitelné)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
             <button type="submit" class="w-full rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
@@ -228,13 +228,14 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
           document.getElementById("event-title").value = data.title || "";
           document.getElementById("event-date").value = data.date || "";
           document.getElementById("event-start").value = data.startTime || "";
-          document.getElementById("event-capacity").value = data.spotsTotal && data.spotsTaken ? String(Math.max(data.spotsTotal - data.spotsTaken, 1)) : "";
-          document.getElementById("event-price").value = data.price || "";
+          document.getElementById("event-end").value = data.endTime || "";
+          document.getElementById("event-capacity").value = data.spotsTotal ? String(data.spotsTotal) : "";
+          document.getElementById("event-price").value = data.price && data.currency ? `${data.price} ${data.currency}` : (data.price || "");
           document.getElementById("event-url").value = url;
           document.getElementById("event-type").value = "tournament";
-          document.getElementById("event-game").value = inferGameFromTitle(data.title);
+          document.getElementById("event-game").value = data.game || inferGameFromTitle(data.title);
           importedCapacityData = { spotsTaken: data.spotsTaken || 0, spotsTotal: data.spotsTotal || 0 };
-          playhubMessage.textContent = `Data načtena: ${data.title}`;
+          playhubMessage.textContent = `Data načtena: ${data.title} (${data.spotsTaken ?? "?"}/${data.spotsTotal ?? "?"} míst)`;
         } else {
           importedCapacityData = null;
           playhubMessage.textContent = result.message || "Nepodařilo se načíst data.";
@@ -283,7 +284,6 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
       const customUrl = document.getElementById("event-url").value.trim();
       const payload = new Date(date + "T00:00:00");
       const importedSpotsTaken = importedCapacityData?.spotsTaken || 0;
-      const importedSpotsTotal = importedCapacityData?.spotsTotal || 0;
 
       const slug = slugify(`${title}-${date}`);
       const registrationUrl = customUrl || DEFAULT_EVENTS.find((item) => item.game === game)?.registrationUrl || "https://www.ravensburgerplayhub.com/";
@@ -301,7 +301,7 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
         time: `${startTime}–${endTime}`,
         day: payload.getDate(),
         spotsTaken: importedSpotsTaken,
-        spotsTotal: importedSpotsTotal || Math.max(capacity, 1),
+        spotsTotal: Math.max(capacity, 1),
         registrationUrl,
         price: price || undefined,
       };
@@ -320,6 +320,9 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
             startTime,
             endTime,
             capacity,
+            registrationUrl: type === "tournament" ? registrationUrl : null,
+            price: price || null,
+            spotsTaken: importedSpotsTaken,
           }),
         });
 

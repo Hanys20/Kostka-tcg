@@ -19,7 +19,7 @@ const toSlug = (value: string) =>
 export async function POST({ request }: { request: Request }) {
   try {
     const body = await request.json();
-    const { title, type, game, date, startTime, endTime, capacity } = body;
+    const { title, type, game, date, startTime, endTime, capacity, registrationUrl, price, spotsTaken } = body;
 
     if (!title || !type || !game || !date || !startTime || !endTime || !capacity) {
       return new Response(
@@ -51,6 +51,9 @@ export async function POST({ request }: { request: Request }) {
       status: "upcoming",
       description: `Začátek ${startTime}–${endTime}`,
       slug,
+      registration_url: registrationUrl || null,
+      price: price || null,
+      spots_taken: spotsTaken || 0,
     });
 
     if (error) {
