@@ -30,3 +30,6 @@ pnpm-debug.log*
 .wrangler/
 worker-configuration.d.ts
 .dev.vars
+
+# Supabase CLI local state
+supabase/.temp/

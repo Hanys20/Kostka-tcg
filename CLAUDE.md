@@ -175,10 +175,18 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
 - **Další krok:** až se odsouhlasí vizuál, napojit reálná data na Supabase (nahradit
   `src/data/tournaments.ts`), zprovoznit auth (přihlášení/registrace) a formuláře.
 - Git repozitář lokální i na GitHubu: `https://github.com/Hanys20/Kostka-tcg`.
-- Supabase projekt zatím nezaložen – `.env.example` obsahuje placeholder proměnné
-  `PUBLIC_SUPABASE_URL` a `PUBLIC_SUPABASE_ANON_KEY`.
-- **`workers/playhub-refresh/` je napsaný, ale nenasazený** – čeká na založení
-  Supabase projektu (potřebuje `service_role` klíč jako secret) a `wrangler login`/
-  `wrangler deploy` na Cloudflare účtu klienta. Do té doby se obsazenost/cena
-  turnajů natažených z PlayHubu neobnovuje automaticky, jen při ručním importu
-  přes administraci.
+- **Supabase projekt založen** (2026-08-06): `kostka-tcg`, org Visargy, region
+  `eu-central-1` (Frankfurt), ref `xlcasytxoeiiwmvizyga`. Migrace ze
+  `supabase/migrations/` napushnuté (`supabase db push`). Lokální `.env` (needituje
+  se do gitu, viz `.gitignore`) má reálné `PUBLIC_SUPABASE_URL`/`PUBLIC_SUPABASE_ANON_KEY`/
+  `SUPABASE_SERVICE_ROLE_KEY`. DB heslo bylo vygenerované a předané uživateli mimo repo
+  (jen pro `supabase link`/`db push`, k Data API se nepoužívá).
+  Pozn.: `00000000000000_init.sql` byl přejmenován na `00000000000000_initial_schema.sql`
+  – Supabase CLI soubor s názvem přesně `init` při `db push` přeskakuje.
+- Tabulka `events` je v produkci zatím prázdná – web běží na fallback mock datech
+  z `src/data/tournaments.ts`, dokud se přes `/admin` nezaloží první ostré termíny.
+- **`workers/playhub-refresh/` je napsaný, ale nenasazený na Cloudflare** – Supabase
+  strana je hotová, chybí ještě `wrangler login` na Cloudflare účtu klienta a
+  nastavení secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `REFRESH_TOKEN`,
+  viz README v adresáři) + `wrangler deploy`. Do té doby se obsazenost/cena turnajů
+  z PlayHubu neobnovuje automaticky, jen při ručním importu přes administraci.
