@@ -1,22 +1,8 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { getUpcomingTournaments, getPastTournaments, gameRegistrationUrls } from "../../data/tournaments";
+import { gameRegistrationUrls } from "../../data/tournaments";
 
-const upcomingTournaments = await getUpcomingTournaments();
-const pastTournaments = await getPastTournaments();
-
-const defaultEvents = [
-  ...upcomingTournaments.map((event) => ({
-    ...event,
-    registrationUrl: event.registrationUrl || gameRegistrationUrls[event.game],
-  })),
-  ...pastTournaments.map((event) => ({
-    ...event,
-    registrationUrl: gameRegistrationUrls[event.game],
-  })),
-];
-
-const defaultEventsJson = JSON.stringify(defaultEvents);
+const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
 ---
 
 <Layout title="Administrace">
@@ -25,7 +11,7 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
       <div>
         <h1 class="text-3xl font-black text-white md:text-4xl">Administrace turnajů</h1>
         <p class="mt-2 text-white/60">
-          Jednoduchý prototyp admin rozhraní pro přidávání turnajů a lig s přístupem pro admina.
+          Správa termínů turnajů a lig – napojeno na Supabase.
         </p>
       </div>
       <button id="logout-button" type="button" class="hidden rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:border-kostka-cyan hover:text-kostka-cyan">
@@ -50,8 +36,15 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
     <div id="admin-panel" class="hidden">
       <div class="mt-8 grid gap-8 lg:grid-cols-[420px_1fr]">
         <div class="rounded-2xl border border-white/10 bg-kostka-surface p-5">
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Přidat událost</p>
-          <h2 class="mt-2 text-xl font-bold text-white">Turnaj / liga</h2>
+          <div class="flex items-center justify-between gap-3">
+            <div>
+              <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Přidat / upravit</p>
+              <h2 id="form-heading" class="mt-2 text-xl font-bold text-white">Turnaj / liga</h2>
+            </div>
+            <button id="cancel-edit-button" type="button" class="hidden rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold text-white/70 hover:border-kostka-cyan hover:text-kostka-cyan">
+              Zrušit úpravu
+            </button>
+          </div>
           <form id="event-form" class="mt-4 space-y-3">
             <div class="rounded-xl border border-kostka-cyan/20 bg-kostka-cyan/10 p-3">
               <label for="playhub-url" class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Import z PlayHubu</label>
@@ -77,9 +70,10 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
               <input id="event-end" type="time" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan" required />
             </div>
             <input id="event-capacity" type="number" min="1" placeholder="Kapacita (celkový počet míst)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
+            <input id="event-spots-taken" type="number" min="0" placeholder="Počet registrovaných hráčů" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
             <input id="event-price" type="text" placeholder="Cena za turnaj (volitelné)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
             <input id="event-url" type="url" placeholder="Registrace / odkaz na stránku hry (volitelné)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
-            <button type="submit" class="w-full rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+            <button id="submit-event-button" type="submit" class="w-full rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
               Uložit událost
             </button>
           </form>
@@ -102,11 +96,15 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
                   <th class="px-4 py-3 font-semibold">Typ</th>
                   <th class="px-4 py-3 font-semibold">Hra</th>
                   <th class="px-4 py-3 font-semibold">Datum</th>
-                  <th class="px-4 py-3 font-semibold">Volná místa</th>
+                  <th class="px-4 py-3 font-semibold">Obsazenost</th>
                   <th class="px-4 py-3"></th>
                 </tr>
               </thead>
-              <tbody id="event-list" class="divide-y divide-white/10"></tbody>
+              <tbody id="event-list" class="divide-y divide-white/10">
+                <tr id="event-list-empty">
+                  <td class="px-4 py-6 text-white/50" colspan="6">Načítám události…</td>
+                </tr>
+              </tbody>
             </table>
           </div>
         </div>
@@ -114,12 +112,11 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
     </div>
   </section>
 
-  <script is:inline define:vars={{ defaultEventsJson }}>
+  <script is:inline define:vars={{ gameRegistrationUrlsJson }}>
     const ADMIN_NICK = "admin";
     const ADMIN_PASSWORD = "admin123";
-    const STORAGE_KEY = "kostka-admin-events";
     const SESSION_KEY = "kostka-admin-session";
-    const DEFAULT_EVENTS = JSON.parse(defaultEventsJson);
+    const GAME_REGISTRATION_URLS = JSON.parse(gameRegistrationUrlsJson);
 
     const loginCard = document.getElementById("auth-card");
     const adminPanel = document.getElementById("admin-panel");
@@ -132,62 +129,148 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
     const playhubUrlInput = document.getElementById("playhub-url");
     const importPlayhubButton = document.getElementById("import-playhub-button");
     const playhubMessage = document.getElementById("playhub-message");
+    const formHeading = document.getElementById("form-heading");
+    const submitEventButton = document.getElementById("submit-event-button");
+    const cancelEditButton = document.getElementById("cancel-edit-button");
 
-    let importedCapacityData = null;
+    let currentEvents = [];
+    let editingId = null;
 
-    function getSavedEvents() {
-      try {
-        const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) || "null");
-        return Array.isArray(stored) && stored.length ? stored : DEFAULT_EVENTS;
-      } catch {
-        return DEFAULT_EVENTS;
-      }
-    }
-
-    function saveEvents(events) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(events));
-    }
-
-    function formatDate(value) {
-      return new Date(value + "T00:00:00").toLocaleDateString("cs-CZ", {
+    function formatDate(isoDate) {
+      return new Date(isoDate).toLocaleDateString("cs-CZ", {
         day: "numeric",
         month: "numeric",
         year: "numeric",
       });
     }
 
-    function slugify(value) {
-      return value
-        .toLowerCase()
-        .normalize("NFD")
-        .replace(/[\u0300-\u036f]/g, "")
-        .replace(/[^a-z0-9\s-]/g, "")
-        .trim()
-        .replace(/\s+/g, "-")
-        .slice(0, 40);
+    function statusLabel(status) {
+      if (status === "cancelled") return "Zrušeno";
+      if (status === "past") return "Proběhlo";
+      return "Nadcházející";
+    }
+
+    async function loadEvents() {
+      eventList.innerHTML = `<tr><td class="px-4 py-6 text-white/50" colspan="6">Načítám události…</td></tr>`;
+      try {
+        const response = await fetch("/api/admin/events");
+        const result = await response.json();
+        if (response.ok && result.ok) {
+          currentEvents = result.events || [];
+          renderEvents();
+        } else {
+          eventList.innerHTML = `<tr><td class="px-4 py-6 text-red-300" colspan="6">${result.message || "Nepodařilo se načíst události."}</td></tr>`;
+        }
+      } catch {
+        eventList.innerHTML = `<tr><td class="px-4 py-6 text-red-300" colspan="6">Nepodařilo se načíst události ze Supabase.</td></tr>`;
+      }
     }
 
     function renderEvents() {
-      const events = getSavedEvents();
-      eventList.innerHTML = events.map((event) => `
+      if (!currentEvents.length) {
+        eventList.innerHTML = `<tr><td class="px-4 py-6 text-white/50" colspan="6">Zatím žádné události. Přidej první vlevo.</td></tr>`;
+        return;
+      }
+
+      eventList.innerHTML = currentEvents.map((event) => `
         <tr>
           <td class="px-4 py-3 font-medium text-white">${event.title}</td>
           <td class="px-4 py-3 text-white/60">${event.type === "league" ? "Liga" : "Turnaj"}</td>
           <td class="px-4 py-3 text-white/60">${event.game}</td>
-          <td class="px-4 py-3 text-white/60">${formatDate(event.date)}</td>
-          <td class="px-4 py-3 text-white/60">${event.spotsTotal}</td>
-          <td class="px-4 py-3 text-right">
-            <a href="${event.registrationUrl || `/turnaje/${event.slug}`}" class="font-semibold text-kostka-cyan hover:underline" target="_blank" rel="noreferrer">Odkaz</a>
+          <td class="px-4 py-3 text-white/60">${formatDate(event.starts_at)}</td>
+          <td class="px-4 py-3 text-white/60">${event.spots_taken ?? 0}/${event.capacity ?? "?"} · ${statusLabel(event.status)}</td>
+          <td class="px-4 py-3">
+            <div class="flex items-center justify-end gap-3">
+              ${event.registration_url ? `<a href="${event.registration_url}" class="font-semibold text-kostka-cyan hover:underline" target="_blank" rel="noreferrer">Odkaz</a>` : ""}
+              <button type="button" data-edit-id="${event.id}" class="font-semibold text-white/70 hover:text-kostka-cyan">Upravit</button>
+              <button type="button" data-delete-id="${event.id}" class="font-semibold text-red-300 hover:text-red-200">Smazat</button>
+            </div>
           </td>
         </tr>
       `).join("");
     }
 
+    eventList.addEventListener("click", async (event) => {
+      const editButton = event.target.closest("[data-edit-id]");
+      if (editButton) {
+        const item = currentEvents.find((e) => e.id === editButton.dataset.editId);
+        if (item) startEdit(item);
+        return;
+      }
+
+      const deleteButton = event.target.closest("[data-delete-id]");
+      if (deleteButton) {
+        const id = deleteButton.dataset.deleteId;
+        const item = currentEvents.find((e) => e.id === id);
+        if (!confirm(`Opravdu smazat událost „${item ? item.title : ""}“? Tuto akci nelze vrátit zpět.`)) return;
+
+        try {
+          const response = await fetch("/api/admin/events", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id }),
+          });
+          const result = await response.json();
+          if (response.ok && result.ok) {
+            if (editingId === id) resetForm();
+            await loadEvents();
+            adminMessage.textContent = "Událost byla smazána.";
+          } else {
+            adminMessage.textContent = result.message || "Smazání se nepodařilo.";
+          }
+        } catch {
+          adminMessage.textContent = "Smazání se nepodařilo – zkontroluj připojení.";
+        }
+      }
+    });
+
+    function startEdit(item) {
+      editingId = item.id;
+      const startsAt = new Date(item.starts_at);
+      // starts_at je uložené jako UTC instant, ale vzniklo tak, že server vzal
+      // datum/čas z formuláře jako doslovné UTC hodnoty (bez konverze) – proto
+      // je pro bezezbytkové kolo-tam-a-zpět čteme zpátky přes UTC gettery,
+      // ne lokální čas prohlížeče.
+      const pad = (n) => String(n).padStart(2, "0");
+      document.getElementById("event-date").value = `${startsAt.getUTCFullYear()}-${pad(startsAt.getUTCMonth() + 1)}-${pad(startsAt.getUTCDate())}`;
+      document.getElementById("event-start").value = `${pad(startsAt.getUTCHours())}:${pad(startsAt.getUTCMinutes())}`;
+      // Koncový čas se strukturovaně neukládá, jen v popisu ("Začátek HH:MM–HH:MM"
+      // z POST/PATCH výše) – při úpravě ho z něj zpátky vytáhneme.
+      const endMatch = (item.description || "").match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);
+      document.getElementById("event-end").value = endMatch ? endMatch[2] : document.getElementById("event-start").value;
+      document.getElementById("event-title").value = item.title || "";
+      document.getElementById("event-type").value = item.type;
+      document.getElementById("event-game").value = item.game;
+      document.getElementById("event-capacity").value = item.capacity ?? "";
+      document.getElementById("event-spots-taken").value = item.spots_taken ?? 0;
+      document.getElementById("event-price").value = item.price || "";
+      document.getElementById("event-url").value = item.registration_url || "";
+      playhubUrlInput.value = "";
+      playhubMessage.textContent = "Úprava existující události – import z PlayHubu přepíše obsazenost a cenu.";
+
+      formHeading.textContent = `Upravit: ${item.title}`;
+      submitEventButton.textContent = "Uložit změny";
+      cancelEditButton.classList.remove("hidden");
+      adminMessage.textContent = "";
+      document.getElementById("event-title").scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+
+    function resetForm() {
+      editingId = null;
+      eventForm.reset();
+      formHeading.textContent = "Turnaj / liga";
+      submitEventButton.textContent = "Uložit událost";
+      cancelEditButton.classList.add("hidden");
+      playhubMessage.textContent = "Vložte odkaz na event a předvyplníme datum, čas, obsazenost a cenu.";
+    }
+
+    cancelEditButton.addEventListener("click", () => resetForm());
+
     function showAdmin() {
       loginCard.classList.add("hidden");
       adminPanel.classList.remove("hidden");
       logoutButton.classList.remove("hidden");
-      renderEvents();
+      loadEvents();
     }
 
     function hideAdmin() {
@@ -230,18 +313,16 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
           document.getElementById("event-start").value = data.startTime || "";
           document.getElementById("event-end").value = data.endTime || "";
           document.getElementById("event-capacity").value = data.spotsTotal ? String(data.spotsTotal) : "";
+          document.getElementById("event-spots-taken").value = data.spotsTaken != null ? String(data.spotsTaken) : "0";
           document.getElementById("event-price").value = data.price && data.currency ? `${data.price} ${data.currency}` : (data.price || "");
           document.getElementById("event-url").value = url;
           document.getElementById("event-type").value = "tournament";
           document.getElementById("event-game").value = data.game || inferGameFromTitle(data.title);
-          importedCapacityData = { spotsTaken: data.spotsTaken || 0, spotsTotal: data.spotsTotal || 0 };
           playhubMessage.textContent = `Data načtena: ${data.title} (${data.spotsTaken ?? "?"}/${data.spotsTotal ?? "?"} míst)`;
         } else {
-          importedCapacityData = null;
           playhubMessage.textContent = result.message || "Nepodařilo se načíst data.";
         }
       } catch {
-        importedCapacityData = null;
         playhubMessage.textContent = "Nepodařilo se načíst data z PlayHubu.";
       } finally {
         importPlayhubButton.disabled = false;
@@ -280,74 +361,46 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
       const startTime = document.getElementById("event-start").value;
       const endTime = document.getElementById("event-end").value;
       const capacity = Number(document.getElementById("event-capacity").value);
+      const spotsTaken = Number(document.getElementById("event-spots-taken").value) || 0;
       const price = document.getElementById("event-price").value.trim();
       const customUrl = document.getElementById("event-url").value.trim();
-      const payload = new Date(date + "T00:00:00");
-      const importedSpotsTaken = importedCapacityData?.spotsTaken || 0;
+      const registrationUrl = customUrl || (type === "tournament" ? GAME_REGISTRATION_URLS[game] : null);
 
-      const slug = slugify(`${title}-${date}`);
-      const registrationUrl = customUrl || DEFAULT_EVENTS.find((item) => item.game === game)?.registrationUrl || "https://www.ravensburgerplayhub.com/";
-
-      const newEvent = {
-        slug,
+      const payload = {
         title,
-        game,
         type,
-        date: payload.toLocaleDateString("cs-CZ", {
-          day: "numeric",
-          month: "numeric",
-          year: "numeric",
-        }),
-        time: `${startTime}–${endTime}`,
-        day: payload.getDate(),
-        spotsTaken: importedSpotsTaken,
-        spotsTotal: Math.max(capacity, 1),
+        game,
+        date,
+        startTime,
+        endTime,
+        capacity,
         registrationUrl,
-        price: price || undefined,
+        price: price || null,
+        spotsTaken,
       };
 
+      submitEventButton.disabled = true;
       try {
         const response = await fetch("/api/admin/events", {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            title,
-            type,
-            game,
-            date,
-            startTime,
-            endTime,
-            capacity,
-            registrationUrl: type === "tournament" ? registrationUrl : null,
-            price: price || null,
-            spotsTaken: importedSpotsTaken,
-          }),
+          method: editingId ? "PATCH" : "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(editingId ? { ...payload, id: editingId } : payload),
         });
 
         const result = await response.json();
 
         if (response.ok && result.ok) {
-          const events = getSavedEvents();
-          saveEvents([newEvent, ...events]);
-          renderEvents();
-          eventForm.reset();
-          importedCapacityData = null;
-          adminMessage.textContent = "Událost byla uložena do Supabase.";
-          return;
+          adminMessage.textContent = editingId ? "Změny byly uloženy." : "Událost byla uložena do Supabase.";
+          resetForm();
+          await loadEvents();
+        } else {
+          adminMessage.textContent = result.message || "Uložení se nepodařilo.";
         }
       } catch {
-        // fallback below
+        adminMessage.textContent = "Uložení se nepodařilo – zkontroluj připojení k Supabase.";
+      } finally {
+        submitEventButton.disabled = false;
       }
-
-      const events = getSavedEvents();
-      saveEvents([newEvent, ...events]);
-      renderEvents();
-      eventForm.reset();
-      importedCapacityData = null;
-      adminMessage.textContent = "Supabase zatím není nastavena. Událost byla uložena lokálně jako fallback.";
     });
   </script>
 </Layout>
-

@@ -10,9 +10,30 @@ const MONTHS = [
   "jul", "aug", "sep", "oct", "nov", "dec",
 ];
 
-const extractByTestId = (html, testId) => {
-  const match = html.match(new RegExp(`data-testid="${testId}"[^>]*>([^<]*)`, "i"));
-  return match ? normalizeWhitespace(match[1]) : null;
+// Next.js/react-intl SSR umí u interpolovaných hodnot (např. "{current} of {total}
+// players") vykreslit sousední textové uzly oddělené komentáři `<!-- -->`
+// (hydration boundary), takže prostý „do prvního `<`" match někdy utne text
+// hned za první číslicí. Proto vezmeme širší okno až po odpovídající uzavírací
+// tag a z něj odstraníme komentáře i vnořené značky, teprve pak čteme text.
+const extractByTestId = (html, testId, windowSize = 300) => {
+  const attrIndex = html.indexOf(`data-testid="${testId}"`);
+  if (attrIndex === -1) return null;
+  const tagEnd = html.indexOf(">", attrIndex);
+  if (tagEnd === -1) return null;
+
+  const scope = html.slice(tagEnd + 1, tagEnd + 1 + windowSize);
+  const closeIndex = scope.search(/<\/(div|span|p|td|th|h1|h2|h3)[^>]*>/i);
+  const inner = closeIndex === -1 ? scope : scope.slice(0, closeIndex);
+  const text = inner.replace(/<!--[\s\S]*?-->/g, "").replace(/<[^>]*>/g, "");
+  const normalized = normalizeWhitespace(text);
+  return normalized || null;
+};
+
+// Záložní zdroj počtu registrovaných hráčů: nadpis "Roster (54)" u seznamu
+// hráčů se v praxi ukázal jako stabilnější než "available-spots" pole.
+const extractRosterCount = (html) => {
+  const match = html.match(/data-testid="roster-section"[\s\S]{0,400}?\((\d+)\)/i);
+  return match ? Number(match[1]) : null;
 };
 
 const extractNearIcon = (html, iconClass, windowSize = 700) => {
@@ -75,13 +96,14 @@ export function parsePlayHubEvent(html, options = {}) {
 
   const capacity = parseCapacityText(capacityText);
   const price = parsePriceText(priceText);
+  const spotsTaken = capacity?.spotsTaken ?? extractRosterCount(html);
 
   return {
     title,
     date: parseCalendarDate(dateText),
     startTime: parseClockTime(startTimeText),
     endTime: endTimeText ? parseClockTime(normalizeWhitespace(endTimeText)) : null,
-    spotsTaken: capacity?.spotsTaken ?? null,
+    spotsTaken: spotsTaken ?? null,
     spotsTotal: capacity?.spotsTotal ?? null,
     price: price?.amount ?? null,
     currency: price?.currency ?? null,

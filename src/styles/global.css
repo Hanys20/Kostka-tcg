@@ -78,6 +78,15 @@ html[data-theme="light"] .logo-footer-light {
   background: #ffffff;
 }
 
+/* Nativní <select> vykresluje rozbalený seznam možností mimo stránku (vlastní
+   vrstva prohlížeče), takže poloprůhledné bg-white/5 z Tailwindu se v něm
+   často zobrazí jako čistě bílá plocha – v kombinaci s bílým textem pak
+   nejde přečíst. Možnostem proto vždy dáme plnou, tématu odpovídající barvu. */
+select option {
+  color: var(--kostka-text);
+  background: var(--color-kostka-surface-2);
+}
+
 html[data-theme="light"] .text-white,
 html[data-theme="light"] [class*="text-white/"],
 html[data-theme="light"] .text-kostka-white {
@@ -114,4 +123,11 @@ html[data-theme="light"] .text-white\/40,
 html[data-theme="light"] .text-white\/55,
 html[data-theme="light"] .text-white\/80 {
   color: var(--kostka-muted) !important;
+}
+
+/* `placeholder:text-white/40` z Tailwindu cílí na ::placeholder, což výše
+   uvedené .text-white\/* přepisy nezachytí – v light módu tak placeholdery
+   zůstávaly skoro bílé na světlém pozadí (nečitelné). */
+html[data-theme="light"] ::placeholder {
+  color: rgba(20, 32, 48, 0.4) !important;
 }
