@@ -189,4 +189,17 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   strana je hotová, chybí ještě `wrangler login` na Cloudflare účtu klienta a
   nastavení secrets (`SUPABASE_URL`, `SUPABASE_SERVICE_ROLE_KEY`, `REFRESH_TOKEN`,
   viz README v adresáři) + `wrangler deploy`. Do té doby se obsazenost/cena turnajů
-  z PlayHubu neobnovuje automaticky, jen při ručním importu přes administraci.
+  z PlayHubu neobnovuje automaticky, jen při ručním (re)importu přes administraci.
+- **Admin (`/admin`) je od 2026-08-06 plně napojený na Supabase** – `/api/admin/events`
+  má teď GET/POST/PATCH/DELETE (dřív jen POST), seznam událostí se načítá živě
+  z DB (ne z localStorage/mock dat) a u každého řádku jsou tlačítka Upravit/Smazat.
+  Přihlášení do admina je pořád jen natvrdo v klientském JS (nick `admin`/heslo
+  `admin123`, žádná reálná autorizace na API), stejně jako předtím – zabezpečit
+  admin API skutečným auth zůstává otevřené.
+- `src/lib/playhub-import.js` byl zpevněný proti React/react-intl hydration
+  komentářům (`<!-- -->`), které umí rozdělit interpolovaný text ("54 of 80")
+  a useknout prostý regex hned za prvním číslem – přidán i fallback na
+  "Roster (X)" nadpis. Testy v `tests/playhub-import.test.mjs`.
+- Kontrast v `src/styles/global.css`: rozbalené `<select>` možnosti a
+  `::placeholder` byly v jednom z motivů prakticky nečitelné (bílý text na
+  bílém/průhledném pozadí) – opraveno globálně pro oba motivy.
