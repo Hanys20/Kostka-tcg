@@ -9,6 +9,13 @@ const upcomingTournaments = await getUpcomingTournaments();
 const pastTournaments = await getPastTournaments();
 const upcomingLeague = upcomingTournaments.filter((e) => e.type === "league");
 const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tournament");
+const activeTab = Astro.url.searchParams.get("tab") ?? "nadchazejici";
+const tabHref = {
+  nadchazejici: "/turnaje#nadchazejici",
+  liga: "/turnaje#liga",
+  turnaje: "/turnaje#turnaje",
+  probihle: "/turnaje#probihle",
+};
 ---
 
 <Layout title="Turnaje a liga">
@@ -20,10 +27,10 @@ const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tou
     </p>
 
     <div class="mt-8 flex flex-wrap gap-2 border-b border-white/10 text-sm font-semibold">
-      <a href="#nadchazejici" class="border-b-2 border-kostka-cyan px-1 pb-3 text-kostka-cyan">Nadcházející</a>
-      <a href="#probihle" class="px-1 pb-3 text-white/50">Proběhlé</a>
-      <a href="#liga" class="px-1 pb-3 text-white/50">Liga</a>
-      <a href="#turnaje" class="px-1 pb-3 text-white/50">Turnaje</a>
+      <a href={tabHref.nadchazejici} class:list={["px-1 pb-3", activeTab === "nadchazejici" ? "border-b-2 border-kostka-cyan text-kostka-cyan" : "text-white/50"]}>Nadcházející</a>
+      <a href={tabHref.probihle} class:list={["px-1 pb-3", activeTab === "probihle" ? "border-b-2 border-kostka-cyan text-kostka-cyan" : "text-white/50"]}>Proběhlé</a>
+      <a href={tabHref.liga} class:list={["px-1 pb-3", activeTab === "liga" ? "border-b-2 border-kostka-cyan text-kostka-cyan" : "text-white/50"]}>Liga</a>
+      <a href={tabHref.turnaje} class:list={["px-1 pb-3", activeTab === "turnaje" ? "border-b-2 border-kostka-cyan text-kostka-cyan" : "text-white/50"]}>Turnaje</a>
     </div>
 
     <div class="mt-10 grid gap-8 lg:grid-cols-[380px_1fr]">

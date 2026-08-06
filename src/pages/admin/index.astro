@@ -53,6 +53,14 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
           <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Přidat událost</p>
           <h2 class="mt-2 text-xl font-bold text-white">Turnaj / liga</h2>
           <form id="event-form" class="mt-4 space-y-3">
+            <div class="rounded-xl border border-kostka-cyan/20 bg-kostka-cyan/10 p-3">
+              <label for="playhub-url" class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-cyan">Import z PlayHubu</label>
+              <div class="mt-2 flex gap-2">
+                <input id="playhub-url" type="url" placeholder="https://tcg.ravensburgerplay.com/events/638126" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
+                <button id="import-playhub-button" type="button" class="rounded-full border border-kostka-cyan/40 px-3 py-2 text-sm font-semibold text-kostka-cyan hover:bg-kostka-cyan/10">Načíst</button>
+              </div>
+              <p id="playhub-message" class="mt-2 text-xs text-white/50">Vložte odkaz na event a předvyplníme datum, čas, obsazenost a cenu.</p>
+            </div>
             <input id="event-title" type="text" placeholder="Název události" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
             <select id="event-type" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan">
               <option value="tournament">Turnaj</option>
@@ -69,6 +77,7 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
               <input id="event-end" type="time" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white outline-none focus:border-kostka-cyan" required />
             </div>
             <input id="event-capacity" type="number" min="1" placeholder="Počet volných míst" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" required />
+            <input id="event-price" type="text" placeholder="Cena za turnaj (volitelné)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
             <input id="event-url" type="url" placeholder="Registrace / odkaz na stránku hry (volitelné)" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan" />
             <button type="submit" class="w-full rounded-full bg-kostka-cyan px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
               Uložit událost
@@ -120,6 +129,11 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
     const loginMessage = document.getElementById("login-message");
     const adminMessage = document.getElementById("admin-message");
     const eventList = document.getElementById("event-list");
+    const playhubUrlInput = document.getElementById("playhub-url");
+    const importPlayhubButton = document.getElementById("import-playhub-button");
+    const playhubMessage = document.getElementById("playhub-message");
+
+    let importedCapacityData = null;
 
     function getSavedEvents() {
       try {
@@ -183,6 +197,56 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
       localStorage.removeItem(SESSION_KEY);
     }
 
+    function inferGameFromTitle(title) {
+      if (!title) return "Lorcana";
+      const normalized = title.toLowerCase();
+      if (normalized.includes("pokemon")) return "Pokémon";
+      if (normalized.includes("riftbound")) return "Riftbound";
+      return "Lorcana";
+    }
+
+    importPlayhubButton.addEventListener("click", async () => {
+      const url = playhubUrlInput.value.trim();
+      if (!url) {
+        playhubMessage.textContent = "Vložte odkaz na event z PlayHubu.";
+        return;
+      }
+
+      importPlayhubButton.disabled = true;
+      playhubMessage.textContent = "Načítám data z PlayHubu…";
+
+      try {
+        const response = await fetch("/api/admin/playhub-import", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ url }),
+        });
+        const result = await response.json();
+
+        if (response.ok && result.ok) {
+          const data = result.data;
+          document.getElementById("event-title").value = data.title || "";
+          document.getElementById("event-date").value = data.date || "";
+          document.getElementById("event-start").value = data.startTime || "";
+          document.getElementById("event-capacity").value = data.spotsTotal && data.spotsTaken ? String(Math.max(data.spotsTotal - data.spotsTaken, 1)) : "";
+          document.getElementById("event-price").value = data.price || "";
+          document.getElementById("event-url").value = url;
+          document.getElementById("event-type").value = "tournament";
+          document.getElementById("event-game").value = inferGameFromTitle(data.title);
+          importedCapacityData = { spotsTaken: data.spotsTaken || 0, spotsTotal: data.spotsTotal || 0 };
+          playhubMessage.textContent = `Data načtena: ${data.title}`;
+        } else {
+          importedCapacityData = null;
+          playhubMessage.textContent = result.message || "Nepodařilo se načíst data.";
+        }
+      } catch {
+        importedCapacityData = null;
+        playhubMessage.textContent = "Nepodařilo se načíst data z PlayHubu.";
+      } finally {
+        importPlayhubButton.disabled = false;
+      }
+    });
+
     if (localStorage.getItem(SESSION_KEY) === "active") {
       showAdmin();
     }
@@ -215,8 +279,11 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
       const startTime = document.getElementById("event-start").value;
       const endTime = document.getElementById("event-end").value;
       const capacity = Number(document.getElementById("event-capacity").value);
+      const price = document.getElementById("event-price").value.trim();
       const customUrl = document.getElementById("event-url").value.trim();
       const payload = new Date(date + "T00:00:00");
+      const importedSpotsTaken = importedCapacityData?.spotsTaken || 0;
+      const importedSpotsTotal = importedCapacityData?.spotsTotal || 0;
 
       const slug = slugify(`${title}-${date}`);
       const registrationUrl = customUrl || DEFAULT_EVENTS.find((item) => item.game === game)?.registrationUrl || "https://www.ravensburgerplayhub.com/";
@@ -233,9 +300,10 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
         }),
         time: `${startTime}–${endTime}`,
         day: payload.getDate(),
-        spotsTaken: 0,
-        spotsTotal: capacity,
+        spotsTaken: importedSpotsTaken,
+        spotsTotal: importedSpotsTotal || Math.max(capacity, 1),
         registrationUrl,
+        price: price || undefined,
       };
 
       try {
@@ -262,6 +330,7 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
           saveEvents([newEvent, ...events]);
           renderEvents();
           eventForm.reset();
+          importedCapacityData = null;
           adminMessage.textContent = "Událost byla uložena do Supabase.";
           return;
         }
@@ -273,6 +342,7 @@ const defaultEventsJson = JSON.stringify(defaultEvents);
       saveEvents([newEvent, ...events]);
       renderEvents();
       eventForm.reset();
+      importedCapacityData = null;
       adminMessage.textContent = "Supabase zatím není nastavena. Událost byla uložena lokálně jako fallback.";
     });
   </script>

@@ -2,10 +2,12 @@
 import Layout from "../../layouts/Layout.astro";
 import { getUpcomingTournaments, getPastTournaments } from "../../data/tournaments";
 
-const upcomingTournaments = await getUpcomingTournaments();
-const pastTournaments = await getPastTournaments();
-
 export async function getStaticPaths() {
+  const [upcomingTournaments, pastTournaments] = await Promise.all([
+    getUpcomingTournaments(),
+    getPastTournaments(),
+  ]);
+
   return [
     ...upcomingTournaments.map((event) => ({ params: { slug: event.slug }, props: { event, isPast: false } })),
     ...pastTournaments.map((event) => ({ params: { slug: event.slug }, props: { event, isPast: true } })),
@@ -13,6 +15,9 @@ export async function getStaticPaths() {
 }
 
 const { event, isPast } = Astro.props;
+const showExternalRegistration = !isPast && event.type === "tournament" && Boolean(event.registrationUrl);
+const spotsLeft = event.spotsTotal - event.spotsTaken;
+const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
 ---
 
 <Layout title={event.title}>
@@ -53,33 +58,60 @@ const { event, isPast } = Astro.props;
       {
         !isPast && (
           <aside class="h-fit rounded-2xl border border-white/10 bg-kostka-surface p-6">
-            <h2 class="font-bold text-white">Rezervace místa</h2>
-            <p class="mt-1 text-sm text-white/50">
-              Jste přihlášeni? <a href="/prihlaseni" class="font-semibold text-kostka-cyan hover:underline">Přihlaste se</a> a údaje se předvyplní.
-            </p>
-            <form class="mt-4 space-y-3">
-              <input
-                type="text"
-                placeholder="Jméno a příjmení"
-                class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
-              />
-              <input
-                type="text"
-                placeholder="Přezdívka"
-                class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
-              />
-              <input
-                type="email"
-                placeholder="E-mail"
-                class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
-              />
-              <button
-                type="submit"
-                class="w-full rounded-full bg-kostka-cyan px-4 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90"
-              >
-                Rezervovat místo
-              </button>
-            </form>
+            {showExternalRegistration ? (
+              <>
+                <h2 class="font-bold text-white">Přihlášení přes PlayHub</h2>
+                <p class="mt-1 text-sm text-white/50">
+                  Registrace na tento turnaj probíhá externě. Naše stránka pouze zobrazuje aktuální obsazenost a odkaz na event.
+                </p>
+                <div class="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
+                  <div class="flex items-center justify-between text-sm text-white/60">
+                    <span>Obsazenost</span>
+                    <span>{event.spotsTaken}/{event.spotsTotal}</span>
+                  </div>
+                  <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                    <div class="h-full rounded-full bg-kostka-cyan" style={`width: ${percentFull}%`} />
+                  </div>
+                  <p class="mt-3 text-sm text-white/70">Volných míst: {Math.max(spotsLeft, 0)}</p>
+                </div>
+                {event.price && (
+                  <p class="mt-3 text-sm font-semibold text-kostka-cyan">Vstupné: {event.price} Kč</p>
+                )}
+                <a href={event.registrationUrl} target="_blank" rel="noreferrer" class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-kostka-cyan px-4 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+                  Otevřít PlayHub
+                </a>
+              </>
+            ) : (
+              <>
+                <h2 class="font-bold text-white">Rezervace místa</h2>
+                <p class="mt-1 text-sm text-white/50">
+                  Jste přihlášeni? <a href="/prihlaseni" class="font-semibold text-kostka-cyan hover:underline">Přihlaste se</a> a údaje se předvyplní.
+                </p>
+                <form class="mt-4 space-y-3">
+                  <input
+                    type="text"
+                    placeholder="Jméno a příjmení"
+                    class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
+                  />
+                  <input
+                    type="text"
+                    placeholder="Přezdívka"
+                    class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
+                  />
+                  <input
+                    type="email"
+                    placeholder="E-mail"
+                    class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-cyan"
+                  />
+                  <button
+                    type="submit"
+                    class="w-full rounded-full bg-kostka-cyan px-4 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90"
+                  >
+                    Rezervovat místo
+                  </button>
+                </form>
+              </>
+            )}
           </aside>
         )
       }
