@@ -9,6 +9,20 @@ Po dokončení každé změny v tomto repozitáři automaticky proveď `git comm
 na `main` bez čekání na explicitní potvrzení uživatele. Commituj jen soubory relevantní
 k provedené změně (ne nesouvisející netracknuté soubory, které se v repu objeví).
 
+**Nasazení není automatické z GitHubu** – žádný CI/CD tam není napojený, jen ruční
+`wrangler deploy` (viz „Stav projektu"). Proto po každé změně, která ovlivňuje
+hlavní web (cokoliv v `src/`, `public/`, `astro.config.mjs`, `wrangler.jsonc`),
+kromě commit+push ještě z kořene repa spusť `npm run build && npx wrangler deploy`
+a nasaď na `https://kostka-tcg.kostka-tcg.workers.dev`, ať živý web nikdy
+nezůstane pozadu za repem (viz incident 2026-08-06, kdy web zůstal nasazený
+jen z prvního uploadu a chyběla v něm skoro celá práce z toho dne).
+Pokud `npm run build` selže na `EPERM`/zamčeném `dist/client`, zkontroluj
+zaseklé staré `node.exe` procesy (`npm run dev`/`wrangler dev` z dřívějška
+– běžný problém, protože repo leží v OneDrive) a ukonči je před opakováním
+buildu. Změny ve `workers/playhub-refresh/` nasazuj zvlášť podle README
+v tom adresáři (`wrangler deploy --config wrangler.toml`), nesouvisí
+s hlavním webem.
+
 ## Klient
 
 - **Firma:** KOSTKA TCG – herna a prodej trading card games (Lorcana, Pokémon, Riftbound),
