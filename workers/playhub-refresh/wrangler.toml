@@ -1,0 +1,17 @@
+name = "kostka-tcg-playhub-refresh"
+main = "src/index.js"
+compatibility_date = "2026-08-06"
+compatibility_flags = ["nodejs_compat"]
+
+# Každých 15 minut projde nadcházející turnaje a přeobnoví jejich
+# obsazenost/cenu/kapacitu z PlayHubu (viz CLAUDE.md).
+[triggers]
+crons = ["*/15 * * * *"]
+
+[observability]
+enabled = true
+
+# Secrets (nastavit přes `wrangler secret put <NÁZEV>`, do repa nepatří):
+#   SUPABASE_URL             – stejné jako PUBLIC_SUPABASE_URL v .env
+#   SUPABASE_SERVICE_ROLE_KEY – service_role klíč z Supabase (obchází RLS, jen pro tento worker)
+#   REFRESH_TOKEN            – libovolný náhodný string pro ruční spuštění přes fetch handler

@@ -108,6 +108,13 @@ Migrace je **návrh k ověření**, ne finální schéma – před ostrým nasaz
   zabezpečení řeší RLS politiky.
 - **Hosting:** Cloudflare Pages (klient to sám navrhl v dotazníku), přes `@astrojs/cloudflare`
   adaptér. Nasazení z GitHubu (auto-deploy při push na `main`).
+- **Pravidelná obnova PlayHub dat:** samostatný Cloudflare Worker s Cron Triggerem
+  (`workers/playhub-refresh/`, viz README tam) – Cron Triggers jsou funkce Workers,
+  ne Pages, proto jde o zvlášť nasazovaný kousek infrastruktury vedle hlavního Pages
+  projektu. Každých 15 minut projde turnaje s PlayHub odkazem a přepíše
+  `spots_taken`/`capacity`/`price` v Supabase, takže stránky zůstávají statické
+  a rychlé (žádný dotaz na PlayHub při renderu). Sdílí parser
+  `src/lib/playhub-import.js` s ručním importem v administraci.
 - Tento stack byl odsouhlasen s klientem/uživatelem – viz plán v
   `~/.claude/plans/eh-vytvo-il-jsem-ti-typed-breeze.md` (Cloudflare Pages + Supabase dává
   smysl, protože web potřebuje účty, admin panel a evidenci výsledků, ne jen prezentaci).
@@ -129,6 +136,9 @@ public/
   images/logo-full.svg, logo-icon.svg
 supabase/migrations/                       – SQL migrace (draft)
 client-materials/                          – originální podklady od klienta (needit)
+workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cron Trigger),
+                                              pravidelně obnovuje obsazenost/cenu turnajů
+                                              z PlayHubu v Supabase (viz README v adresáři)
 ```
 
 ## Otevřené otázky pro klienta (dotazník je v těchto bodech prázdný/neúplný)
@@ -167,3 +177,8 @@ client-materials/                          – originální podklady od klienta 
 - Git repozitář lokální i na GitHubu: `https://github.com/Hanys20/Kostka-tcg`.
 - Supabase projekt zatím nezaložen – `.env.example` obsahuje placeholder proměnné
   `PUBLIC_SUPABASE_URL` a `PUBLIC_SUPABASE_ANON_KEY`.
+- **`workers/playhub-refresh/` je napsaný, ale nenasazený** – čeká na založení
+  Supabase projektu (potřebuje `service_role` klíč jako secret) a `wrangler login`/
+  `wrangler deploy` na Cloudflare účtu klienta. Do té doby se obsazenost/cena
+  turnajů natažených z PlayHubu neobnovuje automaticky, jen při ručním importu
+  přes administraci.
