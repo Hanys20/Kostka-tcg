@@ -36,8 +36,10 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           if (toggle) {
             const isDark = resolved === "dark";
             toggle.setAttribute("aria-label", isDark ? "Přepnout do světlého motivu" : "Přepnout do tmavého motivu");
-            toggle.classList.toggle("text-kostka-cyan", !isDark);
-            toggle.classList.toggle("text-amber-300", isDark);
+            const sunIcon = toggle.querySelector("[data-icon='sun']");
+            const moonIcon = toggle.querySelector("[data-icon='moon']");
+            if (sunIcon) sunIcon.classList.toggle("hidden", !isDark);
+            if (moonIcon) moonIcon.classList.toggle("hidden", isDark);
           }
         }
 
@@ -83,7 +85,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
             aria-label="Přepnout motiv"
             class="hidden h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-kostka-cyan transition hover:border-kostka-cyan hover:bg-kostka-cyan/10 lg:grid"
           >
-            <svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <svg data-icon="sun" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3v2.2"></path>
               <path d="M12 18.8V21"></path>
               <path d="M4.93 4.93l1.56 1.56"></path>
@@ -93,6 +95,9 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
               <path d="M4.93 19.07l1.56-1.56"></path>
               <path d="M17.51 6.49l1.56-1.56"></path>
               <circle cx="12" cy="12" r="4.2"></circle>
+            </svg>
+            <svg data-icon="moon" viewBox="0 0 24 24" class="hidden h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.4 14.7A8.4 8.4 0 0 1 9.3 3.6a8.6 8.6 0 1 0 11.1 11.1Z"></path>
             </svg>
           </button>
 
@@ -153,8 +158,10 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           if (toggle) {
             const isDark = resolved === "dark";
             toggle.setAttribute("aria-label", isDark ? "Přepnout do světlého motivu" : "Přepnout do tmavého motivu");
-            toggle.classList.toggle("text-kostka-cyan", !isDark);
-            toggle.classList.toggle("text-amber-300", isDark);
+            const sunIcon = toggle.querySelector("[data-icon='sun']");
+            const moonIcon = toggle.querySelector("[data-icon='moon']");
+            if (sunIcon) sunIcon.classList.toggle("hidden", !isDark);
+            if (moonIcon) moonIcon.classList.toggle("hidden", isDark);
           }
         }
 
