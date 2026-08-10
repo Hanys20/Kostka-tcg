@@ -11,8 +11,12 @@
 @theme {
   --font-sans: "Raleway", ui-sans-serif, system-ui, sans-serif;
 
-  /* Brand colors, taken from the KOSTKA TCG logo (client-materials/Logo) */
-  --color-kostka-cyan: #00b4d4;
+  /* Brand colors, taken from the KOSTKA TCG logo (client-materials/Logo).
+     kostka-purple je světlejší odstín fialové z loga (#644595) – na tmavém
+     pozadí má stejný účel jako dřív tyrkysová (dost kontrastu na hover
+     texty/okraje); ve světlém motivu se přepíná na přesný odstín z loga,
+     viz html[data-theme="light"] níže. */
+  --color-kostka-purple: #9d7fe0;
   --color-kostka-dark: #36363f;
   --color-kostka-white: #ffffff;
 
@@ -30,6 +34,7 @@
 
 html[data-theme="light"] {
   color-scheme: light;
+  --color-kostka-purple: #644595;
   --color-kostka-white: #0b1320;
   --color-kostka-bg: #f4f7fb;
   --color-kostka-surface: #ffffff;

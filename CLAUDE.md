@@ -55,14 +55,22 @@ s hlavním webem.
 ## Design
 
 - Dojem: minimalistický a čistý, prémiový, technologický/moderní.
-- Barvy (z loga, `client-materials/Logo/`): tyrkysová `#00b4d4`, tmavá `#36363f`, bílá.
-  V Tailwindu zapsané jako `kostka-cyan`, `kostka-dark`, `kostka-white`
-  (viz `src/styles/global.css`, `@theme`).
+- Barvy (z nového loga, `client-materials/Logo/Pro použití na web_*.svg`): fialová
+  `#644595`, tmavá `#36363f`, bílá. V Tailwindu zapsané jako `kostka-purple`,
+  `kostka-dark`, `kostka-white` (viz `src/styles/global.css`, `@theme`).
+  `kostka-purple` je theme-aware stejně jako `kostka-white`/`kostka-bg`/`kostka-surface`:
+  v `@theme` (tmavý motiv, výchozí) je to světlejší odstín `#9d7fe0` kvůli kontrastu
+  na skoro černém pozadí, v `html[data-theme="light"]` se přepíná na přesný odstín
+  z loga `#644595` (na bílém pozadí má sám o sobě dost kontrastu).
+  Nahrazeno 2026-08-10 – původní paleta byla tyrkysová `#00b4d4` podle staršího loga.
 - Font: **Raleway** (varianty Black + Medium), dodán jako variabilní `.ttf`
   v `client-materials/Fonty/`, zkopírován do `public/fonts/`.
 - Ilustrace na míru (ne stock).
-- Loga: `Logo-02.svg` (plné s wordmarkem) a `Logo-03.svg` (jen ikona kostky) –
-  zkopírováno do `public/images/logo-full.svg` a `logo-icon.svg`.
+- Loga: `client-materials/Logo/Pro použití na web_Logo.svg` (plné s wordmarkem),
+  `..._Ikona favicon.svg` (jen ikona kostky) a `..._Badge.svg` (kulatý odznak,
+  zatím na webu nepoužitý) – zkopírováno/odvozeno do `public/images/logo-full.svg`,
+  `logo-full-white.svg` (bílý wordmark pro tmavý motiv, ikona zůstává fialová),
+  `logo-icon.svg` a `logo-icon-white.svg`.
 - Fotky z reálných akcí klienta jsou v `client-materials/Fotky/` – **fotobanka není potřeba**,
   poznámka „fotobanka??" v dotazníku je tímto vyřešená.
 

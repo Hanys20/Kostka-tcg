@@ -164,7 +164,7 @@ export async function getEventBySlug(
 export const gameBadgeColors: Record<TournamentEntry["game"], string> = {
   Pokémon: "bg-yellow-400/10 text-yellow-300",
   Lorcana: "bg-purple-400/10 text-purple-300",
-  Riftbound: "bg-kostka-cyan/10 text-kostka-cyan",
+  Riftbound: "bg-kostka-purple/10 text-kostka-purple",
 };
 
 export const gameRegistrationUrls: Record<TournamentEntry["game"], string> = {

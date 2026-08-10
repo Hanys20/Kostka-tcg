@@ -12,8 +12,8 @@ const actionHref = event.registrationUrl || `/turnaje/${event.slug}`;
 const actionLabel = event.type === "tournament" && event.registrationUrl ? "Otevřít PlayHub" : event.registrationUrl ? "Registrovat se" : spotsLeft > 0 ? "Rezervovat místo" : "Obsazeno – náhradník";
 ---
 
-<article class="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-cyan/40">
-  <div class="pointer-events-none absolute inset-0 rounded-2xl border border-transparent transition-all duration-500 group-hover:border-kostka-cyan/70 group-hover:shadow-[0_0_0_1px_rgba(0,180,212,0.5),0_0_28px_rgba(0,180,212,0.35),0_0_56px_rgba(0,180,212,0.2)]"></div>
+<article class="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-purple/40">
+  <div class="pointer-events-none absolute inset-0 rounded-2xl border border-transparent transition-all duration-500 group-hover:border-kostka-purple/70 group-hover:shadow-[0_0_0_1px_rgba(157,127,224,0.5),0_0_28px_rgba(157,127,224,0.35),0_0_56px_rgba(157,127,224,0.2)]"></div>
   <div class="relative flex items-center justify-between">
     <span class={`rounded-full px-3 py-1 text-xs font-semibold ${gameBadgeColors[event.game]}`}>
       {event.game}
@@ -32,13 +32,13 @@ const actionLabel = event.type === "tournament" && event.registrationUrl ? "Otev
       <span>{event.spotsTaken}/{event.spotsTotal}</span>
     </div>
     <div class="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-      <div class="h-full rounded-full bg-kostka-cyan" style={`width: ${percentFull}%`}></div>
+      <div class="h-full rounded-full bg-kostka-purple" style={`width: ${percentFull}%`}></div>
     </div>
   </div>
 
   <a
     href={actionHref}
-    class="mt-5 inline-flex items-center justify-center rounded-full bg-kostka-cyan px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90"
+    class="mt-5 inline-flex items-center justify-center rounded-full bg-kostka-purple px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90"
   >
     {actionLabel}
   </a>

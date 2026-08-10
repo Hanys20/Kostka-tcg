@@ -72,16 +72,16 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           <img src="/images/logo-full.svg" alt="KOSTKA TCG" class="logo-header-light hidden h-12 w-auto" />
         </a>
         <ul class="hidden items-center gap-7 text-xs font-semibold uppercase tracking-wide md:flex">
-          <li><a href="/turnaje" class="text-white/70 hover:text-kostka-cyan">Kalendář</a></li>
-          <li><a href="/faq" class="text-white/70 hover:text-kostka-cyan">FAQ</a></li>
-          <li><a href="/kontakt" class="text-white/70 hover:text-kostka-cyan">Kontakt</a></li>
+          <li><a href="/turnaje" class="text-white/70 hover:text-kostka-purple">Kalendář</a></li>
+          <li><a href="/faq" class="text-white/70 hover:text-kostka-purple">FAQ</a></li>
+          <li><a href="/kontakt" class="text-white/70 hover:text-kostka-purple">Kontakt</a></li>
         </ul>
         <div class="flex items-center gap-2 sm:gap-3">
           <button
             id="theme-toggle"
             type="button"
             aria-label="Přepnout motiv"
-            class="hidden h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-kostka-cyan transition hover:border-kostka-cyan hover:bg-kostka-cyan/10 lg:grid"
+            class="hidden h-10 w-10 items-center justify-center rounded-full border border-white/15 bg-white/5 text-kostka-purple transition hover:border-kostka-purple hover:bg-kostka-purple/10 lg:grid"
           >
             <svg data-icon="sun" viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
               <path d="M12 3v2.2"></path>
@@ -103,14 +103,14 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
             <button
               type="button"
               data-lang-option="cs"
-              class="lang-option rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:text-kostka-cyan"
+              class="lang-option rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:text-kostka-purple"
             >
               CZ
             </button>
             <button
               type="button"
               data-lang-option="en"
-              class="lang-option rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:text-kostka-cyan"
+              class="lang-option rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:text-kostka-purple"
             >
               EN
             </button>
@@ -118,13 +118,13 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
 
           <a
             href="/prihlaseni"
-            class="hidden rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 hover:border-kostka-cyan hover:text-kostka-cyan sm:block"
+            class="hidden rounded-full border border-white/15 px-4 py-2 text-xs font-semibold uppercase tracking-wide text-white/80 hover:border-kostka-purple hover:text-kostka-purple sm:block"
           >
             Přihlásit se
           </a>
           <a
             href="/turnaje"
-            class="rounded-full bg-kostka-cyan px-5 py-2 text-xs font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
+            class="rounded-full bg-kostka-purple px-5 py-2 text-xs font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
           >
             Zarezervuj termín
           </a>
@@ -171,7 +171,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           const langButtons = document.querySelectorAll("[data-lang-option]");
           langButtons.forEach((button) => {
             const isActive = button.getAttribute("data-lang-option") === resolvedLang;
-            button.classList.toggle("bg-kostka-cyan", isActive);
+            button.classList.toggle("bg-kostka-purple", isActive);
             button.classList.toggle("text-kostka-bg", isActive);
             button.classList.toggle("text-white/70", !isActive);
           });
@@ -212,7 +212,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
     <a
       href="#top"
       aria-label="Zpět nahoru"
-      class="fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-kostka-surface text-kostka-cyan shadow-lg shadow-black/40 hover:bg-kostka-cyan hover:text-kostka-bg"
+      class="fixed bottom-6 right-6 z-40 grid h-11 w-11 place-items-center rounded-full border border-white/10 bg-kostka-surface text-kostka-purple shadow-lg shadow-black/40 hover:bg-kostka-purple hover:text-kostka-bg"
     >
       ↑
     </a>
@@ -225,36 +225,36 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           <p class="mt-4 text-sm text-white/60">Dolní 782/65</p>
           <p class="text-sm text-white/60">700 30 Ostrava-Jih-Zábřeh</p>
           <p class="mt-3 text-sm">
-            <a href="tel:+420773334488" class="text-white/60 hover:text-kostka-cyan">+420 773 334 488</a>
+            <a href="tel:+420773334488" class="text-white/60 hover:text-kostka-purple">+420 773 334 488</a>
           </p>
           <p class="text-sm">
-            <a href="mailto:info@kostkatcg.cz" class="text-white/60 hover:text-kostka-cyan">info@kostkatcg.cz</a>
+            <a href="mailto:info@kostkatcg.cz" class="text-white/60 hover:text-kostka-purple">info@kostkatcg.cz</a>
           </p>
         </div>
 
         <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-cyan">Navigace</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">Navigace</p>
           <ul class="mt-4 space-y-2 text-sm text-white/60">
-            <li><a href="/turnaje" class="hover:text-kostka-cyan">Kalendář</a></li>
-            <li><a href="/faq" class="hover:text-kostka-cyan">FAQ</a></li>
-            <li><a href="/kontakt" class="hover:text-kostka-cyan">Kontakt</a></li>
+            <li><a href="/turnaje" class="hover:text-kostka-purple">Kalendář</a></li>
+            <li><a href="/faq" class="hover:text-kostka-purple">FAQ</a></li>
+            <li><a href="/kontakt" class="hover:text-kostka-purple">Kontakt</a></li>
           </ul>
         </div>
 
         <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-cyan">Můj účet</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">Můj účet</p>
           <ul class="mt-4 space-y-2 text-sm text-white/60">
-            <li><a href="/prihlaseni" class="hover:text-kostka-cyan">Přihlásit se</a></li>
-            <li><a href="/registrace" class="hover:text-kostka-cyan">Registrovat se</a></li>
-            <li><a href="/profil" class="hover:text-kostka-cyan">Můj profil</a></li>
+            <li><a href="/prihlaseni" class="hover:text-kostka-purple">Přihlásit se</a></li>
+            <li><a href="/registrace" class="hover:text-kostka-purple">Registrovat se</a></li>
+            <li><a href="/profil" class="hover:text-kostka-purple">Můj profil</a></li>
           </ul>
         </div>
 
         <div>
-          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-cyan">Právní informace</p>
+          <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">Právní informace</p>
           <ul class="mt-4 space-y-2 text-sm text-white/60">
-            <li><a href="/gdpr" class="hover:text-kostka-cyan">GDPR</a></li>
-            <li><a href="/gdpr" class="hover:text-kostka-cyan">Zásady ochrany osobních údajů</a></li>
+            <li><a href="/gdpr" class="hover:text-kostka-purple">GDPR</a></li>
+            <li><a href="/gdpr" class="hover:text-kostka-purple">Zásady ochrany osobních údajů</a></li>
           </ul>
         </div>
       </div>
