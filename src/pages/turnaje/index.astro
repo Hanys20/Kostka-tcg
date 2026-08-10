@@ -18,6 +18,12 @@ const tabHref = {
   turnaje: "/turnaje#turnaje",
   probihle: "/turnaje#probihle",
 };
+
+const gameFilters = [
+  { id: "lorcana", name: "Lorcana" },
+  { id: "pokemon", name: "Pokémon" },
+  { id: "riftbound", name: "Riftbound" },
+];
 ---
 
 <Layout title="Turnaje a liga">
@@ -31,29 +37,28 @@ const tabHref = {
       <a href={tabHref.turnaje} class:list={["px-1 pb-3", activeTab === "turnaje" ? "border-b-2 border-kostka-purple text-kostka-purple" : "text-white/50"]}>Turnaje</a>
     </div>
 
-    <div class="mt-6 flex flex-wrap items-center gap-3" data-filter-bar>
-      <span class="text-xs font-semibold uppercase tracking-wide text-white/40">Hra:</span>
-      <div class="flex flex-wrap gap-2">
-        {["Lorcana", "Pokémon", "Riftbound"].map((game) => (
-          <button
-            type="button"
-            data-game-filter={game}
-            data-active="true"
-            class="rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 transition hover:border-kostka-purple data-[active=false]:border-white/10 data-[active=false]:text-white/30 data-[active=true]:border-kostka-purple data-[active=true]:bg-kostka-purple/10 data-[active=true]:text-kostka-purple"
-          >
-            {game}
-          </button>
-        ))}
-      </div>
-      <label class="ml-auto flex items-center gap-2 text-xs font-semibold text-white/70">
-        <input type="checkbox" data-hide-full class="h-4 w-4 rounded border-white/20 bg-transparent accent-kostka-purple" />
-        Skrýt obsazené
-      </label>
-    </div>
-
     <div class="mt-10 grid gap-8 lg:grid-cols-[380px_1fr]">
       <ReservationCalendar />
       <div class="space-y-10">
+        <div class="flex flex-wrap items-center gap-3" data-filter-bar>
+          <span class="text-xs font-semibold uppercase tracking-wide text-white/40">Hra:</span>
+          <div class="flex flex-wrap gap-2">
+            {gameFilters.map((game) => (
+              <button
+                type="button"
+                data-game-filter={game.name}
+                data-active="true"
+                class={`game-filter game-filter--${game.id} rounded-full border border-white/10 px-3 py-1.5 text-xs font-semibold text-white/70 transition data-[active=false]:text-white/30`}
+              >
+                {game.name}
+              </button>
+            ))}
+          </div>
+          <label class="ml-auto flex items-center gap-2 text-xs font-semibold text-white/70">
+            <input type="checkbox" data-hide-full class="h-4 w-4 rounded border-white/20 bg-transparent accent-kostka-purple" />
+            Skrýt obsazené
+          </label>
+        </div>
         <div id="nadchazejici">
           <h2 id="liga" class="text-xl font-bold text-white">Liga (pravidelné hraní)</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2" data-event-grid>
@@ -71,6 +76,64 @@ const tabHref = {
       </div>
     </div>
   </section>
+
+  <style>
+    /* Barvy filtrů podle hry – stejné odstíny jako záře karet her na hlavní stránce. */
+    .game-filter:hover {
+      border-color: var(--filter-border, rgba(157, 127, 224, 0.4));
+    }
+
+    .game-filter[data-active="true"] {
+      border-color: var(--filter-border, rgba(157, 127, 224, 0.5));
+      background: var(--filter-bg, rgba(157, 127, 224, 0.1));
+      color: var(--filter-color, #9d7fe0);
+      box-shadow: 0 0 16px var(--filter-glow, rgba(157, 127, 224, 0.2));
+    }
+
+    .game-filter--lorcana {
+      --filter-border: rgba(167, 139, 250, 0.5);
+      --filter-glow: rgba(167, 139, 250, 0.25);
+      --filter-bg: rgba(167, 139, 250, 0.12);
+      --filter-color: #a78bfa;
+    }
+
+    .game-filter--pokemon {
+      --filter-border: rgba(255, 209, 0, 0.5);
+      --filter-glow: rgba(255, 209, 0, 0.25);
+      --filter-bg: rgba(255, 209, 0, 0.12);
+      --filter-color: #ffd100;
+    }
+
+    .game-filter--riftbound {
+      --filter-border: rgba(255, 140, 40, 0.5);
+      --filter-glow: rgba(255, 140, 40, 0.25);
+      --filter-bg: rgba(255, 140, 40, 0.12);
+      --filter-color: #ff8c28;
+    }
+
+    /* Ve světlém motivu potřebují stejné pastelové odstíny sytější variantu,
+       aby zůstaly čitelné na téměř bílém pozadí (viz stejná úprava u karet her). */
+    :global(html[data-theme="light"]) .game-filter--lorcana {
+      --filter-border: rgba(124, 58, 237, 0.55);
+      --filter-glow: rgba(124, 58, 237, 0.3);
+      --filter-bg: rgba(124, 58, 237, 0.12);
+      --filter-color: #7c3aed;
+    }
+
+    :global(html[data-theme="light"]) .game-filter--pokemon {
+      --filter-border: rgba(217, 119, 6, 0.55);
+      --filter-glow: rgba(217, 119, 6, 0.3);
+      --filter-bg: rgba(217, 119, 6, 0.12);
+      --filter-color: #d97706;
+    }
+
+    :global(html[data-theme="light"]) .game-filter--riftbound {
+      --filter-border: rgba(234, 88, 12, 0.55);
+      --filter-glow: rgba(234, 88, 12, 0.3);
+      --filter-bg: rgba(234, 88, 12, 0.12);
+      --filter-color: #ea580c;
+    }
+  </style>
 
   <script>
     const gameButtons = document.querySelectorAll<HTMLButtonElement>("[data-game-filter]");
