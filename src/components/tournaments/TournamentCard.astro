@@ -9,7 +9,7 @@ const { event } = Astro.props;
 const spotsLeft = event.spotsTotal - event.spotsTaken;
 const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
 const actionHref = event.registrationUrl || `/turnaje/${event.slug}`;
-const actionLabel = event.type === "tournament" && event.registrationUrl ? "Otevřít PlayHub" : event.registrationUrl ? "Registrovat se" : spotsLeft > 0 ? "Rezervovat místo" : "Obsazeno – náhradník";
+const actionLabel = event.registrationUrl ? "Otevřít PlayHub" : spotsLeft > 0 ? "Rezervovat místo" : "Obsazeno – náhradník";
 ---
 
 <article

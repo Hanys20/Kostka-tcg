@@ -12,9 +12,11 @@ if (!result) {
 }
 
 const { event, isPast } = result;
-const showExternalRegistration = !isPast && event.type === "tournament" && Boolean(event.registrationUrl);
-const spotsLeft = event.spotsTotal - event.spotsTaken;
-const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
+const showExternalRegistration = !isPast && "registrationUrl" in event && Boolean(event.registrationUrl);
+const spotsTaken = "spotsTaken" in event ? event.spotsTaken : 0;
+const spotsTotal = "spotsTotal" in event ? event.spotsTotal : 0;
+const spotsLeft = spotsTotal - spotsTaken;
+const percentFull = spotsTotal ? Math.round((spotsTaken / spotsTotal) * 100) : 0;
 ---
 
 <Layout title={event.title}>
@@ -53,59 +55,28 @@ const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
       </div>
 
       {
-        !isPast && (
+        !isPast && showExternalRegistration && (
           <aside class="h-fit rounded-2xl border border-white/10 bg-kostka-surface p-6">
-            {showExternalRegistration ? (
-              <>
-                <h2 class="font-bold text-white">Přihlášení přes PlayHub</h2>
-                <p class="mt-1 text-sm text-white/50">
-                  Registrace na tento turnaj probíhá externě. Naše stránka pouze zobrazuje aktuální obsazenost a odkaz na event.
-                </p>
-                <div class="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
-                  <div class="flex items-center justify-between text-sm text-white/60">
-                    <span>Obsazenost</span>
-                    <span>{event.spotsTaken}/{event.spotsTotal}</span>
-                  </div>
-                  <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
-                    <div class="h-full rounded-full bg-kostka-purple" style={`width: ${percentFull}%`} />
-                  </div>
-                  <p class="mt-3 text-sm text-white/70">Volných míst: {Math.max(spotsLeft, 0)}</p>
-                </div>
-                {event.price && (
-                  <p class="mt-3 text-sm font-semibold text-kostka-purple">Vstupné: {event.price} Kč</p>
-                )}
-                <a href={event.registrationUrl} target="_blank" rel="noreferrer" class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-kostka-purple px-4 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
-                  Otevřít PlayHub
-                </a>
-              </>
-            ) : (
-              <>
-                <h2 class="font-bold text-white">Rezervace místa</h2>
-                <form class="mt-4 space-y-3">
-                  <input
-                    type="text"
-                    placeholder="Jméno a příjmení"
-                    class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple"
-                  />
-                  <input
-                    type="text"
-                    placeholder="Přezdívka"
-                    class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple"
-                  />
-                  <input
-                    type="email"
-                    placeholder="E-mail"
-                    class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple"
-                  />
-                  <button
-                    type="submit"
-                    class="w-full rounded-full bg-kostka-purple px-4 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90"
-                  >
-                    Rezervovat místo
-                  </button>
-                </form>
-              </>
+            <h2 class="font-bold text-white">Přihlášení přes PlayHub</h2>
+            <p class="mt-1 text-sm text-white/50">
+              Registrace na tento termín probíhá externě. Naše stránka pouze zobrazuje aktuální obsazenost a odkaz na event.
+            </p>
+            <div class="mt-4 rounded-xl border border-white/10 bg-white/5 p-4">
+              <div class="flex items-center justify-between text-sm text-white/60">
+                <span>Obsazenost</span>
+                <span>{spotsTaken}/{spotsTotal}</span>
+              </div>
+              <div class="mt-2 h-2 overflow-hidden rounded-full bg-white/10">
+                <div class="h-full rounded-full bg-kostka-purple" style={`width: ${percentFull}%`} />
+              </div>
+              <p class="mt-3 text-sm text-white/70">Volných míst: {Math.max(spotsLeft, 0)}</p>
+            </div>
+            {"price" in event && event.price && (
+              <p class="mt-3 text-sm font-semibold text-kostka-purple">Vstupné: {event.price} Kč</p>
             )}
+            <a href={"registrationUrl" in event ? event.registrationUrl : "#"} target="_blank" rel="noreferrer" class="mt-5 inline-flex w-full items-center justify-center rounded-full bg-kostka-purple px-4 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+              Otevřít PlayHub
+            </a>
           </aside>
         )
       }

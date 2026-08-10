@@ -72,9 +72,9 @@ const normalizeEventRow = (row: any): TournamentEntry => {
     day,
     spotsTaken: row.type === "tournament" ? Number(row.spots_taken ?? 0) : 0,
     spotsTotal: capacity,
-    // Liga si drží vlastní registraci na naší stránce – externí odkaz na PlayHub
-    // dává smysl jen u turnajů/prerelease, kde se hráč registruje tam.
-    registrationUrl: row.type === "tournament" ? row.registration_url || gameRegistrationUrls[row.game] : undefined,
+    // Liga i turnaj se přihlašují přes externí PlayHub odkaz (vyplněný v adminu,
+    // s fallbackem na obecnou registrační stránku dané hry).
+    registrationUrl: row.registration_url || gameRegistrationUrls[row.game],
     description: row.description,
     startsAt: row.starts_at,
     price: row.type === "tournament" ? row.price || undefined : undefined,
