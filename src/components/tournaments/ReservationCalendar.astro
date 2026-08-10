@@ -1,37 +1,28 @@
 ---
 import { getUpcomingTournaments } from "../../data/tournaments";
 
-const MONTH_LABEL = "Srpen 2026";
-const DAYS_IN_MONTH = 31;
-const FIRST_WEEKDAY = 5;
-const TODAY = 4;
 const weekdayLabels = ["Po", "Út", "St", "Čt", "Pá", "So", "Ne"];
 
 const upcomingTournaments = await getUpcomingTournaments();
-const eventMap = new Map<number, (typeof upcomingTournaments)[number]>();
-for (const event of upcomingTournaments) {
-  eventMap.set(event.day, event);
-}
 
 const calendarPayload = JSON.stringify(
-  upcomingTournaments.map((event) => ({
-    day: event.day,
-    title: event.title,
-    slug: event.slug,
-    registrationUrl: event.registrationUrl || `/turnaje/${event.slug}`,
-  })),
+  upcomingTournaments
+    .filter((event) => event.startsAt)
+    .map((event) => ({
+      startsAt: event.startsAt,
+      title: event.title,
+      slug: event.slug,
+      registrationUrl: event.registrationUrl || `/turnaje/${event.slug}`,
+    })),
 );
-
-const leadingBlanks = Array.from({ length: FIRST_WEEKDAY });
-const days = Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1);
 ---
 
 <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6" data-calendar-root>
   <div class="flex items-center justify-between">
-    <p class="font-bold text-white">{MONTH_LABEL}</p>
-    <div class="flex gap-1 text-white/40">
-      <span class="grid h-7 w-7 place-items-center rounded-full border border-white/10">‹</span>
-      <span class="grid h-7 w-7 place-items-center rounded-full border border-white/10">›</span>
+    <p class="font-bold text-white" data-calendar-label>&nbsp;</p>
+    <div class="flex gap-1 text-white/70">
+      <button type="button" data-calendar-prev aria-label="Předchozí měsíc" class="grid h-7 w-7 place-items-center rounded-full border border-white/10 transition hover:border-kostka-cyan hover:text-kostka-cyan">‹</button>
+      <button type="button" data-calendar-next aria-label="Další měsíc" class="grid h-7 w-7 place-items-center rounded-full border border-white/10 transition hover:border-kostka-cyan hover:text-kostka-cyan">›</button>
     </div>
   </div>
 
@@ -39,36 +30,7 @@ const days = Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1);
     {weekdayLabels.map((d) => <span>{d}</span>)}
   </div>
 
-  <div class="mt-1 grid grid-cols-7 gap-1 text-center text-sm">
-    {leadingBlanks.map(() => <span></span>)}
-    {
-      days.map((day) => {
-        const event = eventMap.get(day);
-        const isToday = day === TODAY;
-        const textClasses = isToday ? "bg-kostka-cyan font-bold text-kostka-bg" : event ? "font-semibold text-kostka-cyan" : "text-white/70";
-
-        return event ? (
-          <a
-            href={event.registrationUrl || `/turnaje/${event.slug}`}
-            data-calendar-day={day}
-            class:list={["relative grid h-9 place-items-center rounded-full transition hover:text-kostka-cyan", textClasses]}
-            target={event.registrationUrl?.startsWith("http") ? "_blank" : undefined}
-            rel={event.registrationUrl?.startsWith("http") ? "noreferrer" : undefined}
-          >
-            {day}
-            <span class="absolute bottom-1 h-1 w-1 rounded-full bg-kostka-cyan" />
-          </a>
-        ) : (
-          <span
-            data-calendar-day={day}
-            class:list={["relative grid h-9 place-items-center rounded-full", textClasses]}
-          >
-            {day}
-          </span>
-        );
-      })
-    }
-  </div>
+  <div class="mt-1 grid grid-cols-7 gap-1 text-center text-sm" data-calendar-grid></div>
 
   <div class="mt-5 flex items-center gap-4 border-t border-white/10 pt-4 text-xs text-white/50">
     <span class="flex items-center gap-1"><span class="h-2 w-2 rounded-full bg-kostka-cyan"></span> Volný termín</span>
@@ -76,10 +38,119 @@ const days = Array.from({ length: DAYS_IN_MONTH }, (_, i) => i + 1);
   </div>
 </div>
 
-<script is:inline>
-  window.__KOSTKA_CALENDAR_EVENTS__ = window.__KOSTKA_CALENDAR_EVENTS__ || [];
-  window.__KOSTKA_CALENDAR_EVENTS__ = [
-    ...window.__KOSTKA_CALENDAR_EVENTS__,
-    ...JSON.parse(`$${calendarPayload}`),
+<script type="application/json" data-calendar-events set:html={calendarPayload} />
+
+<script>
+  const MONTH_LABELS = [
+    "Leden", "Únor", "Březen", "Duben", "Květen", "Červen",
+    "Červenec", "Srpen", "Září", "Říjen", "Listopad", "Prosinec",
   ];
+
+  function initCalendar(root: HTMLElement) {
+    const dataEl = root.parentElement?.querySelector("script[data-calendar-events]");
+    const raw = dataEl?.textContent ? JSON.parse(dataEl.textContent) : [];
+
+    const events: Array<{ startsAt: string; title: string; slug: string; registrationUrl: string; date: Date }> = raw
+      .map((e: any) => ({ ...e, date: new Date(e.startsAt) }))
+      .filter((e: any) => !Number.isNaN(e.date.getTime()));
+
+    const label = root.querySelector("[data-calendar-label]") as HTMLElement;
+    const grid = root.querySelector("[data-calendar-grid]") as HTMLElement;
+    const prevBtn = root.querySelector("[data-calendar-prev]") as HTMLButtonElement;
+    const nextBtn = root.querySelector("[data-calendar-next]") as HTMLButtonElement;
+
+    const today = new Date();
+    let viewYear = today.getFullYear();
+    let viewMonth = today.getMonth();
+
+    const key = (y: number, m: number, d: number) => `${y}-${m}-${d}`;
+
+    function eventsByDay(year: number, month: number) {
+      const map = new Map<string, typeof events>();
+      for (const event of events) {
+        if (event.date.getFullYear() === year && event.date.getMonth() === month) {
+          const k = key(year, month, event.date.getDate());
+          const existing = map.get(k);
+          if (existing) existing.push(event);
+          else map.set(k, [event]);
+        }
+      }
+      return map;
+    }
+
+    function render() {
+      label.textContent = `${MONTH_LABELS[viewMonth]} ${viewYear}`;
+
+      const dayMap = eventsByDay(viewYear, viewMonth);
+      const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+      const firstWeekday = (new Date(viewYear, viewMonth, 1).getDay() + 6) % 7;
+
+      grid.innerHTML = "";
+
+      for (let i = 0; i < firstWeekday; i++) {
+        grid.appendChild(document.createElement("span"));
+      }
+
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isToday =
+          viewYear === today.getFullYear() && viewMonth === today.getMonth() && day === today.getDate();
+        const dayEvents = dayMap.get(key(viewYear, viewMonth, day));
+
+        let el: HTMLElement;
+        if (dayEvents?.length) {
+          const primary = dayEvents[0];
+          const a = document.createElement("a");
+          a.href = primary.registrationUrl;
+          if (primary.registrationUrl.startsWith("http")) {
+            a.target = "_blank";
+            a.rel = "noreferrer";
+          }
+          a.title = dayEvents.map((e) => e.title).join(", ");
+          el = a;
+        } else {
+          el = document.createElement("span");
+        }
+
+        el.className = [
+          "relative grid h-9 place-items-center rounded-full transition",
+          isToday
+            ? "bg-kostka-cyan font-bold text-kostka-bg"
+            : dayEvents?.length
+              ? "font-semibold text-kostka-cyan hover:text-kostka-cyan/80"
+              : "text-white/70",
+        ].join(" ");
+        el.textContent = String(day);
+
+        if (dayEvents?.length) {
+          const dot = document.createElement("span");
+          dot.className = "absolute bottom-1 h-1 w-1 rounded-full bg-kostka-cyan";
+          el.appendChild(dot);
+        }
+
+        grid.appendChild(el);
+      }
+    }
+
+    prevBtn.addEventListener("click", () => {
+      viewMonth -= 1;
+      if (viewMonth < 0) {
+        viewMonth = 11;
+        viewYear -= 1;
+      }
+      render();
+    });
+
+    nextBtn.addEventListener("click", () => {
+      viewMonth += 1;
+      if (viewMonth > 11) {
+        viewMonth = 0;
+        viewYear += 1;
+      }
+      render();
+    });
+
+    render();
+  }
+
+  document.querySelectorAll<HTMLElement>("[data-calendar-root]").forEach(initCalendar);
 </script>
