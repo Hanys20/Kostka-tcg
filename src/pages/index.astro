@@ -16,8 +16,8 @@ import teamSofa from "../assets/gallery/team-sofa.jpg";
 
 const games = [
   { id: "lorcana", name: "Lorcana", logo: "/images/games/lorcana.png", href: "/lorcana" },
-  { id: "pokemon", name: "Pokémon TCG", logo: "/images/games/pokemon-tcg.webp", href: "/pokemon-tcg" },
-  { id: "riftbound", name: "Riftbound", logo: "/images/games/riftbound.png", href: "/riftbound" },
+  { id: "pokemon", name: "Pokémon TCG", logo: "/images/games/pokemon-tcg.webp", href: "/pokemon-tcg", comingSoon: true },
+  { id: "riftbound", name: "Riftbound", logo: "/images/games/riftbound.png", href: "/riftbound", comingSoon: true },
 ];
 
 const usps = [
@@ -108,10 +108,16 @@ const faqPreview = [
               >
                 <span class="game-card__glow pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-500 group-hover:opacity-100" />
 
+                {game.comingSoon && (
+                  <span class="absolute right-3 top-3 z-10 rounded-full border border-kostka-purple/40 bg-kostka-purple/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-kostka-purple">
+                    Připravujeme
+                  </span>
+                )}
+
                 <img
                   src={game.logo}
                   alt={game.name}
-                  class="game-card__logo relative z-10 max-h-20 w-auto object-contain sm:max-h-24"
+                  class={`game-card__logo relative z-10 max-h-20 w-auto object-contain sm:max-h-24 ${game.comingSoon ? "opacity-60" : ""}`}
                 />
               </a>
             ))
