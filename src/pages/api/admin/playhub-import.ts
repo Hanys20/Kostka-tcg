@@ -1,14 +1,38 @@
+import type { APIContext } from "astro";
 import { parsePlayHubEvent } from "../../../lib/playhub-import.js";
+import { requireAdmin } from "../../../lib/adminAuth";
 
 export const prerender = false;
 
-export async function POST({ request }: { request: Request }) {
+const ALLOWED_HOSTS = new Set(["ravensburgerplayhub.com", "www.ravensburgerplayhub.com", "tcg.ravensburgerplay.com"]);
+
+export async function POST({ request, cookies }: APIContext) {
+  const auth = await requireAdmin(cookies);
+  if (!auth.session) return auth.response;
+
   try {
     const body = await request.json();
     const targetUrl = body?.url?.trim();
 
     if (!targetUrl) {
       return new Response(JSON.stringify({ ok: false, message: "Chybí URL události." }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    let parsedUrl: URL;
+    try {
+      parsedUrl = new URL(targetUrl);
+    } catch {
+      return new Response(JSON.stringify({ ok: false, message: "Neplatná URL." }), {
+        status: 400,
+        headers: { "content-type": "application/json" },
+      });
+    }
+
+    if (!ALLOWED_HOSTS.has(parsedUrl.hostname)) {
+      return new Response(JSON.stringify({ ok: false, message: "Povolené jsou jen odkazy na PlayHub." }), {
         status: 400,
         headers: { "content-type": "application/json" },
       });

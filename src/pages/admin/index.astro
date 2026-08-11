@@ -1,39 +1,49 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import { gameRegistrationUrls } from "../../data/tournaments";
+import { getAdminSession } from "../../lib/adminAuth";
+
+export const prerender = false;
+
+const session = await getAdminSession(Astro.cookies);
+const isLoggedIn = !!session;
+const isPrimary = session?.isPrimary ?? false;
+const nickname = session?.nickname ?? "";
 
 const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
 ---
 
 <Layout title="Administrace">
-  <section class="mx-auto max-w-6xl px-4 py-16">
+  <section class="mx-auto max-w-6xl px-4 py-10 sm:py-16">
     <div class="flex flex-wrap items-center justify-between gap-4">
       <div>
-        <h1 class="text-3xl font-black text-white md:text-4xl">Administrace turnajů</h1>
-        <p class="mt-2 text-white/60">
+        <h1 class="text-2xl font-black text-white sm:text-3xl md:text-4xl">Administrace turnajů</h1>
+        <p class="mt-2 text-sm text-white/60 sm:text-base">
           Správa termínů turnajů a lig – napojeno na Supabase.
         </p>
       </div>
-      <button id="logout-button" type="button" class="hidden rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:border-kostka-purple hover:text-kostka-purple">
-        Odhlásit se
-      </button>
+      <div class:list={["flex items-center gap-3", { hidden: !isLoggedIn }]} id="logged-in-bar">
+        <span class="text-sm text-white/60">Přihlášen jako <strong class="text-white">{nickname}</strong></span>
+        <button id="logout-button" type="button" class="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:border-kostka-purple hover:text-kostka-purple">
+          Odhlásit se
+        </button>
+      </div>
     </div>
 
-    <div id="auth-card" class="mx-auto mt-8 max-w-md rounded-2xl border border-white/10 bg-kostka-surface p-6">
+    <div id="auth-card" class:list={["mx-auto mt-8 max-w-md rounded-2xl border border-white/10 bg-kostka-surface p-6", { hidden: isLoggedIn }]}>
       <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Přihlášení</p>
       <h2 class="mt-2 text-2xl font-bold text-white">Admin login</h2>
-      <p class="mt-2 text-sm text-white/50">Přezdívka: <strong>admin</strong> · Heslo: <strong>admin123</strong></p>
       <form id="login-form" class="mt-6 space-y-3">
-        <input id="admin-nick" type="text" placeholder="Přezdívka" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" required />
-        <input id="admin-password" type="password" placeholder="Heslo" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" required />
-        <button type="submit" class="w-full rounded-full bg-kostka-purple px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+        <input id="admin-nick" type="text" autocomplete="username" placeholder="Přezdívka" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" required />
+        <input id="admin-password" type="password" autocomplete="current-password" placeholder="Heslo" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" required />
+        <button id="login-submit-button" type="submit" class="w-full rounded-full bg-kostka-purple px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
           Přihlásit se
         </button>
       </form>
       <p id="login-message" class="mt-3 text-sm text-red-300"></p>
     </div>
 
-    <div id="admin-panel" class="hidden">
+    <div id="admin-panel" class:list={["", { hidden: !isLoggedIn }]}>
       <div class="mt-8 grid gap-8 lg:grid-cols-[420px_1fr]">
         <div class="rounded-2xl border border-white/10 bg-kostka-surface p-5">
           <div class="flex items-center justify-between gap-3">
@@ -48,9 +58,9 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
           <form id="event-form" class="mt-4 space-y-3">
             <div class="rounded-xl border border-kostka-purple/20 bg-kostka-purple/10 p-3">
               <label for="playhub-url" class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Import z PlayHubu</label>
-              <div class="mt-2 flex gap-2">
+              <div class="mt-2 flex flex-col gap-2 sm:flex-row">
                 <input id="playhub-url" type="url" placeholder="https://tcg.ravensburgerplay.com/events/638126" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" />
-                <button id="import-playhub-button" type="button" class="rounded-full border border-kostka-purple/40 px-3 py-2 text-sm font-semibold text-kostka-purple hover:bg-kostka-purple/10">Načíst</button>
+                <button id="import-playhub-button" type="button" class="w-full rounded-full border border-kostka-purple/40 px-3 py-2 text-sm font-semibold text-kostka-purple hover:bg-kostka-purple/10 sm:w-auto">Načíst</button>
               </div>
               <p id="playhub-message" class="mt-2 text-xs text-white/50">Vložte odkaz na event a předvyplníme datum, čas, obsazenost a cenu.</p>
             </div>
@@ -88,42 +98,46 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
             </div>
           </div>
 
-          <div class="mt-4 overflow-x-auto rounded-2xl border border-white/10">
-            <table class="w-full text-left text-sm">
-              <thead class="bg-white/[0.03] text-white/50">
-                <tr>
-                  <th class="px-4 py-3 font-semibold">Název</th>
-                  <th class="px-4 py-3 font-semibold">Typ</th>
-                  <th class="px-4 py-3 font-semibold">Hra</th>
-                  <th class="px-4 py-3 font-semibold">Datum</th>
-                  <th class="px-4 py-3 font-semibold">Obsazenost</th>
-                  <th class="px-4 py-3"></th>
-                </tr>
-              </thead>
-              <tbody id="event-list" class="divide-y divide-white/10">
-                <tr id="event-list-empty">
-                  <td class="px-4 py-6 text-white/50" colspan="6">Načítám události…</td>
-                </tr>
-              </tbody>
-            </table>
+          <div id="event-list" class="mt-4 grid gap-3 sm:grid-cols-2">
+            <p id="event-list-empty" class="text-sm text-white/50">Načítám události…</p>
           </div>
         </div>
       </div>
+
+      {isPrimary && (
+        <div class="mt-10 rounded-2xl border border-white/10 bg-kostka-surface p-5">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Primární admin</p>
+          <h2 class="mt-2 text-xl font-bold text-white">Správa administrátorů</h2>
+          <p class="mt-2 text-sm text-white/50">
+            Tuhle sekci vidí jen primární admin. Přidávejte a spravujte účty dalších adminů.
+          </p>
+
+          <form id="admin-account-form" class="mt-4 grid gap-3 sm:grid-cols-2">
+            <input id="admin-account-nickname" type="text" placeholder="Přezdívka" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" required />
+            <input id="admin-account-email" type="email" placeholder="E-mail" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" required />
+            <input id="admin-account-password" type="password" autocomplete="new-password" placeholder="Heslo (min. 8 znaků)" minlength="8" class="w-full rounded-xl border border-white/15 bg-white/5 px-4 py-2.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple sm:col-span-2" required />
+            <button id="admin-account-submit" type="submit" class="w-full rounded-full bg-kostka-purple px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90 sm:col-span-2">
+              Přidat admina
+            </button>
+          </form>
+          <p id="admin-account-message" class="mt-3 text-sm text-kostka-purple"></p>
+
+          <div id="admin-account-list" class="mt-6 grid gap-3 sm:grid-cols-2">
+            <p class="text-sm text-white/50">Načítám adminy…</p>
+          </div>
+        </div>
+      )}
     </div>
   </section>
 
-  <script is:inline define:vars={{ gameRegistrationUrlsJson }}>
-    const ADMIN_NICK = "admin";
-    const ADMIN_PASSWORD = "admin123";
-    const SESSION_KEY = "kostka-admin-session";
+  <script is:inline define:vars={{ gameRegistrationUrlsJson, isLoggedIn, isPrimary }}>
     const GAME_REGISTRATION_URLS = JSON.parse(gameRegistrationUrlsJson);
 
-    const loginCard = document.getElementById("auth-card");
-    const adminPanel = document.getElementById("admin-panel");
-    const logoutButton = document.getElementById("logout-button");
     const loginForm = document.getElementById("login-form");
-    const eventForm = document.getElementById("event-form");
+    const loginSubmitButton = document.getElementById("login-submit-button");
     const loginMessage = document.getElementById("login-message");
+    const logoutButton = document.getElementById("logout-button");
+    const eventForm = document.getElementById("event-form");
     const adminMessage = document.getElementById("admin-message");
     const eventList = document.getElementById("event-list");
     const playhubUrlInput = document.getElementById("playhub-url");
@@ -150,44 +164,58 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
       return "Nadcházející";
     }
 
+    function reloadOnAuthError(response) {
+      if (response.status === 401) {
+        window.location.reload();
+        return true;
+      }
+      return false;
+    }
+
     async function loadEvents() {
-      eventList.innerHTML = `<tr><td class="px-4 py-6 text-white/50" colspan="6">Načítám události…</td></tr>`;
+      eventList.innerHTML = `<p class="text-sm text-white/50">Načítám události…</p>`;
       try {
         const response = await fetch("/api/admin/events");
+        if (reloadOnAuthError(response)) return;
         const result = await response.json();
         if (response.ok && result.ok) {
           currentEvents = result.events || [];
           renderEvents();
         } else {
-          eventList.innerHTML = `<tr><td class="px-4 py-6 text-red-300" colspan="6">${result.message || "Nepodařilo se načíst události."}</td></tr>`;
+          eventList.innerHTML = `<p class="text-sm text-red-300">${result.message || "Nepodařilo se načíst události."}</p>`;
         }
       } catch {
-        eventList.innerHTML = `<tr><td class="px-4 py-6 text-red-300" colspan="6">Nepodařilo se načíst události ze Supabase.</td></tr>`;
+        eventList.innerHTML = `<p class="text-sm text-red-300">Nepodařilo se načíst události ze Supabase.</p>`;
       }
     }
 
     function renderEvents() {
       if (!currentEvents.length) {
-        eventList.innerHTML = `<tr><td class="px-4 py-6 text-white/50" colspan="6">Zatím žádné události. Přidej první vlevo.</td></tr>`;
+        eventList.innerHTML = `<p class="text-sm text-white/50">Zatím žádné události. Přidej první vlevo.</p>`;
         return;
       }
 
-      eventList.innerHTML = currentEvents.map((event) => `
-        <tr>
-          <td class="px-4 py-3 font-medium text-white">${event.title}</td>
-          <td class="px-4 py-3 text-white/60">${event.type === "league" ? "Liga" : "Turnaj"}</td>
-          <td class="px-4 py-3 text-white/60">${event.game}</td>
-          <td class="px-4 py-3 text-white/60">${formatDate(event.starts_at)}</td>
-          <td class="px-4 py-3 text-white/60">${event.spots_taken ?? 0}/${event.capacity ?? "?"} · ${statusLabel(event.status)}</td>
-          <td class="px-4 py-3">
-            <div class="flex items-center justify-end gap-3">
-              ${event.registration_url ? `<a href="${event.registration_url}" class="font-semibold text-kostka-purple hover:underline" target="_blank" rel="noreferrer">Odkaz</a>` : ""}
-              <button type="button" data-edit-id="${event.id}" class="font-semibold text-white/70 hover:text-kostka-purple">Upravit</button>
-              <button type="button" data-delete-id="${event.id}" class="font-semibold text-red-300 hover:text-red-200">Smazat</button>
+      eventList.innerHTML = currentEvents
+        .map(
+          (event) => `
+        <div class="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="font-semibold text-white">${event.title}</p>
+              <p class="mt-1 text-xs text-white/50">${event.type === "league" ? "Liga" : "Turnaj"} · ${event.game}</p>
             </div>
-          </td>
-        </tr>
-      `).join("");
+            ${event.registration_url ? `<a href="${event.registration_url}" class="shrink-0 text-xs font-semibold text-kostka-purple hover:underline" target="_blank" rel="noreferrer">Odkaz</a>` : ""}
+          </div>
+          <p class="mt-3 text-sm text-white/70">${formatDate(event.starts_at)}</p>
+          <p class="mt-1 text-sm text-white/70">${event.spots_taken ?? 0}/${event.capacity ?? "?"} míst · ${statusLabel(event.status)}</p>
+          <div class="mt-3 flex items-center gap-4 border-t border-white/10 pt-3">
+            <button type="button" data-edit-id="${event.id}" class="text-sm font-semibold text-white/70 hover:text-kostka-purple">Upravit</button>
+            <button type="button" data-delete-id="${event.id}" class="text-sm font-semibold text-red-300 hover:text-red-200">Smazat</button>
+          </div>
+        </div>
+      `
+        )
+        .join("");
     }
 
     eventList.addEventListener("click", async (event) => {
@@ -210,6 +238,7 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ id }),
           });
+          if (reloadOnAuthError(response)) return;
           const result = await response.json();
           if (response.ok && result.ok) {
             if (editingId === id) resetForm();
@@ -227,15 +256,9 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
     function startEdit(item) {
       editingId = item.id;
       const startsAt = new Date(item.starts_at);
-      // starts_at je uložené jako UTC instant, ale vzniklo tak, že server vzal
-      // datum/čas z formuláře jako doslovné UTC hodnoty (bez konverze) – proto
-      // je pro bezezbytkové kolo-tam-a-zpět čteme zpátky přes UTC gettery,
-      // ne lokální čas prohlížeče.
       const pad = (n) => String(n).padStart(2, "0");
       document.getElementById("event-date").value = `${startsAt.getUTCFullYear()}-${pad(startsAt.getUTCMonth() + 1)}-${pad(startsAt.getUTCDate())}`;
       document.getElementById("event-start").value = `${pad(startsAt.getUTCHours())}:${pad(startsAt.getUTCMinutes())}`;
-      // Koncový čas se strukturovaně neukládá, jen v popisu ("Začátek HH:MM–HH:MM"
-      // z POST/PATCH výše) – při úpravě ho z něj zpátky vytáhneme.
       const endMatch = (item.description || "").match(/(\d{1,2}:\d{2})\s*[–-]\s*(\d{1,2}:\d{2})/);
       document.getElementById("event-end").value = endMatch ? endMatch[2] : document.getElementById("event-start").value;
       document.getElementById("event-title").value = item.title || "";
@@ -266,20 +289,6 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
 
     cancelEditButton.addEventListener("click", () => resetForm());
 
-    function showAdmin() {
-      loginCard.classList.add("hidden");
-      adminPanel.classList.remove("hidden");
-      logoutButton.classList.remove("hidden");
-      loadEvents();
-    }
-
-    function hideAdmin() {
-      loginCard.classList.remove("hidden");
-      adminPanel.classList.add("hidden");
-      logoutButton.classList.add("hidden");
-      localStorage.removeItem(SESSION_KEY);
-    }
-
     function inferGameFromTitle(title) {
       if (!title) return "Lorcana";
       const normalized = title.toLowerCase();
@@ -304,6 +313,7 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ url }),
         });
+        if (reloadOnAuthError(response)) return;
         const result = await response.json();
 
         if (response.ok && result.ok) {
@@ -329,27 +339,39 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
       }
     });
 
-    if (localStorage.getItem(SESSION_KEY) === "active") {
-      showAdmin();
-    }
-
-    loginForm.addEventListener("submit", (event) => {
+    loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       const nick = document.getElementById("admin-nick").value.trim();
-      const password = document.getElementById("admin-password").value.trim();
+      const password = document.getElementById("admin-password").value;
 
-      if (nick === ADMIN_NICK && password === ADMIN_PASSWORD) {
-        localStorage.setItem(SESSION_KEY, "active");
-        showAdmin();
-        loginMessage.textContent = "";
-      } else {
-        loginMessage.textContent = "Špatný nick nebo heslo.";
+      loginMessage.textContent = "";
+      loginSubmitButton.disabled = true;
+      try {
+        const response = await fetch("/api/admin/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ nick, password }),
+        });
+        const result = await response.json();
+        if (response.ok && result.ok) {
+          window.location.reload();
+        } else {
+          loginMessage.textContent = result.message || "Špatná přezdívka nebo heslo.";
+        }
+      } catch {
+        loginMessage.textContent = "Přihlášení se nepodařilo – zkontroluj připojení.";
+      } finally {
+        loginSubmitButton.disabled = false;
       }
     });
 
-    logoutButton.addEventListener("click", () => {
-      hideAdmin();
-    });
+    if (logoutButton) {
+      logoutButton.addEventListener("click", async () => {
+        logoutButton.disabled = true;
+        await fetch("/api/admin/logout", { method: "POST" }).catch(() => {});
+        window.location.reload();
+      });
+    }
 
     eventForm.addEventListener("submit", async (event) => {
       event.preventDefault();
@@ -386,6 +408,7 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(editingId ? { ...payload, id: editingId } : payload),
         });
+        if (reloadOnAuthError(response)) return;
 
         const result = await response.json();
 
@@ -402,5 +425,152 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
         submitEventButton.disabled = false;
       }
     });
+
+    // --- Správa adminů (jen primární admin) ---
+    const adminAccountForm = document.getElementById("admin-account-form");
+    const adminAccountList = document.getElementById("admin-account-list");
+    const adminAccountMessage = document.getElementById("admin-account-message");
+    const adminAccountSubmit = document.getElementById("admin-account-submit");
+
+    async function loadAdminAccounts() {
+      if (!adminAccountList) return;
+      adminAccountList.innerHTML = `<p class="text-sm text-white/50">Načítám adminy…</p>`;
+      try {
+        const response = await fetch("/api/admin/admins");
+        if (reloadOnAuthError(response)) return;
+        const result = await response.json();
+        if (response.ok && result.ok) {
+          renderAdminAccounts(result.admins || []);
+        } else {
+          adminAccountList.innerHTML = `<p class="text-sm text-red-300">${result.message || "Nepodařilo se načíst adminy."}</p>`;
+        }
+      } catch {
+        adminAccountList.innerHTML = `<p class="text-sm text-red-300">Nepodařilo se načíst adminy.</p>`;
+      }
+    }
+
+    function renderAdminAccounts(admins) {
+      if (!admins.length) {
+        adminAccountList.innerHTML = `<p class="text-sm text-white/50">Zatím žádní další admini.</p>`;
+        return;
+      }
+
+      adminAccountList.innerHTML = admins
+        .map(
+          (admin) => `
+        <div class="rounded-xl border border-white/10 bg-white/[0.03] p-4">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="font-semibold text-white">${admin.nickname}${admin.isPrimary ? ' <span class="ml-1 rounded-full bg-kostka-purple/20 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-kostka-purple">Primární</span>' : ""}</p>
+              <p class="mt-1 text-xs text-white/50">${admin.email}</p>
+            </div>
+          </div>
+          <div class="mt-3 flex items-center gap-4 border-t border-white/10 pt-3">
+            <button type="button" data-admin-edit="${admin.id}" class="text-sm font-semibold text-white/70 hover:text-kostka-purple">Upravit</button>
+            ${admin.isPrimary ? "" : `<button type="button" data-admin-delete="${admin.id}" class="text-sm font-semibold text-red-300 hover:text-red-200">Smazat</button>`}
+          </div>
+        </div>
+      `
+        )
+        .join("");
+    }
+
+    if (adminAccountList) {
+      adminAccountList.addEventListener("click", async (event) => {
+        const editButton = event.target.closest("[data-admin-edit]");
+        if (editButton) {
+          const id = editButton.dataset.adminEdit;
+          const newNickname = prompt("Nová přezdívka (nech prázdné pro beze změny):");
+          const newEmail = prompt("Nový e-mail (nech prázdné pro beze změny):");
+          const newPassword = prompt("Nové heslo, min. 8 znaků (nech prázdné pro beze změny):");
+
+          const payload = { id };
+          if (newNickname) payload.nickname = newNickname.trim();
+          if (newEmail) payload.email = newEmail.trim();
+          if (newPassword) payload.password = newPassword;
+
+          if (!payload.nickname && !payload.email && !payload.password) return;
+
+          try {
+            const response = await fetch("/api/admin/admins", {
+              method: "PATCH",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            });
+            if (reloadOnAuthError(response)) return;
+            const result = await response.json();
+            if (response.ok && result.ok) {
+              adminAccountMessage.textContent = "Účet byl upraven.";
+              await loadAdminAccounts();
+            } else {
+              adminAccountMessage.textContent = result.message || "Úprava se nepodařila.";
+            }
+          } catch {
+            adminAccountMessage.textContent = "Úprava se nepodařila – zkontroluj připojení.";
+          }
+          return;
+        }
+
+        const deleteButton = event.target.closest("[data-admin-delete]");
+        if (deleteButton) {
+          const id = deleteButton.dataset.adminDelete;
+          if (!confirm("Opravdu smazat tento admin účet? Tuto akci nelze vrátit zpět.")) return;
+
+          try {
+            const response = await fetch("/api/admin/admins", {
+              method: "DELETE",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ id }),
+            });
+            if (reloadOnAuthError(response)) return;
+            const result = await response.json();
+            if (response.ok && result.ok) {
+              adminAccountMessage.textContent = "Admin byl smazán.";
+              await loadAdminAccounts();
+            } else {
+              adminAccountMessage.textContent = result.message || "Smazání se nepodařilo.";
+            }
+          } catch {
+            adminAccountMessage.textContent = "Smazání se nepodařilo – zkontroluj připojení.";
+          }
+        }
+      });
+    }
+
+    if (adminAccountForm) {
+      adminAccountForm.addEventListener("submit", async (event) => {
+        event.preventDefault();
+        const nickname = document.getElementById("admin-account-nickname").value.trim();
+        const email = document.getElementById("admin-account-email").value.trim();
+        const password = document.getElementById("admin-account-password").value;
+
+        adminAccountSubmit.disabled = true;
+        try {
+          const response = await fetch("/api/admin/admins", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ nickname, email, password }),
+          });
+          if (reloadOnAuthError(response)) return;
+          const result = await response.json();
+          if (response.ok && result.ok) {
+            adminAccountMessage.textContent = "Nový admin byl vytvořen.";
+            adminAccountForm.reset();
+            await loadAdminAccounts();
+          } else {
+            adminAccountMessage.textContent = result.message || "Vytvoření se nepodařilo.";
+          }
+        } catch {
+          adminAccountMessage.textContent = "Vytvoření se nepodařilo – zkontroluj připojení.";
+        } finally {
+          adminAccountSubmit.disabled = false;
+        }
+      });
+    }
+
+    if (isLoggedIn) {
+      loadEvents();
+      if (isPrimary) loadAdminAccounts();
+    }
   </script>
 </Layout>
