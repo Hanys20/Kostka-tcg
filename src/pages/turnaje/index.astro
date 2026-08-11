@@ -1,14 +1,12 @@
 ---
 import Layout from "../../layouts/Layout.astro";
 import TournamentCard from "../../components/tournaments/TournamentCard.astro";
-import PastTournamentCard from "../../components/tournaments/PastTournamentCard.astro";
 import ReservationCalendar from "../../components/tournaments/ReservationCalendar.astro";
-import { getUpcomingTournaments, getPastTournaments } from "../../data/tournaments";
+import { getUpcomingTournaments } from "../../data/tournaments";
 
 export const prerender = false;
 
 const upcomingTournaments = await getUpcomingTournaments();
-const pastTournaments = await getPastTournaments();
 const upcomingLeague = upcomingTournaments.filter((e) => e.type === "league");
 const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tournament");
 const activeTab = Astro.url.searchParams.get("tab") ?? "nadchazejici";
@@ -16,7 +14,6 @@ const tabHref = {
   nadchazejici: "/turnaje#nadchazejici",
   liga: "/turnaje#liga",
   turnaje: "/turnaje#turnaje",
-  probihle: "/turnaje#probihle",
 };
 
 const gameFilters = [
@@ -32,7 +29,6 @@ const gameFilters = [
 
     <div class="mt-8 flex flex-wrap gap-2 border-b border-white/10 text-sm font-semibold">
       <a href={tabHref.nadchazejici} class:list={["px-1 pb-3", activeTab === "nadchazejici" ? "border-b-2 border-kostka-purple text-kostka-purple" : "text-white/50"]}>Nadcházející</a>
-      <a href={tabHref.probihle} class:list={["px-1 pb-3", activeTab === "probihle" ? "border-b-2 border-kostka-purple text-kostka-purple" : "text-white/50"]}>Proběhlé</a>
       <a href={tabHref.liga} class:list={["px-1 pb-3", activeTab === "liga" ? "border-b-2 border-kostka-purple text-kostka-purple" : "text-white/50"]}>Liga</a>
       <a href={tabHref.turnaje} class:list={["px-1 pb-3", activeTab === "turnaje" ? "border-b-2 border-kostka-purple text-kostka-purple" : "text-white/50"]}>Turnaje</a>
     </div>
@@ -178,13 +174,4 @@ const gameFilters = [
 
     applyFilters();
   </script>
-
-  <section id="probihle" class="bg-kostka-surface/40 py-16">
-    <div class="mx-auto max-w-6xl px-4">
-      <h2 class="text-2xl font-bold text-white md:text-3xl">Proběhlé turnaje</h2>
-      <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-        {pastTournaments.length ? pastTournaments.map((event) => <PastTournamentCard event={event} />) : <p class="text-sm text-white/50">Zatím tu nejsou žádné proběhlé turnaje.</p>}
-      </div>
-    </div>
-  </section>
 </Layout>

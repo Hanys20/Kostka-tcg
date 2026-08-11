@@ -118,31 +118,6 @@ export async function getUpcomingTournaments(): Promise<TournamentEntry[]> {
   return data.map(normalizeEventRow);
 }
 
-export async function getPastTournaments(): Promise<PastTournamentEntry[]> {
-  if (!isSupabaseReady()) {
-    return [];
-  }
-
-  const now = new Date().toISOString();
-  const { data, error } = await supabase
-    .from("events")
-    .select(EVENT_COLUMNS)
-    .or(`status.eq.past,status.eq.cancelled`)
-    .lt("starts_at", now)
-    .order("starts_at", { ascending: false });
-
-  if (error || !data) {
-    return [];
-  }
-
-  return data.map(normalizePastEventRow);
-}
-
-export async function getAllEventData() {
-  const [upcoming, past] = await Promise.all([getUpcomingTournaments(), getPastTournaments()]);
-  return { upcoming, past };
-}
-
 export async function getEventBySlug(
   slug: string,
 ): Promise<{ event: TournamentEntry | PastTournamentEntry; isPast: boolean } | null> {

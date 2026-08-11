@@ -2,22 +2,17 @@
 import { Image } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
 import TournamentCard from "../components/tournaments/TournamentCard.astro";
-import PastTournamentCard from "../components/tournaments/PastTournamentCard.astro";
-import { getUpcomingTournaments, getPastTournaments } from "../data/tournaments";
+import { getUpcomingTournaments } from "../data/tournaments";
 
 export const prerender = false;
 
 const upcomingTournaments = await getUpcomingTournaments();
-const pastTournaments = await getPastTournaments();
 
-import teamProfile from "../assets/gallery/team-profile.jpg";
 import teamCouch from "../assets/gallery/team-couch.jpg";
 import teamTower from "../assets/gallery/team-tower.jpg";
 import gamesStack from "../assets/gallery/games-stack.jpg";
 import cardGame from "../assets/gallery/card-game.jpg";
 import teamSofa from "../assets/gallery/team-sofa.jpg";
-import heroBoard from "../assets/gallery/hero-board.jpg";
-import teamGroup from "../assets/gallery/team-group.jpg";
 
 const games = [
   { id: "lorcana", name: "Lorcana", logo: "/images/games/lorcana.png", href: "/lorcana" },
@@ -42,12 +37,6 @@ const usps = [
     title: "Komunita hráčů",
     text: "Spojujeme hráče Lorcany, Pokémonu i Riftboundu v Ostravě.",
   },
-];
-
-const aboutPoints = [
-  "Osobní přístup a férové jednání",
-  "Skvělá dostupnost v Ostravě-Zábřehu",
-  "Místo, kde se z hráčů stávají přátelé",
 ];
 
 const faqPreview = [
@@ -240,49 +229,6 @@ const faqPreview = [
     </p>
   </section>
 
-  <!-- O NÁS -->
-  <section class="mx-auto max-w-6xl px-4 py-16 md:py-24">
-    <div class="grid items-center gap-10 md:grid-cols-2">
-      <Image
-        src={teamProfile}
-        alt="Herna KOSTKA TCG"
-        class="w-full rounded-2xl object-cover"
-        widths={[400, 800]}
-        sizes="(min-width: 768px) 50vw, 100vw"
-      />
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">O nás</p>
-        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">
-          Herna pro hráče, od hráčů pro hráče.
-        </h2>
-        <p class="mt-4 text-base text-white/60">
-          KOSTKA TCG vznikla z vášně pro trading card games a komunitu, která kolem nich vzniká.
-          Chceme vytvořit místo, kam se budete rádi vracet – na turnaje, ligy, prerelease i jen tak si zahrát.
-        </p>
-        <ul class="mt-6 space-y-3">
-          {
-            aboutPoints.map((point) => (
-              <li class="flex items-center gap-3 text-sm text-white/70">
-                <span class="grid h-5 w-5 flex-none place-items-center rounded-full bg-kostka-purple/15 text-kostka-purple">
-                  <svg viewBox="0 0 16 16" class="h-3 w-3" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <polyline points="3.5,8.5 6.5,11.5 12.5,4.5" />
-                  </svg>
-                </span>
-                {point}
-              </li>
-            ))
-          }
-        </ul>
-        <a
-          href="/kontakt#o-nas"
-          class="mt-8 inline-flex items-center gap-2 rounded-full border border-white/20 px-6 py-2.5 text-sm font-semibold uppercase tracking-wide text-white hover:border-kostka-purple hover:text-kostka-purple"
-        >
-          Zjistit více o nás →
-        </a>
-      </div>
-    </div>
-  </section>
-
   <!-- GALERIE -->
   <section class="bg-kostka-surface/40 py-16 md:py-24">
     <div class="mx-auto max-w-6xl px-4">
@@ -298,21 +244,6 @@ const faqPreview = [
         <Image src={teamCouch} alt="Tým KOSTKA TCG na gauči s hrami" class="h-full w-full rounded-2xl object-cover" widths={[300, 600]} sizes="300px" />
         <Image src={teamSofa} alt="Tým KOSTKA TCG při turnaji" class="h-full w-full rounded-2xl object-cover" widths={[300, 600]} sizes="300px" />
       </div>
-    </div>
-  </section>
-
-  <!-- PROBĚHLÉ TURNAJE -->
-  <section class="mx-auto max-w-6xl px-4 py-16 md:py-24">
-    <div class="flex flex-wrap items-end justify-between gap-4">
-      <h2 class="text-2xl font-bold text-white md:text-3xl">Předešlé turnaje</h2>
-      <a href="/turnaje?tab=probehle" class="text-sm font-semibold text-kostka-purple hover:underline">
-        Celá historie →
-      </a>
-    </div>
-    <div class="mt-8 grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-      {pastTournaments.length
-        ? pastTournaments.map((event) => <PastTournamentCard event={event} />)
-        : <p class="text-sm text-white/50">Zatím tu nejsou žádné proběhlé turnaje.</p>}
     </div>
   </section>
 
@@ -335,32 +266,6 @@ const faqPreview = [
       <a href="/faq" class="mt-6 inline-block text-sm font-semibold text-kostka-purple hover:underline">
         Všechny otázky →
       </a>
-    </div>
-  </section>
-
-  <!-- CTA BANNER -->
-  <section class="mx-auto max-w-6xl px-4 py-16 md:py-24">
-    <div class="grid overflow-hidden rounded-3xl border border-white/10 bg-kostka-surface">
-      <Image
-        src={heroBoard}
-        alt=""
-        class="pointer-events-none col-start-1 row-start-1 h-64 w-full object-cover sm:h-80 md:h-96"
-        widths={[600, 1200]}
-        sizes="100vw"
-      />
-      <div class="pointer-events-none col-start-1 row-start-1 bg-gradient-to-r from-kostka-surface from-20% via-kostka-surface/90 via-60% to-kostka-surface/10"></div>
-      <div class="relative col-start-1 row-start-1 flex flex-col justify-center p-10 md:p-14">
-        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">Připraven/a zahrát?</p>
-        <h2 class="mt-2 max-w-md text-3xl font-black text-white md:text-4xl">
-          Zarezervuj si místo na dalším turnaji.
-        </h2>
-        <a
-          href="/turnaje"
-          class="mt-8 inline-flex items-center gap-2 rounded-full bg-kostka-purple px-8 py-3 text-sm font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
-        >
-          Zarezervovat termín →
-        </a>
-      </div>
     </div>
   </section>
 </Layout>
