@@ -126,29 +126,6 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
             </a>
           </div>
 
-          <div class="hidden items-center rounded-full border border-white/15 bg-white/5 p-1 lg:flex">
-            <button
-              type="button"
-              data-lang-option="cs"
-              class="lang-option rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:text-kostka-purple"
-            >
-              CZ
-            </button>
-            <button
-              type="button"
-              data-lang-option="en"
-              class="lang-option rounded-full px-3 py-1 text-[11px] font-semibold uppercase tracking-[0.16em] text-white/70 transition hover:text-kostka-purple"
-            >
-              EN
-            </button>
-          </div>
-
-          <a
-            href="/turnaje"
-            class="rounded-full bg-kostka-purple px-5 py-2 text-xs font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
-          >
-            Zarezervuj termín
-          </a>
         </div>
       </nav>
     </header>
@@ -160,7 +137,6 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
     <script is:inline>
       (function () {
         const THEME_STORAGE_KEY = "kostka-theme";
-        const LANGUAGE_STORAGE_KEY = "kostka-language";
         const toggle = document.getElementById("theme-toggle");
         const root = document.documentElement;
         const media = window.matchMedia("(prefers-color-scheme: dark)");
@@ -184,25 +160,9 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           }
         }
 
-        function applyLanguage(lang) {
-          const resolvedLang = lang === "en" ? "en" : "cs";
-          root.setAttribute("lang", resolvedLang);
-          root.dataset.lang = resolvedLang;
-
-          const langButtons = document.querySelectorAll("[data-lang-option]");
-          langButtons.forEach((button) => {
-            const isActive = button.getAttribute("data-lang-option") === resolvedLang;
-            button.classList.toggle("bg-kostka-purple", isActive);
-            button.classList.toggle("text-kostka-bg", isActive);
-            button.classList.toggle("text-white/70", !isActive);
-          });
-        }
-
         const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || "dark";
-        const savedLanguage = localStorage.getItem(LANGUAGE_STORAGE_KEY) || "cs";
 
         applyTheme(savedTheme);
-        applyLanguage(savedLanguage);
 
         if (toggle) {
           toggle.addEventListener("click", () => {
@@ -212,14 +172,6 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
             applyTheme(next);
           });
         }
-
-        document.querySelectorAll("[data-lang-option]").forEach((button) => {
-          button.addEventListener("click", () => {
-            const lang = button.getAttribute("data-lang-option") || "cs";
-            localStorage.setItem(LANGUAGE_STORAGE_KEY, lang);
-            applyLanguage(lang);
-          });
-        });
 
         media.addEventListener("change", () => {
           const stored = localStorage.getItem(THEME_STORAGE_KEY);
