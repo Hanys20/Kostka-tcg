@@ -42,6 +42,8 @@ const actionLabel = event.registrationUrl ? "Otevřít PlayHub" : spotsLeft > 0 
 
   <a
     href={actionHref}
+    target={event.registrationUrl ? "_blank" : undefined}
+    rel={event.registrationUrl ? "noreferrer" : undefined}
     class="mt-5 inline-flex items-center justify-center rounded-full bg-kostka-purple px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90"
   >
     {actionLabel}
