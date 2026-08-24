@@ -6,6 +6,11 @@
 	],
 	"name": "kostka-tcg",
 	"main": "@astrojs/cloudflare/entrypoints/server",
+	"workers_dev": true,
+	"routes": [
+		{ "pattern": "kostkatcg.cz", "custom_domain": true },
+		{ "pattern": "www.kostkatcg.cz", "custom_domain": true }
+	],
 	"assets": {
 		"directory": "./dist",
 		"binding": "ASSETS"
