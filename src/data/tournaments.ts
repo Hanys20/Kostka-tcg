@@ -72,9 +72,10 @@ const normalizeEventRow = (row: any): TournamentEntry => {
     day,
     spotsTaken: row.type === "tournament" ? Number(row.spots_taken ?? 0) : 0,
     spotsTotal: capacity,
-    // Liga i turnaj se přihlašují přes externí PlayHub odkaz (vyplněný v adminu,
-    // s fallbackem na obecnou registrační stránku dané hry).
-    registrationUrl: row.registration_url || gameRegistrationUrls[row.game],
+    // Liga i turnaj se přihlašují přes externí PlayHub odkaz vyplněný v adminu.
+    // Bez konkrétního odkazu k danému termínu vede tlačítko na interní stránku
+    // eventu (`/turnaje/{slug}`), ne na obecnou stránku hry.
+    registrationUrl: row.registration_url || undefined,
     description: row.description,
     startsAt: row.starts_at,
     price: row.type === "tournament" ? row.price || undefined : undefined,
@@ -142,8 +143,3 @@ export const gameBadgeColors: Record<TournamentEntry["game"], string> = {
   Riftbound: "bg-kostka-purple/10 text-kostka-purple",
 };
 
-export const gameRegistrationUrls: Record<TournamentEntry["game"], string> = {
-  Lorcana: "https://www.ravensburgerplayhub.com/",
-  Pokémon: "https://www.pokemon.com/us/play-pokemon/",
-  Riftbound: "https://www.riftbound.com/",
-};

@@ -1,6 +1,5 @@
 ---
 import Layout from "../../layouts/Layout.astro";
-import { gameRegistrationUrls } from "../../data/tournaments";
 import { getAdminSession } from "../../lib/adminAuth";
 
 export const prerender = false;
@@ -9,8 +8,6 @@ const session = await getAdminSession(Astro.cookies);
 const isLoggedIn = !!session;
 const isPrimary = session?.isPrimary ?? false;
 const nickname = session?.nickname ?? "";
-
-const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
 ---
 
 <Layout title="Administrace">
@@ -130,9 +127,7 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
     </div>
   </section>
 
-  <script is:inline define:vars={{ gameRegistrationUrlsJson, isLoggedIn, isPrimary }}>
-    const GAME_REGISTRATION_URLS = JSON.parse(gameRegistrationUrlsJson);
-
+  <script is:inline define:vars={{ isLoggedIn, isPrimary }}>
     const loginForm = document.getElementById("login-form");
     const loginSubmitButton = document.getElementById("login-submit-button");
     const loginMessage = document.getElementById("login-message");
@@ -386,7 +381,7 @@ const gameRegistrationUrlsJson = JSON.stringify(gameRegistrationUrls);
       const spotsTaken = Number(document.getElementById("event-spots-taken").value) || 0;
       const price = document.getElementById("event-price").value.trim();
       const customUrl = document.getElementById("event-url").value.trim();
-      const registrationUrl = customUrl || (type === "tournament" ? GAME_REGISTRATION_URLS[game] : null);
+      const registrationUrl = customUrl || null;
 
       const payload = {
         title,
