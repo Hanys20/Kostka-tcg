@@ -27,7 +27,8 @@ s hlavním webem.
 
 - **Firma:** KOSTKA TCG – herna a prodej trading card games (Lorcana, Pokémon, Riftbound),
   pořádání turnajů, lig a prerelease akcí nových sad.
-- **Kontakty:** Vojtěch Kielkovský, Jan Mrázek · +420 773 334 488 · info@kostkatcg.cz
+- **Kontakty:** Vojtěch Kielkovský, Jan Mrázek · +420 773 334 488 · kostkatcg@gmail.com
+- **IČO:** 299 34 249
 - **Pobočka:** Dolní 782/65, 700 30 Ostrava-Jih-Zábřeh (MSK kraj, případně celá ČR)
 - **Doména:** kostkatcg.cz
 

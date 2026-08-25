@@ -130,7 +130,7 @@ const COMING_SOON_HTML = `<!doctype html>
     <h1>Chystáme pro vás nový web KOSTKA TCG</h1>
     <p>Pracujeme na online rezervacích turnajů a lig. Web bude brzy spuštěný – mezitím nás najdete i takto:</p>
     <div class="contact">
-      <a href="mailto:info@kostkatcg.cz">info@kostkatcg.cz</a>
+      <a href="mailto:kostkatcg@gmail.com">kostkatcg@gmail.com</a>
       <a href="tel:+420773334488">+420 773 334 488</a>
     </div>
     <footer>KOSTKA TCG &middot; Dolní 782/65, Ostrava-Jih-Zábřeh</footer>
