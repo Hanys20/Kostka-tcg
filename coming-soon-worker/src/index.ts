@@ -133,7 +133,7 @@ const COMING_SOON_HTML = `<!doctype html>
       <a href="mailto:kostkatcg@gmail.com">kostkatcg@gmail.com</a>
       <a href="tel:+420773334488">+420 773 334 488</a>
     </div>
-    <footer>KOSTKA TCG &middot; Dolní 782/65, Ostrava-Jih-Zábřeh</footer>
+    <footer>KOSTKA TCG &middot; Dolní 782/65, Ostrava-Zábřeh</footer>
   </main>
 </body>
 </html>`;

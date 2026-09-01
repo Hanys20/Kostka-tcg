@@ -29,7 +29,7 @@ s hlavním webem.
   pořádání turnajů, lig a prerelease akcí nových sad.
 - **Kontakty:** Vojtěch Kielkovský, Jan Mrázek · +420 773 334 488 · kostkatcg@gmail.com
 - **IČO:** 299 34 249
-- **Pobočka:** Dolní 782/65, 700 30 Ostrava-Jih-Zábřeh (MSK kraj, případně celá ČR)
+- **Pobočka:** Dolní 782/65, 700 30 Ostrava-Zábřeh (MSK kraj, případně celá ČR)
 - **Doména:** kostkatcg.cz
 
 ## Cíle webu
