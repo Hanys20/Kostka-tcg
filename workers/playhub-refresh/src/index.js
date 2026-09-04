@@ -1,6 +1,6 @@
 // Cloudflare Worker se Cron Triggerem – pravidelně (viz wrangler.toml) projde
-// nadcházející turnaje uložené v Supabase, u těch s odkazem na PlayHub znovu
-// načte a naparsuje jejich stránku a aktualizuje obsazenost/cenu/kapacitu.
+// nadcházející události (turnaje i ligy) uložené v Supabase, u těch s odkazem
+// na PlayHub znovu načte a naparsuje jejich stránku a aktualizuje obsazenost/cenu/kapacitu.
 // Používá stejný parser jako ruční import v administraci (src/lib/playhub-import.js),
 // aby se logika parsování PlayHub HTML neduplikovala.
 import { createClient } from "@supabase/supabase-js";
@@ -54,7 +54,6 @@ async function refreshPlayHubEvents(env) {
   const { data: events, error } = await supabase
     .from("events")
     .select("id, registration_url, capacity, spots_taken, price")
-    .eq("type", "tournament")
     .eq("status", "upcoming")
     .not("registration_url", "is", null);
 

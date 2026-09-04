@@ -1,8 +1,8 @@
 # playhub-refresh (Cloudflare Worker)
 
 Samostatný Cloudflare Worker (mimo hlavní Astro/Pages projekt) s Cron Triggerem
-(`wrangler.toml`, každých 15 minut). Projde v Supabase turnaje
-(`type = tournament`, `status = upcoming`) s odkazem na PlayHub
+(`wrangler.toml`, každých 15 minut). Projde v Supabase všechny nadcházející
+události (turnaje i ligy, `status = upcoming`) s odkazem na PlayHub
 (`registration_url` obsahující `ravensburgerplay(hub).com/events/…`), znovu
 načte jejich stránku na PlayHubu a aktualizuje `spots_taken`, `capacity`
 a `price`, pokud se změnily. Parsování HTML sdílí s ručním importem
