@@ -70,7 +70,7 @@ const normalizeEventRow = (row: any): TournamentEntry => {
     date: dateLabel,
     time: timeLabel,
     day,
-    spotsTaken: row.type === "tournament" ? Number(row.spots_taken ?? 0) : 0,
+    spotsTaken: Number(row.spots_taken ?? 0),
     spotsTotal: capacity,
     // Liga i turnaj se přihlašují přes externí PlayHub odkaz vyplněný v adminu.
     // Bez konkrétního odkazu k danému termínu vede tlačítko na interní stránku
@@ -78,7 +78,7 @@ const normalizeEventRow = (row: any): TournamentEntry => {
     registrationUrl: row.registration_url || undefined,
     description: row.description,
     startsAt: row.starts_at,
-    price: row.type === "tournament" ? row.price || undefined : undefined,
+    price: row.price || undefined,
   };
 };
 
