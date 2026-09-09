@@ -136,3 +136,29 @@ html[data-theme="light"] .text-white\/80 {
 html[data-theme="light"] ::placeholder {
   color: rgba(20, 32, 48, 0.4) !important;
 }
+
+/* —— Mobilní menu (hamburger) —— */
+.mobile-menu {
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.mobile-menu.is-open {
+  opacity: 1;
+}
+
+.mobile-menu__panel {
+  transform: translateY(-12px);
+  transition: transform 0.2s ease;
+}
+
+.mobile-menu.is-open .mobile-menu__panel {
+  transform: translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mobile-menu,
+  .mobile-menu__panel {
+    transition: none;
+  }
+}
