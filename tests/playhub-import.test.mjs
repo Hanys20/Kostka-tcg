@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { parsePlayHubEvent } from "../src/lib/playhub-import.js";
+import { parsePlayHubEvent, detectEventType } from "../src/lib/playhub-import.js";
 
 test("parses title, date, time, occupancy and price from PlayHub HTML", () => {
   const html = `
@@ -48,6 +48,52 @@ test("parses occupancy when React/react-intl splits the text into comment-separa
 
   assert.equal(result.spotsTaken, 54);
   assert.equal(result.spotsTotal, 80);
+});
+
+test("detects a league from the title in any Czech declension", () => {
+  for (const title of [
+    "Lorcana liga – 3. kolo",
+    "Podzimní LIGA 2026",
+    "Pokémon ligy pokračování",
+    "Zápis do ligy",
+    "Výsledky v lize",
+    "Přihlaste se do ligu",
+    "Finále ligou",
+    "Ligový večer",
+    "Riftbound League Night",
+  ]) {
+    assert.equal(detectEventType(title), "league", title);
+  }
+});
+
+test("treats tournaments, prereleases and other events as tournaments", () => {
+  for (const title of [
+    "XZONE PRAGUE OPEN 2026",
+    "Prerelease nové sady Azurite Sea",
+    "Sobotní turnaj Lorcana",
+    "Store Championship",
+    "",
+    null,
+  ]) {
+    assert.equal(detectEventType(title), "tournament", String(title));
+  }
+});
+
+test("parsePlayHubEvent returns type: league when the title says so", () => {
+  const html = `
+    <html>
+      <head><title>Lorcana liga - Lorcana</title></head>
+      <body>
+        <div data-testid="event-title" class="text-2xl font-bold">Lorcana liga – 3. kolo</div>
+        <div class="flex items-center gap-2"><svg class="lucide-calendar h-4 w-4"></svg><span class="font-medium">Oct 10, 2026</span></div>
+        <div data-testid="event-date" class="font-medium">6:00 PM (GMT+2)</div>
+      </body>
+    </html>
+  `;
+
+  const result = parsePlayHubEvent(html);
+
+  assert.equal(result.type, "league");
 });
 
 test("falls back to the roster heading count when the capacity field can't be parsed", () => {

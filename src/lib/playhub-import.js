@@ -77,6 +77,16 @@ const parsePriceText = (text) => {
   return match ? { amount: match[2], currency: match[1] } : null;
 };
 
+// Rozliší „ligu" od „turnaje" podle názvu události. Ligu bereme, kdykoliv se
+// v názvu objeví slovo „liga" v jakémkoliv pádu (liga, ligy, lize, ligu, ligou,
+// lig, ligám, ligách, ligami), přídavné jméno „ligový/-á/-é…" nebo anglické
+// „league". Vše ostatní (turnaje, prerelease nových sad apod.) je „tournament".
+const LEAGUE_TITLE_PATTERN =
+  /\b(lig[aeouy]|lig|lize|ligou|lig[aá]ch|ligám|ligami|ligov\w*|leagues?)\b/i;
+
+export const detectEventType = (title) =>
+  LEAGUE_TITLE_PATTERN.test(title || "") ? "league" : "tournament";
+
 const detectGame = (html) => {
   const title = html.match(/<title>([^<]*)<\/title>/i)?.[1] || "";
   if (/lorcana/i.test(title)) return "Lorcana";
@@ -100,6 +110,7 @@ export function parsePlayHubEvent(html, options = {}) {
 
   return {
     title,
+    type: detectEventType(title),
     date: parseCalendarDate(dateText),
     startTime: parseClockTime(startTimeText),
     endTime: endTimeText ? parseClockTime(normalizeWhitespace(endTimeText)) : null,

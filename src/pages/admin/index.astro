@@ -351,9 +351,9 @@ const nickname = session?.nickname ?? "";
           document.getElementById("event-spots-taken").value = data.spotsTaken != null ? String(data.spotsTaken) : "0";
           document.getElementById("event-price").value = data.price && data.currency ? `${data.price} ${data.currency}` : (data.price || "");
           document.getElementById("event-url").value = url;
-          document.getElementById("event-type").value = "tournament";
+          document.getElementById("event-type").value = data.type === "league" ? "league" : "tournament";
           document.getElementById("event-game").value = data.game || inferGameFromTitle(data.title);
-          playhubMessage.textContent = `Data načtena: ${data.title} (${data.spotsTaken ?? "?"}/${data.spotsTotal ?? "?"} míst)`;
+          playhubMessage.textContent = `Data načtena: ${data.title} – ${data.type === "league" ? "liga" : "turnaj"} (${data.spotsTaken ?? "?"}/${data.spotsTotal ?? "?"} míst)`;
         } else {
           playhubMessage.textContent = result.message || "Nepodařilo se načíst data.";
         }
