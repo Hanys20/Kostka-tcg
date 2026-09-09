@@ -126,9 +126,7 @@ const trendMark: Record<StandingRow["trend"], { char: string; cls: string; label
 const hasPrizePool = !!(season && season.prize_pool_value);
 
 const ligaCount = (n: number) => (n === 1 ? "liga" : n >= 2 && n <= 4 ? "ligy" : "lig");
-const ligaLoc = (n: number) => (n === 1 ? "lize" : "ligách");
-const streakLabel = (n: number) =>
-  `Série účasti: hráč hrál na posledních ${n} ${ligaLoc(n)} po sobě, bez jediného vynechání. Odznak se objeví od 3 lig v řadě, po vynechané lize se série vynuluje.`;
+const streakLabel = (_n: number) => "Série účastí alespoň 3 ligy po sobě.";
 ---
 
 <Layout title="Žebříček ligy">
