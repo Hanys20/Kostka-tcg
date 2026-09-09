@@ -117,17 +117,17 @@ const rest = standings.slice(3);
 const medalOrder = [2, 1, 3]; // vizuální pořadí sloupců pódia
 
 const trendMark: Record<StandingRow["trend"], { char: string; cls: string; label: string }> = {
-  up: { char: "▲", cls: "trend trend-up", label: "polepšil si" },
-  down: { char: "▼", cls: "trend trend-down", label: "pohoršil si" },
-  same: { char: "–", cls: "trend trend-same", label: "beze změny" },
-  new: { char: "★", cls: "trend trend-new", label: "nový v žebříčku" },
+  up: { char: "▲", cls: "trend trend-up", label: "Polepšil si oproti pořadí před posledním kolem." },
+  down: { char: "▼", cls: "trend trend-down", label: "Pohoršil si oproti pořadí před posledním kolem." },
+  same: { char: "–", cls: "trend trend-same", label: "Beze změny oproti pořadí před posledním kolem." },
+  new: { char: "★", cls: "trend trend-new", label: "Nový v žebříčku – v předchozích kolech nehrál." },
 };
 
 const hasPrizePool = !!(season && season.prize_pool_value);
 
-const roundWord = (n: number) => (n === 1 ? "kolo" : n >= 2 && n <= 4 ? "kola" : "kol");
+const roundLoc = (n: number) => (n === 1 ? "kole" : "kolech");
 const streakLabel = (n: number) =>
-  `Série účasti: hráč byl na posledních ${n} ${roundWord(n)} po sobě, bez jediného vynechání.`;
+  `Série účasti: hráč hrál na posledních ${n} ${roundLoc(n)} po sobě, bez jediného vynechání. Odznak se objeví od 3 kol v řadě, po vynechaném kole se série vynuluje.`;
 ---
 
 <Layout title="Žebříček ligy">
@@ -224,7 +224,18 @@ const streakLabel = (n: number) =>
                           </div>
                           <p class="pname">
                             {row.displayName}
-                            {row.streak >= 3 && <span title={streakLabel(row.streak)}> 🔥</span>}
+                            {row.streak >= 3 && (
+                              <span
+                                class="tip"
+                                data-tip={streakLabel(row.streak)}
+                                tabindex="0"
+                                role="button"
+                                aria-label={streakLabel(row.streak)}
+                              >
+                                {" "}
+                                🔥
+                              </span>
+                            )}
                           </p>
                           <p class={`pscore score-${place}`}>{row.points} b.</p>
                         </div>
@@ -271,14 +282,23 @@ const streakLabel = (n: number) =>
                         <td class="px-2 py-3">
                           <div class="flex items-center gap-2 font-semibold text-white">
                             <span
-                              class={`w-3 shrink-0 text-center text-xs ${trendMark[row.trend].cls}`}
-                              title={trendMark[row.trend].label}
+                              class={`tip w-3 shrink-0 text-center text-xs ${trendMark[row.trend].cls}`}
+                              data-tip={trendMark[row.trend].label}
+                              tabindex="0"
+                              role="button"
+                              aria-label={trendMark[row.trend].label}
                             >
                               {trendMark[row.trend].char}
                             </span>
                             <span class="truncate">{row.displayName}</span>
                             {row.streak >= 3 && (
-                              <span class="shrink-0 text-xs" title={streakLabel(row.streak)}>
+                              <span
+                                class="tip shrink-0 text-xs"
+                                data-tip={streakLabel(row.streak)}
+                                tabindex="0"
+                                role="button"
+                                aria-label={streakLabel(row.streak)}
+                              >
                                 🔥{row.streak}
                               </span>
                             )}
@@ -313,7 +333,78 @@ const streakLabel = (n: number) =>
       )
     }
   </section>
+
+  <div id="lb-tip" role="tooltip" hidden></div>
 </Layout>
+
+<script is:inline>
+  (function () {
+    const tip = document.getElementById("lb-tip");
+    if (!tip) return;
+    let pinned = null;
+
+    function place(el) {
+      const text = el.getAttribute("data-tip");
+      if (!text) return;
+      tip.textContent = text;
+      tip.hidden = false;
+      tip.style.left = "0px";
+      tip.style.top = "0px";
+      const r = el.getBoundingClientRect();
+      const t = tip.getBoundingClientRect();
+      let left = r.left + r.width / 2 - t.width / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - t.width - 8));
+      let top = r.top - t.height - 8;
+      if (top < 8) top = r.bottom + 8;
+      tip.style.left = left + "px";
+      tip.style.top = top + "px";
+    }
+
+    function hide() {
+      tip.hidden = true;
+      pinned = null;
+    }
+
+    document.querySelectorAll("[data-tip]").forEach((el) => {
+      el.addEventListener("mouseenter", () => {
+        if (!pinned) place(el);
+      });
+      el.addEventListener("mouseleave", () => {
+        if (!pinned) hide();
+      });
+      el.addEventListener("focus", () => place(el));
+      el.addEventListener("blur", () => {
+        if (!pinned) hide();
+      });
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (pinned === el) {
+          hide();
+        } else {
+          pinned = el;
+          place(el);
+        }
+      });
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          pinned = pinned === el ? null : el;
+          if (pinned) place(el);
+          else hide();
+        }
+      });
+    });
+
+    document.addEventListener("click", () => {
+      if (pinned) hide();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hide();
+    });
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+  })();
+</script>
 
 <style>
   .hide-sm {
@@ -496,6 +587,36 @@ const streakLabel = (n: number) =>
 
   .foot {
     color: rgba(255, 255, 255, 0.4);
+  }
+
+  /* —— Nápověda (funguje na hover i na klik/ťuk na mobilu) —— */
+  .tip {
+    cursor: help;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tip:focus-visible {
+    outline: 2px solid var(--color-kostka-purple);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  #lb-tip {
+    position: fixed;
+    z-index: 100;
+    max-width: min(280px, calc(100vw - 16px));
+    padding: 8px 11px;
+    border-radius: 8px;
+    background: #1b1b22;
+    color: #f3f3f5;
+    font-size: 12px;
+    line-height: 1.45;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 10px 28px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+  }
+  #lb-tip[hidden] {
+    display: none;
   }
 
   /* —— Světlý motiv: kontrastnější text, čísla i pořadí —— */
