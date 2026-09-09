@@ -215,7 +215,8 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           menu.hidden = false;
           document.body.style.overflow = "hidden";
           toggle.setAttribute("aria-expanded", "true");
-          requestAnimationFrame(() => menu.classList.add("is-open"));
+          void menu.offsetWidth; // vynutí reflow, aby naběhl přechod
+          menu.classList.add("is-open");
         }
 
         function closeMenu() {
