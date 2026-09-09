@@ -124,6 +124,10 @@ const trendMark: Record<StandingRow["trend"], { char: string; cls: string; label
 };
 
 const hasPrizePool = !!(season && season.prize_pool_value);
+
+const roundWord = (n: number) => (n === 1 ? "kolo" : n >= 2 && n <= 4 ? "kola" : "kol");
+const streakLabel = (n: number) =>
+  `Série účasti: hráč byl na posledních ${n} ${roundWord(n)} po sobě, bez jediného vynechání.`;
 ---
 
 <Layout title="Žebříček ligy">
@@ -220,7 +224,7 @@ const hasPrizePool = !!(season && season.prize_pool_value);
                           </div>
                           <p class="pname">
                             {row.displayName}
-                            {row.streak >= 3 && <span title={`${row.streak} kol v řadě`}> 🔥</span>}
+                            {row.streak >= 3 && <span title={streakLabel(row.streak)}> 🔥</span>}
                           </p>
                           <p class={`pscore score-${place}`}>{row.points} b.</p>
                         </div>
@@ -274,7 +278,7 @@ const hasPrizePool = !!(season && season.prize_pool_value);
                             </span>
                             <span class="truncate">{row.displayName}</span>
                             {row.streak >= 3 && (
-                              <span class="shrink-0 text-xs" title={`${row.streak} kol v řadě`}>
+                              <span class="shrink-0 text-xs" title={streakLabel(row.streak)}>
                                 🔥{row.streak}
                               </span>
                             )}
