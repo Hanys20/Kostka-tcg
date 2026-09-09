@@ -1,0 +1,614 @@
+---
+// Veřejný (read-only) žebříček ligy pro danou hru. Data čte server-side přes
+// service role klíč přímo ze Supabase – žádné admin přihlášení, žádný odkaz do
+// administrace. Cokoliv admin uloží v /leaderboard/sprava se sem propíše samo
+// při dalším načtení stránky (stránka, která komponentu použije, musí mít
+// `export const prerender = false`).
+import { createServiceClient } from "../../lib/adminAuth";
+import {
+  computeStandings,
+  type EntryRow,
+  type PlayerRow,
+  type RoundRow,
+  type Scoring,
+  type StandingRow,
+} from "../../lib/leaderboard";
+
+interface Props {
+  /** Hodnota `lb_seasons.game`, např. "Lorcana". */
+  game: string;
+}
+
+const { game } = Astro.props;
+
+const service = createServiceClient();
+
+const { data: seasonsRaw } = await service
+  .from("lb_seasons")
+  .select(
+    "id, game, name, starts_on, ends_on, is_active, points_win, points_draw, points_loss, points_participation, prize_pool_label, prize_pool_value, prize_pool_note, created_at"
+  )
+  .eq("game", game)
+  .order("is_active", { ascending: false })
+  .order("created_at", { ascending: false });
+
+const seasons = seasonsRaw ?? [];
+const season = seasons.find((s) => s.is_active) ?? seasons[0] ?? null;
+
+let standings: StandingRow[] = [];
+let rounds: RoundRow[] = [];
+let scoring: Scoring = {
+  pointsWin: 3,
+  pointsDraw: 1,
+  pointsLoss: 0,
+  pointsParticipation: 3,
+};
+
+if (season) {
+  scoring = {
+    pointsWin: season.points_win,
+    pointsDraw: season.points_draw,
+    pointsLoss: season.points_loss,
+    pointsParticipation: season.points_participation,
+  };
+
+  const [{ data: playersRaw }, { data: roundsRaw }] = await Promise.all([
+    service.from("lb_players").select("id, display_name, note").eq("season_id", season.id),
+    service
+      .from("lb_rounds")
+      .select("id, label, played_on, sort_order")
+      .eq("season_id", season.id)
+      .order("sort_order", { ascending: true }),
+  ]);
+
+  const players: PlayerRow[] = (playersRaw ?? []).map((p) => ({
+    id: p.id,
+    displayName: p.display_name,
+    note: p.note,
+  }));
+  rounds = (roundsRaw ?? []).map((r) => ({
+    id: r.id,
+    label: r.label,
+    playedOn: r.played_on,
+    sortOrder: r.sort_order,
+  }));
+
+  let entries: EntryRow[] = [];
+  if (rounds.length) {
+    const { data: entriesRaw } = await service
+      .from("lb_entries")
+      .select("round_id, player_id, wins, draws, losses, bonus_points, bonus_note")
+      .in(
+        "round_id",
+        rounds.map((r) => r.id)
+      );
+    entries = (entriesRaw ?? []).map((e) => ({
+      roundId: e.round_id,
+      playerId: e.player_id,
+      wins: e.wins,
+      draws: e.draws,
+      losses: e.losses,
+      bonusPoints: e.bonus_points,
+      bonusNote: e.bonus_note,
+    }));
+  }
+
+  standings = computeStandings(players, rounds, entries, scoring);
+}
+
+const dateFmt = new Intl.DateTimeFormat("cs-CZ", {
+  day: "numeric",
+  month: "numeric",
+  year: "numeric",
+});
+const fmtDate = (d: string | null | undefined) => (d ? dateFmt.format(new Date(d)) : null);
+const rangeLabel =
+  season && (season.starts_on || season.ends_on)
+    ? `${fmtDate(season.starts_on) ?? "?"} – ${fmtDate(season.ends_on) ?? "?"}`
+    : null;
+
+const podium = standings.slice(0, 3);
+const rest = standings.slice(3);
+const medalOrder = [2, 1, 3]; // vizuální pořadí sloupců pódia
+
+const trendMark: Record<StandingRow["trend"], { char: string; cls: string; label: string }> = {
+  up: { char: "▲", cls: "trend trend-up", label: "Polepšil si oproti pořadí před poslední ligou." },
+  down: { char: "▼", cls: "trend trend-down", label: "Pohoršil si oproti pořadí před poslední ligou." },
+  same: { char: "–", cls: "trend trend-same", label: "Beze změny oproti pořadí před poslední ligou." },
+  new: { char: "★", cls: "trend trend-new", label: "Nový v žebříčku – v předchozích ligách nehrál." },
+};
+
+const hasPrizePool = !!(season && season.prize_pool_value);
+
+const ligaCount = (n: number) => (n === 1 ? "liga" : n >= 2 && n <= 4 ? "ligy" : "lig");
+const streakLabel = (_n: number) => "Série účastí alespoň 3 ligy po sobě.";
+const hracCount = (n: number) => (n === 1 ? "hráč" : n >= 2 && n <= 4 ? "hráči" : "hráčů");
+---
+
+{
+  season && (
+    <div class="lb">
+      <header class="text-center">
+        <p class="text-xs font-semibold uppercase tracking-[0.25em] text-kostka-purple">
+          {season.game} · Liga
+        </p>
+        <h2 class="mt-2 text-3xl font-black text-white sm:text-4xl">{season.name}</h2>
+        <p class="mt-2 text-sm text-white/50">
+          {rangeLabel ? `${rangeLabel} · ` : ""}
+          {rounds.length} {ligaCount(rounds.length)}
+          {" · "}
+          {standings.length} {hracCount(standings.length)}
+        </p>
+      </header>
+
+      {hasPrizePool && (
+        <div class="mt-6 flex justify-center">
+          <div class="w-full max-w-sm rounded-2xl border border-kostka-purple/30 bg-gradient-to-b from-kostka-purple/15 to-kostka-purple/5 p-4 text-center">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
+              {season.prize_pool_label || "Hraje se o"}
+            </p>
+            <p class="mt-1 text-2xl font-black text-kostka-purple">{season.prize_pool_value}</p>
+            {season.prize_pool_note && (
+              <p class="mt-3 border-t border-white/10 pt-3 text-xs leading-relaxed text-white/60">
+                {season.prize_pool_note}
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {standings.length === 0 ? (
+        <div class="mt-8 rounded-2xl border border-white/10 bg-kostka-surface p-8 text-center text-sm text-white/60">
+          Liga právě startuje – výsledky se objeví po prvním herním večeru.
+        </div>
+      ) : (
+        <>
+          {podium.length === 3 && (
+            <div class="podium mt-10">
+              {medalOrder.map((place) => {
+                const row = podium[place - 1];
+                return (
+                  <div class={`slot slot-${place}`}>
+                    <div class="fig">
+                      <div class={`disc disc-${place}`}>
+                        <span>{[...row.displayName.trim()][0]?.toUpperCase() ?? "?"}</span>
+                      </div>
+                      <p class="pname">
+                        {row.displayName}
+                        {row.streak >= 3 && (
+                          <span
+                            class="tip"
+                            data-tip={streakLabel(row.streak)}
+                            tabindex="0"
+                            role="button"
+                            aria-label={streakLabel(row.streak)}
+                          >
+                            {" "}
+                            🔥
+                          </span>
+                        )}
+                      </p>
+                      <p class={`pscore score-${place}`}>{row.points} b.</p>
+                    </div>
+                    <div class={`plinth plinth-${place}`}>
+                      <span>{place}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+
+          <div class="mt-8 overflow-x-auto">
+            <table class="w-full min-w-[420px] border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-white/15 text-white/50">
+                  <th class="w-14 px-2 py-3 text-center font-semibold">Poz.</th>
+                  <th class="px-2 py-3 text-left font-semibold">Hráč</th>
+                  <th class="hide-sm w-16 px-2 py-3 text-center font-semibold">Účast</th>
+                  <th class="hide-sm w-16 px-2 py-3 text-center font-semibold">Výhry</th>
+                  <th class="hide-sm w-16 px-2 py-3 text-center font-semibold">Remízy</th>
+                  <th class="w-16 px-2 py-3 text-center font-semibold">Body</th>
+                </tr>
+              </thead>
+              <tbody>
+                {standings.map((row) => (
+                  <tr class="border-b border-white/10">
+                    <td class="px-2 py-3 text-center">
+                      <span
+                        class:list={[
+                          "rankbadge",
+                          row.rank === 1
+                            ? "rankbadge-1"
+                            : row.rank === 2
+                              ? "rankbadge-2"
+                              : row.rank === 3
+                                ? "rankbadge-3"
+                                : "rankbadge-n",
+                        ]}
+                      >
+                        {row.rank}
+                      </span>
+                    </td>
+                    <td class="px-2 py-3">
+                      <div class="flex items-center gap-2 font-semibold text-white">
+                        <span
+                          class={`tip w-3 shrink-0 text-center text-xs ${trendMark[row.trend].cls}`}
+                          data-tip={trendMark[row.trend].label}
+                          tabindex="0"
+                          role="button"
+                          aria-label={trendMark[row.trend].label}
+                        >
+                          {trendMark[row.trend].char}
+                        </span>
+                        <span class="truncate">{row.displayName}</span>
+                        {row.streak >= 3 && (
+                          <span
+                            class="tip shrink-0 text-xs"
+                            data-tip={streakLabel(row.streak)}
+                            tabindex="0"
+                            role="button"
+                            aria-label={streakLabel(row.streak)}
+                          >
+                            🔥{row.streak}
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                    <td class="hide-sm px-2 py-3 text-center tabular-nums text-white/70">
+                      {row.roundsPlayed}
+                    </td>
+                    <td class="hide-sm px-2 py-3 text-center tabular-nums text-white/70">
+                      {row.wins}
+                    </td>
+                    <td class="hide-sm px-2 py-3 text-center tabular-nums text-white/70">
+                      {row.draws}
+                    </td>
+                    <td class="px-2 py-3 text-center text-base font-black tabular-nums text-kostka-purple">
+                      {row.points}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <p class="foot mt-4 text-center text-[11px]">
+            Bodování: +{scoring.pointsParticipation} za účast · +{scoring.pointsWin} výhra · +
+            {scoring.pointsDraw} remíza
+            {scoring.pointsLoss ? ` · ${scoring.pointsLoss > 0 ? "+" : ""}${scoring.pointsLoss} prohra` : ""}
+          </p>
+        </>
+      )}
+
+      <div id="lb-tip" role="tooltip" hidden></div>
+    </div>
+  )
+}
+
+<script is:inline>
+  (function () {
+    const tip = document.getElementById("lb-tip");
+    if (!tip) return;
+    let pinned = null;
+
+    function place(el) {
+      const text = el.getAttribute("data-tip");
+      if (!text) return;
+      tip.textContent = text;
+      tip.hidden = false;
+      tip.style.left = "0px";
+      tip.style.top = "0px";
+      const r = el.getBoundingClientRect();
+      const t = tip.getBoundingClientRect();
+      let left = r.left + r.width / 2 - t.width / 2;
+      left = Math.max(8, Math.min(left, window.innerWidth - t.width - 8));
+      let top = r.top - t.height - 8;
+      if (top < 8) top = r.bottom + 8;
+      tip.style.left = left + "px";
+      tip.style.top = top + "px";
+    }
+
+    function hide() {
+      tip.hidden = true;
+      pinned = null;
+    }
+
+    document.querySelectorAll("[data-tip]").forEach((el) => {
+      el.addEventListener("mouseenter", () => {
+        if (!pinned) place(el);
+      });
+      el.addEventListener("mouseleave", () => {
+        if (!pinned) hide();
+      });
+      el.addEventListener("focus", () => place(el));
+      el.addEventListener("blur", () => {
+        if (!pinned) hide();
+      });
+      el.addEventListener("click", (e) => {
+        e.stopPropagation();
+        if (pinned === el) {
+          hide();
+        } else {
+          pinned = el;
+          place(el);
+        }
+      });
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          pinned = pinned === el ? null : el;
+          if (pinned) place(el);
+          else hide();
+        }
+      });
+    });
+
+    document.addEventListener("click", () => {
+      if (pinned) hide();
+    });
+    document.addEventListener("keydown", (e) => {
+      if (e.key === "Escape") hide();
+    });
+    window.addEventListener("scroll", hide, true);
+    window.addEventListener("resize", hide);
+  })();
+</script>
+
+<style>
+  .hide-sm {
+    display: table-cell;
+  }
+  @media (max-width: 560px) {
+    .hide-sm {
+      display: none;
+    }
+  }
+
+  .podium {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr 1fr;
+    gap: 10px;
+    align-items: end;
+    max-width: 480px;
+    margin-inline: auto;
+  }
+  .slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .slot-1 {
+    animation-delay: 0.25s;
+  }
+  .slot-2 {
+    animation-delay: 0.08s;
+  }
+  .slot-3 {
+    animation-delay: 0.16s;
+  }
+
+  .fig {
+    text-align: center;
+    padding: 0 4px 10px;
+  }
+  .disc {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 8px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #0a0c11;
+    border: 3px solid rgba(255, 255, 255, 0.75);
+  }
+  .disc-1 {
+    width: 74px;
+    height: 74px;
+    font-size: 1.7rem;
+    background: linear-gradient(160deg, #f7e08a, #d4a017);
+    box-shadow: 0 0 22px rgba(240, 200, 80, 0.35);
+  }
+  .disc-2 {
+    background: linear-gradient(160deg, #e6e9ee, #9aa0a6);
+  }
+  .disc-3 {
+    background: linear-gradient(160deg, #e2a877, #b8743a);
+  }
+  .pname {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    color: #fff;
+    word-break: break-word;
+  }
+  .slot-1 .pname {
+    font-size: 1rem;
+  }
+  .pscore {
+    margin: 4px 0 0;
+    font-weight: 800;
+    font-size: 0.9rem;
+  }
+  .score-1 {
+    color: #f5d76e;
+  }
+  .score-2 {
+    color: #d8dde3;
+  }
+  .score-3 {
+    color: #e2a877;
+  }
+  .plinth {
+    width: 100%;
+    border-radius: 8px 8px 3px 3px;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.85);
+    transform-origin: bottom;
+    transform: scaleY(0.3);
+    opacity: 0;
+    animation: grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .plinth-1 {
+    height: 68px;
+    background: linear-gradient(180deg, #b98cff, #6d47b8);
+    animation-delay: 0.22s;
+  }
+  .plinth-2 {
+    height: 48px;
+    background: linear-gradient(180deg, #5a6068, #3b4048);
+    animation-delay: 0.06s;
+  }
+  .plinth-3 {
+    height: 38px;
+    background: linear-gradient(180deg, #a9673c, #7c4a29);
+    animation-delay: 0.12s;
+  }
+
+  @keyframes rise {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes grow {
+    to {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slot,
+    .plinth {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+  }
+
+  /* —— Trend šipky —— */
+  .trend-up {
+    color: #34d399;
+  }
+  .trend-down {
+    color: #f87171;
+  }
+  .trend-same {
+    color: rgba(255, 255, 255, 0.3);
+  }
+  .trend-new {
+    color: var(--color-kostka-purple);
+  }
+
+  /* —— Odznak pořadí —— */
+  .rankbadge {
+    display: inline-grid;
+    height: 1.75rem;
+    width: 1.75rem;
+    place-items: center;
+    border-radius: 9999px;
+    font-size: 0.75rem;
+    font-weight: 700;
+  }
+  .rankbadge-1 {
+    background: rgba(250, 204, 21, 0.2);
+    color: #fde047;
+  }
+  .rankbadge-2 {
+    background: rgba(203, 213, 225, 0.2);
+    color: #e2e8f0;
+  }
+  .rankbadge-3 {
+    background: rgba(217, 119, 6, 0.22);
+    color: #fbbf24;
+  }
+  .rankbadge-n {
+    color: rgba(255, 255, 255, 0.5);
+  }
+
+  .foot {
+    color: rgba(255, 255, 255, 0.4);
+  }
+
+  /* —— Nápověda (funguje na hover i na klik/ťuk na mobilu) —— */
+  .tip {
+    cursor: help;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .tip:focus-visible {
+    outline: 2px solid var(--color-kostka-purple);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+  #lb-tip {
+    position: fixed;
+    z-index: 100;
+    max-width: min(280px, calc(100vw - 16px));
+    padding: 8px 11px;
+    border-radius: 8px;
+    background: #1b1b22;
+    color: #f3f3f5;
+    font-size: 12px;
+    line-height: 1.45;
+    box-shadow:
+      0 0 0 1px rgba(255, 255, 255, 0.08),
+      0 10px 28px rgba(0, 0, 0, 0.45);
+    pointer-events: none;
+  }
+  #lb-tip[hidden] {
+    display: none;
+  }
+
+  /* —— Světlý motiv: kontrastnější text, čísla i pořadí —— */
+  html[data-theme="light"] .pname {
+    color: #142030;
+  }
+  html[data-theme="light"] .disc {
+    border-color: rgba(0, 0, 0, 0.12);
+  }
+  html[data-theme="light"] .score-1 {
+    color: #a16207;
+  }
+  html[data-theme="light"] .score-2 {
+    color: #475569;
+  }
+  html[data-theme="light"] .score-3 {
+    color: #b45309;
+  }
+  html[data-theme="light"] .trend-up {
+    color: #047857;
+  }
+  html[data-theme="light"] .trend-down {
+    color: #b91c1c;
+  }
+  html[data-theme="light"] .trend-same {
+    color: rgba(20, 32, 48, 0.45);
+  }
+  html[data-theme="light"] .rankbadge-1 {
+    background: rgba(202, 138, 4, 0.18);
+    color: #854d0e;
+  }
+  html[data-theme="light"] .rankbadge-2 {
+    background: rgba(100, 116, 139, 0.2);
+    color: #334155;
+  }
+  html[data-theme="light"] .rankbadge-3 {
+    background: rgba(180, 83, 9, 0.16);
+    color: #9a3412;
+  }
+  html[data-theme="light"] .rankbadge-n {
+    color: rgba(20, 32, 48, 0.6);
+  }
+  html[data-theme="light"] .foot {
+    color: rgba(20, 32, 48, 0.6);
+  }
+</style>
