@@ -254,3 +254,31 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
 - Kontrast v `src/styles/global.css`: rozbalené `<select>` možnosti a
   `::placeholder` byly v jednom z motivů prakticky nečitelné (bílý text na
   bílém/průhledném pozadí) – opraveno globálně pro oba motivy.
+- **2026-09-09: přidán žebříček ligy (`/leaderboard`) – zatím SKRYTÝ.** Inspirace
+  bodováním brněnského Hero Comics (repo `Kubqo/hero-sync`): +3 účast/kolo,
+  +3 výhra, +1 remíza, +0 prohra (hodnoty editovatelné na sezónu). Data se
+  zadávají **ručně každý týden** v `/leaderboard/sprava` (žádný externí API
+  ingest jako má hero-sync). Obě stránky jsou **za admin loginem**
+  (`getAdminSession`, jinak redirect na `/admin?next=…`), veřejně nikde
+  nelinkované; odkaz je jen v `/admin` po přihlášení. Čtení i zápis jde
+  výhradně přes service role klíč server-side.
+  - Schéma: `supabase/migrations/20260909000000_leaderboard.sql` – tabulky
+    `lb_seasons` / `lb_players` / `lb_rounds` / `lb_entries` (prefix `lb_`,
+    nezávislé na `events`/`registrations`/`results`). RLS zapnuté, **žádné
+    policy ani granty** pro anon/authenticated (Supabase dává SELECT na nové
+    tabulky přes ALTER DEFAULT PRIVILEGES – proto explicitní `revoke` v migraci).
+  - Migrace byla poprvé nasazená přes **Supabase Management API**
+    (`POST /v1/projects/xlcasytxoeiiwmvizyga/database/query` s Personal Access
+    Tokenem), ne přes `supabase db push` – CLI ani DB heslo nebyly po ruce.
+  - Logika (skóre, řazení, trend ▲▼ oproti stavu před posledním kolem, série
+    účasti 🔥) je v `src/lib/leaderboard.ts`, čistě funkční, testy
+    `tests/leaderboard.test.mjs` (`node --test`).
+  - API: `src/pages/api/admin/leaderboard/{seasons,players,rounds,entries}.ts`
+    (všechny `requireAdmin` + `createServiceClient`).
+  - `entries` PUT je bulk upsert celého kola; nezaškrtnutý hráč („hrál") se
+    z kola smaže a nezapočítá se mu ani účast.
+  - `/admin` teď po `getAdminSession` respektuje `?next=<lokální cesta>` a
+    přesměruje tam po přihlášení.
+  - Na produkci je zatím **demo sezóna „Podzimní liga 2026"** s vymyšlenými
+    hráči (Kubqo, Jan N., …) pro ukázku – smazat tlačítkem „Smazat sezónu"
+    ve správě, než začne ostrý provoz.

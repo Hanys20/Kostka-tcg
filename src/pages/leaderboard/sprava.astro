@@ -1,0 +1,592 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getAdminSession } from "../../lib/adminAuth";
+
+export const prerender = false;
+
+const session = await getAdminSession(Astro.cookies);
+if (!session) {
+  return Astro.redirect("/admin?next=/leaderboard/sprava");
+}
+---
+
+<Layout title="Správa žebříčku">
+  <section class="mx-auto max-w-5xl px-4 py-10 sm:py-14">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <h1 class="text-2xl font-black text-white sm:text-3xl">Správa žebříčku ligy</h1>
+        <p class="mt-2 text-sm text-white/60">
+          Každý týden přidej kolo a zapiš výsledky – žebříček se přepočítá sám.
+        </p>
+      </div>
+      <div class="flex items-center gap-3 text-sm">
+        <a href="/leaderboard" class="font-semibold text-kostka-purple hover:underline">Zobrazit žebříček →</a>
+        <a href="/admin" class="text-white/50 hover:text-kostka-purple">Zpět do adminu</a>
+      </div>
+    </div>
+
+    <p id="global-message" class="mt-4 text-sm text-kostka-purple"></p>
+
+    <!-- 1) SEZÓNA -->
+    <div class="mt-6 rounded-2xl border border-white/10 bg-kostka-surface p-5">
+      <div class="flex flex-wrap items-center justify-between gap-3">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">1 · Sezóna</p>
+        <select
+          id="season-select"
+          class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-kostka-purple"
+        >
+          <option value="__new">＋ Nová sezóna</option>
+        </select>
+      </div>
+
+      <form id="season-form" class="mt-4 grid gap-3 sm:grid-cols-2">
+        <label class="text-xs text-white/50 sm:col-span-2">
+          Název sezóny
+          <input id="s-name" type="text" placeholder="Podzimní liga 2026" class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" required />
+        </label>
+        <label class="text-xs text-white/50">
+          Hra
+          <input id="s-game" type="text" value="Lorcana" list="s-game-list" class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-kostka-purple" />
+          <datalist id="s-game-list">
+            <option value="Lorcana"></option>
+            <option value="Pokémon"></option>
+            <option value="Riftbound"></option>
+          </datalist>
+        </label>
+        <label class="flex items-end gap-2 text-xs text-white/50">
+          <input id="s-active" type="checkbox" class="h-4 w-4 rounded border-white/20 bg-white/5" />
+          <span>Aktivní sezóna (výchozí v žebříčku pro tuto hru)</span>
+        </label>
+        <label class="text-xs text-white/50">
+          Od
+          <input id="s-from" type="date" class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-kostka-purple" />
+        </label>
+        <label class="text-xs text-white/50">
+          Do
+          <input id="s-to" type="date" class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-kostka-purple" />
+        </label>
+
+        <fieldset class="rounded-xl border border-white/10 p-3 sm:col-span-2">
+          <legend class="px-1 text-xs text-white/50">Bodování (výchozí = Hero Comics)</legend>
+          <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
+            <label class="text-xs text-white/50">Za účast<input id="s-pp" type="number" value="3" class="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-kostka-purple" /></label>
+            <label class="text-xs text-white/50">Výhra<input id="s-pw" type="number" value="3" class="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-kostka-purple" /></label>
+            <label class="text-xs text-white/50">Remíza<input id="s-pd" type="number" value="1" class="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-kostka-purple" /></label>
+            <label class="text-xs text-white/50">Prohra<input id="s-pl" type="number" value="0" class="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white outline-none focus:border-kostka-purple" /></label>
+          </div>
+        </fieldset>
+
+        <fieldset class="rounded-xl border border-white/10 p-3 sm:col-span-2">
+          <legend class="px-1 text-xs text-white/50">Odměna (volitelné – zobrazí se nad žebříčkem)</legend>
+          <div class="grid gap-3 sm:grid-cols-2">
+            <label class="text-xs text-white/50">Popisek<input id="s-pool-label" type="text" placeholder="Hraje se o" class="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" /></label>
+            <label class="text-xs text-white/50">Hodnota<input id="s-pool-value" type="text" placeholder="3 000 Kč store kredit" class="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" /></label>
+            <label class="text-xs text-white/50 sm:col-span-2">Poznámka<textarea id="s-pool-note" rows="2" placeholder="Např. jak se kredit rozděluje mezi nejlepší hráče." class="mt-1 w-full rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple"></textarea></label>
+          </div>
+        </fieldset>
+
+        <div class="flex flex-wrap items-center gap-3 sm:col-span-2">
+          <button type="submit" class="rounded-full bg-kostka-purple px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+            Uložit sezónu
+          </button>
+          <button id="s-delete" type="button" class="hidden rounded-full border border-red-400/40 px-4 py-2 text-sm font-semibold text-red-300 hover:bg-red-400/10">
+            Smazat sezónu
+          </button>
+        </div>
+      </form>
+    </div>
+
+    <div id="needs-season" class="mt-6 rounded-2xl border border-white/10 bg-kostka-surface p-6 text-sm text-white/50">
+      Nejdřív vyber nebo založ sezónu.
+    </div>
+
+    <div id="season-scoped" class="hidden">
+      <!-- 2) HRÁČI -->
+      <div class="mt-6 rounded-2xl border border-white/10 bg-kostka-surface p-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">2 · Hráči</p>
+        <p class="mt-1 text-xs text-white/40">
+          Zadávej přezdívku nebo jméno ve tvaru „Jan N." (ne celé příjmení).
+        </p>
+
+        <form id="player-add-form" class="mt-3 flex flex-wrap gap-2">
+          <input id="p-name" type="text" placeholder="Přezdívka nebo Jan N." class="min-w-[200px] flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" />
+          <button id="p-shorten" type="button" class="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-white/70 hover:border-kostka-purple hover:text-kostka-purple">Zkrátit příjmení</button>
+          <button type="submit" class="rounded-full bg-kostka-purple px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90">Přidat</button>
+        </form>
+
+        <details class="mt-3">
+          <summary class="cursor-pointer text-xs font-semibold text-white/60 hover:text-kostka-purple">Přidat víc hráčů najednou</summary>
+          <form id="player-bulk-form" class="mt-2">
+            <textarea id="p-bulk" rows="4" placeholder="Jeden hráč na řádek" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple"></textarea>
+            <button type="submit" class="mt-2 rounded-full bg-kostka-purple px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90">Přidat všechny</button>
+          </form>
+        </details>
+
+        <div id="player-list" class="mt-4 grid gap-2 sm:grid-cols-2"></div>
+      </div>
+
+      <!-- 3) KOLA -->
+      <div class="mt-6 rounded-2xl border border-white/10 bg-kostka-surface p-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">3 · Kola (týdny)</p>
+        <form id="round-add-form" class="mt-3 flex flex-wrap gap-2">
+          <input id="r-label" type="text" placeholder="Týden N (nech prázdné pro automatické)" class="min-w-[200px] flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" />
+          <input id="r-date" type="date" class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-kostka-purple" />
+          <button type="submit" class="rounded-full bg-kostka-purple px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90">Přidat kolo</button>
+        </form>
+        <div id="round-list" class="mt-4 flex flex-wrap gap-2"></div>
+      </div>
+
+      <!-- 4) ZÁPIS VÝSLEDKŮ -->
+      <div class="mt-6 rounded-2xl border border-white/10 bg-kostka-surface p-5">
+        <div class="flex flex-wrap items-center justify-between gap-3">
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">4 · Zápis výsledků kola</p>
+          <select id="round-select" class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-kostka-purple">
+            <option value="">– vyber kolo –</option>
+          </select>
+        </div>
+
+        <div id="entry-wrap" class="mt-4 hidden">
+          <p class="text-xs text-white/40">
+            Zaškrtni „hrál", zadej výhry/remízy/prohry. Nezaškrtnutý hráč se v kole nezapočítá (ani účast).
+            Bonus = ruční body navíc s poznámkou.
+          </p>
+          <div class="mt-3 overflow-x-auto">
+            <table class="w-full min-w-[640px] border-collapse text-sm">
+              <thead>
+                <tr class="border-b border-white/15 text-left text-white/50">
+                  <th class="px-2 py-2 font-semibold">Hráč</th>
+                  <th class="w-16 px-2 py-2 text-center font-semibold">Hrál</th>
+                  <th class="w-16 px-2 py-2 text-center font-semibold">Výhry</th>
+                  <th class="w-16 px-2 py-2 text-center font-semibold">Remízy</th>
+                  <th class="w-16 px-2 py-2 text-center font-semibold">Prohry</th>
+                  <th class="w-16 px-2 py-2 text-center font-semibold">Bonus</th>
+                  <th class="px-2 py-2 font-semibold">Poznámka k bonusu</th>
+                </tr>
+              </thead>
+              <tbody id="entry-rows"></tbody>
+            </table>
+          </div>
+          <div class="mt-3 flex flex-wrap items-center gap-3">
+            <button id="entry-save" type="button" class="rounded-full bg-kostka-purple px-5 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90">
+              Uložit kolo
+            </button>
+            <span id="entry-message" class="text-sm text-white/50"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <script is:inline>
+    const API = "/api/admin/leaderboard";
+    const $ = (id) => document.getElementById(id);
+    const msg = $("global-message");
+    let seasons = [];
+    let currentSeasonId = null;
+    let players = [];
+    let rounds = [];
+
+    function say(text, isError) {
+      msg.textContent = text;
+      msg.className = "mt-4 text-sm " + (isError ? "text-red-300" : "text-kostka-purple");
+    }
+
+    function abbreviateSurname(name) {
+      const t = name.trim().replace(/\s+/g, " ");
+      if (!t) return t;
+      const parts = t.split(" ");
+      if (parts.length < 2) return t;
+      const first = parts.slice(0, -1).join(" ");
+      const last = parts[parts.length - 1];
+      const initial = [...last][0];
+      return initial ? `${first} ${initial.toUpperCase()}.` : first;
+    }
+
+    async function api(path, opts) {
+      const res = await fetch(API + path, opts);
+      if (res.status === 401) {
+        window.location.href = "/admin?next=/leaderboard/sprava";
+        throw new Error("unauthorized");
+      }
+      const json = await res.json().catch(() => ({}));
+      if (!res.ok || !json.ok) throw new Error(json.message || "Chyba serveru");
+      return json;
+    }
+
+    // —— SEZÓNY ——
+    async function loadSeasons(selectId) {
+      const { seasons: list } = await api("/seasons");
+      seasons = list;
+      const sel = $("season-select");
+      sel.innerHTML =
+        '<option value="__new">＋ Nová sezóna</option>' +
+        seasons
+          .map(
+            (s) =>
+              `<option value="${s.id}">${s.game} · ${s.name}${s.is_active ? " (aktivní)" : ""}</option>`
+          )
+          .join("");
+      const target =
+        selectId ||
+        currentSeasonId ||
+        (seasons.find((s) => s.is_active) || seasons[0] || {}).id;
+      if (target && seasons.some((s) => s.id === target)) {
+        sel.value = target;
+      } else {
+        sel.value = "__new";
+      }
+      onSeasonChange();
+    }
+
+    function fillSeasonForm(s) {
+      $("s-name").value = s ? s.name : "";
+      $("s-game").value = s ? s.game : "Lorcana";
+      $("s-active").checked = s ? !!s.is_active : false;
+      $("s-from").value = s && s.starts_on ? s.starts_on : "";
+      $("s-to").value = s && s.ends_on ? s.ends_on : "";
+      $("s-pp").value = s ? s.points_participation : 3;
+      $("s-pw").value = s ? s.points_win : 3;
+      $("s-pd").value = s ? s.points_draw : 1;
+      $("s-pl").value = s ? s.points_loss : 0;
+      $("s-pool-label").value = s && s.prize_pool_label ? s.prize_pool_label : "";
+      $("s-pool-value").value = s && s.prize_pool_value ? s.prize_pool_value : "";
+      $("s-pool-note").value = s && s.prize_pool_note ? s.prize_pool_note : "";
+      $("s-delete").classList.toggle("hidden", !s);
+    }
+
+    function onSeasonChange() {
+      const val = $("season-select").value;
+      currentSeasonId = val === "__new" ? null : val;
+      const s = seasons.find((x) => x.id === currentSeasonId) || null;
+      fillSeasonForm(s);
+      $("needs-season").classList.toggle("hidden", !!s);
+      $("season-scoped").classList.toggle("hidden", !s);
+      if (s) {
+        loadPlayers();
+        loadRounds();
+      }
+    }
+
+    $("season-select").addEventListener("change", onSeasonChange);
+
+    $("season-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const payload = {
+        name: $("s-name").value.trim(),
+        game: $("s-game").value.trim() || "Lorcana",
+        isActive: $("s-active").checked,
+        startsOn: $("s-from").value || null,
+        endsOn: $("s-to").value || null,
+        pointsParticipation: Number($("s-pp").value),
+        pointsWin: Number($("s-pw").value),
+        pointsDraw: Number($("s-pd").value),
+        pointsLoss: Number($("s-pl").value),
+        prizePoolLabel: $("s-pool-label").value.trim() || null,
+        prizePoolValue: $("s-pool-value").value.trim() || null,
+        prizePoolNote: $("s-pool-note").value.trim() || null,
+      };
+      try {
+        if (currentSeasonId) {
+          await api("/seasons", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ...payload, id: currentSeasonId }),
+          });
+          say("Sezóna uložena.");
+          await loadSeasons(currentSeasonId);
+        } else {
+          const { season } = await api("/seasons", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          });
+          say("Sezóna vytvořena.");
+          currentSeasonId = season.id;
+          await loadSeasons(season.id);
+        }
+      } catch (err) {
+        say(err.message, true);
+      }
+    });
+
+    $("s-delete").addEventListener("click", async () => {
+      if (!currentSeasonId) return;
+      if (!confirm("Smazat celou sezónu i s hráči, koly a výsledky? Nevratné.")) return;
+      try {
+        await api("/seasons", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: currentSeasonId }),
+        });
+        currentSeasonId = null;
+        say("Sezóna smazána.");
+        await loadSeasons("__new");
+      } catch (err) {
+        say(err.message, true);
+      }
+    });
+
+    // —— HRÁČI ——
+    async function loadPlayers() {
+      if (!currentSeasonId) return;
+      const { players: list } = await api("/players?season=" + currentSeasonId);
+      players = list;
+      $("player-list").innerHTML = players.length
+        ? players
+            .map(
+              (p) => `
+        <div class="flex items-center justify-between gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+          <span class="truncate text-sm font-medium text-white">${escapeHtml(p.display_name)}</span>
+          <span class="flex shrink-0 gap-3 text-xs">
+            <button type="button" data-p-rename="${p.id}" class="font-semibold text-white/60 hover:text-kostka-purple">Přejmenovat</button>
+            <button type="button" data-p-del="${p.id}" class="font-semibold text-red-300 hover:text-red-200">Smazat</button>
+          </span>
+        </div>`
+            )
+            .join("")
+        : '<p class="text-sm text-white/40">Zatím žádní hráči.</p>';
+      renderEntryRowsIfActive();
+    }
+
+    $("p-shorten").addEventListener("click", () => {
+      $("p-name").value = abbreviateSurname($("p-name").value);
+    });
+
+    $("player-add-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const name = $("p-name").value.trim();
+      if (!name) return;
+      try {
+        const r = await api("/players", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seasonId: currentSeasonId, names: [name] }),
+        });
+        $("p-name").value = "";
+        say(r.skipped ? "Hráč už v sezóně je." : "Hráč přidán.");
+        await loadPlayers();
+      } catch (err) {
+        say(err.message, true);
+      }
+    });
+
+    $("player-bulk-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const names = $("p-bulk").value.split("\n").map((n) => n.trim()).filter(Boolean);
+      if (!names.length) return;
+      try {
+        const r = await api("/players", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ seasonId: currentSeasonId, names }),
+        });
+        $("p-bulk").value = "";
+        say(`Přidáno ${r.added.length}, přeskočeno ${r.skipped}.`);
+        await loadPlayers();
+      } catch (err) {
+        say(err.message, true);
+      }
+    });
+
+    $("player-list").addEventListener("click", async (e) => {
+      const rename = e.target.closest("[data-p-rename]");
+      const del = e.target.closest("[data-p-del]");
+      if (rename) {
+        const p = players.find((x) => x.id === rename.dataset.pRename);
+        const next = prompt("Nové jméno hráče:", p ? p.display_name : "");
+        if (!next || !next.trim()) return;
+        try {
+          await api("/players", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: rename.dataset.pRename, displayName: next.trim() }),
+          });
+          await loadPlayers();
+          say("Hráč přejmenován.");
+        } catch (err) {
+          say(err.message, true);
+        }
+      }
+      if (del) {
+        if (!confirm("Smazat hráče i jeho výsledky ze všech kol?")) return;
+        try {
+          await api("/players", {
+            method: "DELETE",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ id: del.dataset.pDel }),
+          });
+          await loadPlayers();
+          say("Hráč smazán.");
+        } catch (err) {
+          say(err.message, true);
+        }
+      }
+    });
+
+    // —— KOLA ——
+    async function loadRounds() {
+      if (!currentSeasonId) return;
+      const { rounds: list } = await api("/rounds?season=" + currentSeasonId);
+      rounds = list;
+      $("round-list").innerHTML = rounds.length
+        ? rounds
+            .map(
+              (r) => `
+        <span class="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-1.5 text-xs">
+          <span class="font-semibold text-white">${escapeHtml(r.label)}</span>
+          ${r.played_on ? `<span class="text-white/40">${r.played_on}</span>` : ""}
+          <button type="button" data-r-del="${r.id}" class="font-semibold text-red-300 hover:text-red-200">✕</button>
+        </span>`
+            )
+            .join("")
+        : '<p class="text-sm text-white/40">Zatím žádná kola.</p>';
+
+      const sel = $("round-select");
+      const prev = sel.value;
+      sel.innerHTML =
+        '<option value="">– vyber kolo –</option>' +
+        rounds.map((r) => `<option value="${r.id}">${escapeHtml(r.label)}</option>`).join("");
+      if (rounds.some((r) => r.id === prev)) sel.value = prev;
+      onRoundChange();
+    }
+
+    $("round-add-form").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      try {
+        await api("/rounds", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            seasonId: currentSeasonId,
+            label: $("r-label").value.trim() || null,
+            playedOn: $("r-date").value || null,
+          }),
+        });
+        $("r-label").value = "";
+        $("r-date").value = "";
+        say("Kolo přidáno.");
+        await loadRounds();
+      } catch (err) {
+        say(err.message, true);
+      }
+    });
+
+    $("round-list").addEventListener("click", async (e) => {
+      const del = e.target.closest("[data-r-del]");
+      if (!del) return;
+      if (!confirm("Smazat kolo i s jeho výsledky?")) return;
+      try {
+        await api("/rounds", {
+          method: "DELETE",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ id: del.dataset.rDel }),
+        });
+        say("Kolo smazáno.");
+        await loadRounds();
+      } catch (err) {
+        say(err.message, true);
+      }
+    });
+
+    // —— ZÁPIS VÝSLEDKŮ ——
+    let entryRows = [];
+
+    $("round-select").addEventListener("change", () => {
+      $("entry-message").textContent = "";
+      onRoundChange();
+    });
+
+    async function onRoundChange() {
+      const roundId = $("round-select").value;
+      const wrap = $("entry-wrap");
+      if (!roundId) {
+        wrap.classList.add("hidden");
+        return;
+      }
+      try {
+        const { rows } = await api("/entries?round=" + roundId);
+        entryRows = rows;
+        renderEntryRows();
+        wrap.classList.remove("hidden");
+      } catch (err) {
+        say(err.message, true);
+      }
+    }
+
+    function renderEntryRowsIfActive() {
+      if ($("round-select").value && !$("entry-wrap").classList.contains("hidden")) {
+        onRoundChange();
+      }
+    }
+
+    function renderEntryRows() {
+      const tb = $("entry-rows");
+      if (!entryRows.length) {
+        tb.innerHTML =
+          '<tr><td colspan="7" class="px-2 py-4 text-sm text-white/40">Nejdřív přidej hráče (sekce 2).</td></tr>';
+        return;
+      }
+      tb.innerHTML = entryRows
+        .map(
+          (r, i) => `
+        <tr class="border-b border-white/10" data-i="${i}">
+          <td class="px-2 py-2 font-medium text-white">${escapeHtml(r.displayName)}</td>
+          <td class="px-2 py-2 text-center"><input type="checkbox" data-f="played" ${r.played ? "checked" : ""} class="h-4 w-4" /></td>
+          <td class="px-2 py-2"><input type="number" min="0" data-f="wins" value="${r.wins || 0}" class="w-14 rounded border border-white/15 bg-white/5 px-1.5 py-1 text-center text-sm text-white outline-none focus:border-kostka-purple" /></td>
+          <td class="px-2 py-2"><input type="number" min="0" data-f="draws" value="${r.draws || 0}" class="w-14 rounded border border-white/15 bg-white/5 px-1.5 py-1 text-center text-sm text-white outline-none focus:border-kostka-purple" /></td>
+          <td class="px-2 py-2"><input type="number" min="0" data-f="losses" value="${r.losses || 0}" class="w-14 rounded border border-white/15 bg-white/5 px-1.5 py-1 text-center text-sm text-white outline-none focus:border-kostka-purple" /></td>
+          <td class="px-2 py-2"><input type="number" data-f="bonusPoints" value="${r.bonusPoints || 0}" class="w-14 rounded border border-white/15 bg-white/5 px-1.5 py-1 text-center text-sm text-white outline-none focus:border-kostka-purple" /></td>
+          <td class="px-2 py-2"><input type="text" data-f="bonusNote" value="${escapeAttr(r.bonusNote || "")}" placeholder="volitelné" class="w-full rounded border border-white/15 bg-white/5 px-2 py-1 text-sm text-white placeholder:text-white/30 outline-none focus:border-kostka-purple" /></td>
+        </tr>`
+        )
+        .join("");
+
+      // Když admin zadá skóre, automaticky zaškrtne "hrál".
+      tb.querySelectorAll('input[data-f="wins"], input[data-f="draws"], input[data-f="losses"]').forEach((inp) => {
+        inp.addEventListener("input", (ev) => {
+          const tr = ev.target.closest("tr");
+          if (Number(ev.target.value) > 0) tr.querySelector('input[data-f="played"]').checked = true;
+        });
+      });
+    }
+
+    $("entry-save").addEventListener("click", async () => {
+      const roundId = $("round-select").value;
+      if (!roundId) return;
+      const rows = [...$("entry-rows").querySelectorAll("tr[data-i]")].map((tr) => {
+        const i = Number(tr.dataset.i);
+        const get = (f) => tr.querySelector(`[data-f="${f}"]`);
+        return {
+          playerId: entryRows[i].playerId,
+          played: get("played").checked,
+          wins: Number(get("wins").value) || 0,
+          draws: Number(get("draws").value) || 0,
+          losses: Number(get("losses").value) || 0,
+          bonusPoints: Number(get("bonusPoints").value) || 0,
+          bonusNote: get("bonusNote").value.trim(),
+        };
+      });
+      try {
+        const r = await api("/entries", {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ roundId, entries: rows }),
+        });
+        $("entry-message").textContent = `Uloženo: ${r.saved} hráčů, ${r.cleared} vynecháno.`;
+        say("Kolo uloženo. Žebříček je aktualizovaný.");
+        onRoundChange();
+      } catch (err) {
+        say(err.message, true);
+      }
+    });
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+    }
+    function escapeAttr(s) {
+      return escapeHtml(s);
+    }
+
+    loadSeasons().catch((err) => say(err.message, true));
+  </script>
+</Layout>

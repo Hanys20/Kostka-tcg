@@ -1,0 +1,452 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getAdminSession, createServiceClient } from "../../lib/adminAuth";
+import {
+  computeStandings,
+  type EntryRow,
+  type PlayerRow,
+  type RoundRow,
+  type Scoring,
+  type StandingRow,
+} from "../../lib/leaderboard";
+
+export const prerender = false;
+
+const session = await getAdminSession(Astro.cookies);
+if (!session) {
+  return Astro.redirect("/admin?next=/leaderboard");
+}
+
+const service = createServiceClient();
+
+const { data: seasonsRaw } = await service
+  .from("lb_seasons")
+  .select(
+    "id, game, name, starts_on, ends_on, is_active, points_win, points_draw, points_loss, points_participation, prize_pool_label, prize_pool_value, prize_pool_note"
+  )
+  .order("is_active", { ascending: false })
+  .order("created_at", { ascending: false });
+
+const seasons = seasonsRaw ?? [];
+const games = [...new Set(seasons.map((s) => s.game))];
+
+const requestedSeasonId = Astro.url.searchParams.get("season");
+const requestedGame = Astro.url.searchParams.get("game");
+
+let season =
+  (requestedSeasonId && seasons.find((s) => s.id === requestedSeasonId)) ||
+  (requestedGame && seasons.find((s) => s.game === requestedGame && s.is_active)) ||
+  seasons.find((s) => s.is_active) ||
+  seasons[0] ||
+  null;
+
+let standings: StandingRow[] = [];
+let rounds: RoundRow[] = [];
+let scoring: Scoring = {
+  pointsWin: 3,
+  pointsDraw: 1,
+  pointsLoss: 0,
+  pointsParticipation: 3,
+};
+
+if (season) {
+  scoring = {
+    pointsWin: season.points_win,
+    pointsDraw: season.points_draw,
+    pointsLoss: season.points_loss,
+    pointsParticipation: season.points_participation,
+  };
+
+  const [{ data: playersRaw }, { data: roundsRaw }] = await Promise.all([
+    service.from("lb_players").select("id, display_name, note").eq("season_id", season.id),
+    service
+      .from("lb_rounds")
+      .select("id, label, played_on, sort_order")
+      .eq("season_id", season.id)
+      .order("sort_order", { ascending: true }),
+  ]);
+
+  const players: PlayerRow[] = (playersRaw ?? []).map((p) => ({
+    id: p.id,
+    displayName: p.display_name,
+    note: p.note,
+  }));
+  rounds = (roundsRaw ?? []).map((r) => ({
+    id: r.id,
+    label: r.label,
+    playedOn: r.played_on,
+    sortOrder: r.sort_order,
+  }));
+
+  let entries: EntryRow[] = [];
+  if (rounds.length) {
+    const { data: entriesRaw } = await service
+      .from("lb_entries")
+      .select("round_id, player_id, wins, draws, losses, bonus_points, bonus_note")
+      .in(
+        "round_id",
+        rounds.map((r) => r.id)
+      );
+    entries = (entriesRaw ?? []).map((e) => ({
+      roundId: e.round_id,
+      playerId: e.player_id,
+      wins: e.wins,
+      draws: e.draws,
+      losses: e.losses,
+      bonusPoints: e.bonus_points,
+      bonusNote: e.bonus_note,
+    }));
+  }
+
+  standings = computeStandings(players, rounds, entries, scoring);
+}
+
+const dateFmt = new Intl.DateTimeFormat("cs-CZ", {
+  day: "numeric",
+  month: "numeric",
+  year: "numeric",
+});
+const fmtDate = (d: string | null | undefined) => (d ? dateFmt.format(new Date(d)) : null);
+const rangeLabel =
+  season && (season.starts_on || season.ends_on)
+    ? `${fmtDate(season.starts_on) ?? "?"} – ${fmtDate(season.ends_on) ?? "?"}`
+    : null;
+
+const podium = standings.slice(0, 3);
+const rest = standings.slice(3);
+const medalOrder = [2, 1, 3]; // vizuální pořadí sloupců pódia
+
+const trendMark: Record<StandingRow["trend"], { char: string; cls: string; label: string }> = {
+  up: { char: "▲", cls: "text-emerald-400", label: "polepšil si" },
+  down: { char: "▼", cls: "text-red-400", label: "pohoršil si" },
+  same: { char: "–", cls: "text-white/25", label: "beze změny" },
+  new: { char: "★", cls: "text-kostka-purple", label: "nový v žebříčku" },
+};
+
+const hasPrizePool = !!(season && season.prize_pool_value);
+---
+
+<Layout title="Žebříček ligy">
+  <section class="mx-auto max-w-4xl px-4 py-8 sm:py-12">
+    <div
+      class="mb-6 flex items-center gap-2 rounded-xl border border-kostka-purple/25 bg-kostka-purple/10 px-3 py-2 text-xs text-white/70"
+    >
+      <span aria-hidden="true">🔒</span>
+      <span>Náhled žebříčku – veřejně skrytý, vidí ho jen přihlášený admin.</span>
+      <a href="/leaderboard/sprava" class="ml-auto shrink-0 font-semibold text-kostka-purple hover:underline"
+        >Zadat výsledky →</a
+      >
+    </div>
+
+    {
+      !season ? (
+        <div class="rounded-2xl border border-white/10 bg-kostka-surface p-8 text-center">
+          <h1 class="text-2xl font-black text-white">Žebříček ligy</h1>
+          <p class="mt-3 text-sm text-white/60">
+            Zatím není žádná sezóna. Založ ji ve{" "}
+            <a href="/leaderboard/sprava" class="font-semibold text-kostka-purple hover:underline">
+              správě žebříčku
+            </a>
+            .
+          </p>
+        </div>
+      ) : (
+        <>
+          <header class="text-center">
+            <p class="text-xs font-semibold uppercase tracking-[0.25em] text-kostka-purple">
+              {season.game} · Liga
+            </p>
+            <h1 class="mt-2 text-3xl font-black text-white sm:text-4xl">{season.name}</h1>
+            <p class="mt-2 text-sm text-white/50">
+              {rangeLabel ? `${rangeLabel} · ` : ""}
+              {rounds.length} {rounds.length === 1 ? "kolo" : rounds.length >= 2 && rounds.length <= 4 ? "kola" : "kol"}
+              {" · "}
+              {standings.length} {standings.length === 1 ? "hráč" : standings.length >= 2 && standings.length <= 4 ? "hráči" : "hráčů"}
+            </p>
+
+            {(seasons.length > 1 || games.length > 1) && (
+              <form method="get" class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                <select
+                  name="season"
+                  onchange="this.form.submit()"
+                  class="rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white outline-none focus:border-kostka-purple"
+                >
+                  {seasons.map((s) => (
+                    <option value={s.id} selected={s.id === season.id}>
+                      {s.game} · {s.name}
+                      {s.is_active ? " (aktivní)" : ""}
+                    </option>
+                  ))}
+                </select>
+              </form>
+            )}
+          </header>
+
+          {hasPrizePool && (
+            <div class="mt-6 flex justify-center">
+              <div class="w-full max-w-sm rounded-2xl border border-kostka-purple/30 bg-gradient-to-b from-kostka-purple/15 to-kostka-purple/5 p-4 text-center">
+                <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">
+                  {season.prize_pool_label || "Hraje se o"}
+                </p>
+                <p class="mt-1 text-2xl font-black text-kostka-purple">{season.prize_pool_value}</p>
+                {season.prize_pool_note && (
+                  <p class="mt-3 border-t border-white/10 pt-3 text-xs leading-relaxed text-white/60">
+                    {season.prize_pool_note}
+                  </p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {standings.length === 0 ? (
+            <div class="mt-8 rounded-2xl border border-white/10 bg-kostka-surface p-8 text-center text-sm text-white/60">
+              Zatím žádné výsledky. Přidej kolo a zapiš je ve{" "}
+              <a href="/leaderboard/sprava" class="font-semibold text-kostka-purple hover:underline">
+                správě
+              </a>
+              .
+            </div>
+          ) : (
+            <>
+              {podium.length === 3 && (
+                <div class="podium mt-10">
+                  {medalOrder.map((place) => {
+                    const row = podium[place - 1];
+                    return (
+                      <div class={`slot slot-${place}`}>
+                        <div class="fig">
+                          <div class={`disc disc-${place}`}>
+                            <span>{[...row.displayName.trim()][0]?.toUpperCase() ?? "?"}</span>
+                          </div>
+                          <p class="pname">
+                            {row.displayName}
+                            {row.streak >= 3 && <span title={`${row.streak} kol v řadě`}> 🔥</span>}
+                          </p>
+                          <p class={`pscore score-${place}`}>{row.points} b.</p>
+                        </div>
+                        <div class={`plinth plinth-${place}`}>
+                          <span>{place}</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              <div class="mt-8 overflow-x-auto">
+                <table class="w-full min-w-[420px] border-collapse text-sm">
+                  <thead>
+                    <tr class="border-b border-white/15 text-white/50">
+                      <th class="w-14 px-2 py-3 text-center font-semibold">Poz.</th>
+                      <th class="px-2 py-3 text-left font-semibold">Hráč</th>
+                      <th class="hide-sm w-16 px-2 py-3 text-center font-semibold">Kola</th>
+                      <th class="hide-sm w-16 px-2 py-3 text-center font-semibold">Výhra</th>
+                      <th class="hide-sm w-16 px-2 py-3 text-center font-semibold">Remíza</th>
+                      <th class="w-16 px-2 py-3 text-center font-semibold">Body</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {standings.map((row) => (
+                      <tr class="border-b border-white/10">
+                        <td class="px-2 py-3 text-center">
+                          <span
+                            class:list={[
+                              "inline-grid h-7 w-7 place-items-center rounded-full text-xs font-bold",
+                              row.rank === 1
+                                ? "bg-yellow-400/20 text-yellow-300"
+                                : row.rank === 2
+                                  ? "bg-slate-300/20 text-slate-200"
+                                  : row.rank === 3
+                                    ? "bg-amber-600/20 text-amber-400"
+                                    : "text-white/50",
+                            ]}
+                          >
+                            {row.rank}
+                          </span>
+                        </td>
+                        <td class="px-2 py-3">
+                          <div class="flex items-center gap-2 font-semibold text-white">
+                            <span
+                              class={`w-3 shrink-0 text-center text-xs ${trendMark[row.trend].cls}`}
+                              title={trendMark[row.trend].label}
+                            >
+                              {trendMark[row.trend].char}
+                            </span>
+                            <span class="truncate">{row.displayName}</span>
+                            {row.streak >= 3 && (
+                              <span class="shrink-0 text-xs" title={`${row.streak} kol v řadě`}>
+                                🔥{row.streak}
+                              </span>
+                            )}
+                          </div>
+                        </td>
+                        <td class="hide-sm px-2 py-3 text-center tabular-nums text-white/70">
+                          {row.roundsPlayed}
+                        </td>
+                        <td class="hide-sm px-2 py-3 text-center tabular-nums text-white/70">
+                          {row.wins}
+                        </td>
+                        <td class="hide-sm px-2 py-3 text-center tabular-nums text-white/70">
+                          {row.draws}
+                        </td>
+                        <td class="px-2 py-3 text-center text-base font-black tabular-nums text-kostka-purple">
+                          {row.points}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+
+              <p class="mt-4 text-center text-[11px] text-white/35">
+                Bodování: +{scoring.pointsParticipation} za účast · +{scoring.pointsWin} výhra · +
+                {scoring.pointsDraw} remíza
+                {scoring.pointsLoss ? ` · ${scoring.pointsLoss > 0 ? "+" : ""}${scoring.pointsLoss} prohra` : ""}
+              </p>
+            </>
+          )}
+        </>
+      )
+    }
+  </section>
+</Layout>
+
+<style>
+  .hide-sm {
+    display: table-cell;
+  }
+  @media (max-width: 560px) {
+    .hide-sm {
+      display: none;
+    }
+  }
+
+  .podium {
+    display: grid;
+    grid-template-columns: 1fr 1.15fr 1fr;
+    gap: 10px;
+    align-items: end;
+    max-width: 480px;
+    margin-inline: auto;
+  }
+  .slot {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    opacity: 0;
+    transform: translateY(24px);
+    animation: rise 0.6s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .slot-1 {
+    animation-delay: 0.25s;
+  }
+  .slot-2 {
+    animation-delay: 0.08s;
+  }
+  .slot-3 {
+    animation-delay: 0.16s;
+  }
+
+  .fig {
+    text-align: center;
+    padding: 0 4px 10px;
+  }
+  .disc {
+    width: 60px;
+    height: 60px;
+    margin: 0 auto 8px;
+    border-radius: 50%;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    font-size: 1.4rem;
+    color: #0a0c11;
+    border: 3px solid rgba(255, 255, 255, 0.75);
+  }
+  .disc-1 {
+    width: 74px;
+    height: 74px;
+    font-size: 1.7rem;
+    background: linear-gradient(160deg, #f7e08a, #d4a017);
+    box-shadow: 0 0 22px rgba(240, 200, 80, 0.35);
+  }
+  .disc-2 {
+    background: linear-gradient(160deg, #e6e9ee, #9aa0a6);
+  }
+  .disc-3 {
+    background: linear-gradient(160deg, #e2a877, #b8743a);
+  }
+  .pname {
+    margin: 0;
+    font-weight: 700;
+    font-size: 0.9rem;
+    line-height: 1.2;
+    color: #fff;
+    word-break: break-word;
+  }
+  .slot-1 .pname {
+    font-size: 1rem;
+  }
+  .pscore {
+    margin: 4px 0 0;
+    font-weight: 800;
+    font-size: 0.9rem;
+  }
+  .score-1 {
+    color: #f5d76e;
+  }
+  .score-2 {
+    color: #d8dde3;
+  }
+  .score-3 {
+    color: #e2a877;
+  }
+  .plinth {
+    width: 100%;
+    border-radius: 8px 8px 3px 3px;
+    display: grid;
+    place-items: center;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.85);
+    transform-origin: bottom;
+    transform: scaleY(0.3);
+    opacity: 0;
+    animation: grow 0.5s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+  .plinth-1 {
+    height: 68px;
+    background: linear-gradient(180deg, #b98cff, #6d47b8);
+    animation-delay: 0.22s;
+  }
+  .plinth-2 {
+    height: 48px;
+    background: linear-gradient(180deg, #5a6068, #3b4048);
+    animation-delay: 0.06s;
+  }
+  .plinth-3 {
+    height: 38px;
+    background: linear-gradient(180deg, #a9673c, #7c4a29);
+    animation-delay: 0.12s;
+  }
+
+  @keyframes rise {
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  @keyframes grow {
+    to {
+      opacity: 1;
+      transform: scaleY(1);
+    }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .slot,
+    .plinth {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+  }
+</style>
