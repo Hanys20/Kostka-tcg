@@ -100,12 +100,38 @@ const calendarPayload = JSON.stringify(
         if (dayEvents?.length) {
           const primary = dayEvents[0];
           const a = document.createElement("a");
-          a.href = primary.registrationUrl;
-          if (primary.registrationUrl.startsWith("http")) {
-            a.target = "_blank";
-            a.rel = "noreferrer";
-          }
+          // Primárně proklik na kartu události v seznamu vpravo (posun stránky).
+          // Když karta na stránce není (jiná stránka, proběhlá liga, turnaj mimo
+          // výpis), spadneme zpět na registrační odkaz / detail události.
+          a.href = `#event-${primary.slug}`;
           a.title = dayEvents.map((e) => e.title).join(", ");
+          a.addEventListener("click", (ev) => {
+            const target = document.getElementById(`event-${primary.slug}`);
+            if (target) {
+              ev.preventDefault();
+              // Karta může být skrytá filtrem hry – aktivuj odpovídající filtr.
+              const game = target.getAttribute("data-game");
+              if (game) {
+                const btn = document.querySelector<HTMLButtonElement>(
+                  `[data-game-filter="${game}"]`,
+                );
+                if (btn && btn.dataset.active !== "true") btn.click();
+              }
+              target.classList.remove("hidden");
+              target.scrollIntoView({ behavior: "smooth", block: "center" });
+              target.classList.remove("event-card--flash");
+              void target.offsetWidth;
+              target.classList.add("event-card--flash");
+              window.setTimeout(() => target.classList.remove("event-card--flash"), 1800);
+            } else {
+              ev.preventDefault();
+              if (primary.registrationUrl.startsWith("http")) {
+                window.open(primary.registrationUrl, "_blank", "noopener");
+              } else {
+                window.location.href = primary.registrationUrl;
+              }
+            }
+          });
           el = a;
         } else {
           el = document.createElement("span");

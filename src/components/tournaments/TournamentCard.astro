@@ -13,7 +13,8 @@ const actionLabel = event.registrationUrl ? "Otevřít PlayHub" : spotsLeft > 0 
 ---
 
 <article
-  class="group relative flex flex-col overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-purple/40"
+  id={`event-${event.slug}`}
+  class="group relative flex scroll-mt-28 flex-col overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-purple/40"
   data-game={event.game}
   data-full={spotsLeft <= 0}
 >

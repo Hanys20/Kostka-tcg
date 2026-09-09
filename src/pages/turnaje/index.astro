@@ -7,7 +7,20 @@ import { getUpcomingTournaments } from "../../data/tournaments";
 export const prerender = false;
 
 const upcomingTournaments = await getUpcomingTournaments();
-const upcomingLeague = upcomingTournaments.filter((e) => e.type === "league");
+
+// Práh "dnešek od půlnoci" – termín, který už dnes proběhl, se z ligy schová.
+const startOfToday = new Date();
+startOfToday.setHours(0, 0, 0, 0);
+const isNotPast = (e: (typeof upcomingTournaments)[number]) =>
+  !e.startsAt || new Date(e.startsAt) >= startOfToday;
+
+// Liga: jen nadcházející termíny, seřazené podle data, a max nejbližší 4.
+const upcomingLeague = upcomingTournaments
+  .filter((e) => e.type === "league" && isNotPast(e))
+  .sort((a, b) => new Date(a.startsAt ?? 0).getTime() - new Date(b.startsAt ?? 0).getTime())
+  .slice(0, 4);
+
+// Turnaje, prerelease/preview nových sad a store championshipy – zobrazujeme vždy všechny.
 const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tournament");
 
 const gameFilters = [
@@ -51,7 +64,7 @@ const gameFilters = [
           <p class="mt-4 hidden text-sm text-white/50" data-empty-hint>Žádné termíny neodpovídají zvolenému filtru.</p>
         </div>
         <div id="turnaje">
-          <h2 class="text-xl font-bold text-white">Turnaje a prerelease</h2>
+          <h2 class="text-xl font-bold text-white">Turnaje, prerelease a store championshipy</h2>
           <div class="mt-4 grid gap-6 sm:grid-cols-2" data-event-grid>
             {upcomingTournamentOnly.length ? upcomingTournamentOnly.map((event) => <TournamentCard event={event} />) : <p class="text-sm text-white/50">Zatím tu nejsou žádné naplánované turnaje.</p>}
           </div>
@@ -62,6 +75,29 @@ const gameFilters = [
   </section>
 
   <style>
+    /* Zvýraznění karty po prokliku z kalendáře. */
+    :global(.event-card--flash) {
+      animation: event-card-flash 1.6s ease-out;
+    }
+
+    @keyframes event-card-flash {
+      0%,
+      15% {
+        border-color: rgba(157, 127, 224, 0.9);
+        box-shadow: 0 0 0 1px rgba(157, 127, 224, 0.6), 0 0 32px rgba(157, 127, 224, 0.4);
+      }
+      100% {
+        border-color: rgba(255, 255, 255, 0.1);
+        box-shadow: none;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      :global(.event-card--flash) {
+        animation: none;
+      }
+    }
+
     /* Barvy filtrů podle hry – stejné odstíny jako záře karet her na hlavní stránce. */
     .game-filter:hover {
       border-color: var(--filter-border, rgba(157, 127, 224, 0.4));
