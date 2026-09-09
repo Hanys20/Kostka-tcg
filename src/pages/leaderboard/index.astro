@@ -117,17 +117,18 @@ const rest = standings.slice(3);
 const medalOrder = [2, 1, 3]; // vizuální pořadí sloupců pódia
 
 const trendMark: Record<StandingRow["trend"], { char: string; cls: string; label: string }> = {
-  up: { char: "▲", cls: "trend trend-up", label: "Polepšil si oproti pořadí před posledním kolem." },
-  down: { char: "▼", cls: "trend trend-down", label: "Pohoršil si oproti pořadí před posledním kolem." },
-  same: { char: "–", cls: "trend trend-same", label: "Beze změny oproti pořadí před posledním kolem." },
-  new: { char: "★", cls: "trend trend-new", label: "Nový v žebříčku – v předchozích kolech nehrál." },
+  up: { char: "▲", cls: "trend trend-up", label: "Polepšil si oproti pořadí před poslední ligou." },
+  down: { char: "▼", cls: "trend trend-down", label: "Pohoršil si oproti pořadí před poslední ligou." },
+  same: { char: "–", cls: "trend trend-same", label: "Beze změny oproti pořadí před poslední ligou." },
+  new: { char: "★", cls: "trend trend-new", label: "Nový v žebříčku – v předchozích ligách nehrál." },
 };
 
 const hasPrizePool = !!(season && season.prize_pool_value);
 
-const roundLoc = (n: number) => (n === 1 ? "kole" : "kolech");
+const ligaCount = (n: number) => (n === 1 ? "liga" : n >= 2 && n <= 4 ? "ligy" : "lig");
+const ligaLoc = (n: number) => (n === 1 ? "lize" : "ligách");
 const streakLabel = (n: number) =>
-  `Série účasti: hráč hrál na posledních ${n} ${roundLoc(n)} po sobě, bez jediného vynechání. Odznak se objeví od 3 kol v řadě, po vynechaném kole se série vynuluje.`;
+  `Série účasti: hráč hrál na posledních ${n} ${ligaLoc(n)} po sobě, bez jediného vynechání. Odznak se objeví od 3 lig v řadě, po vynechané lize se série vynuluje.`;
 ---
 
 <Layout title="Žebříček ligy">
@@ -163,7 +164,7 @@ const streakLabel = (n: number) =>
             <h1 class="mt-2 text-3xl font-black text-white sm:text-4xl">{season.name}</h1>
             <p class="mt-2 text-sm text-white/50">
               {rangeLabel ? `${rangeLabel} · ` : ""}
-              {rounds.length} {rounds.length === 1 ? "kolo" : rounds.length >= 2 && rounds.length <= 4 ? "kola" : "kol"}
+              {rounds.length} {ligaCount(rounds.length)}
               {" · "}
               {standings.length} {standings.length === 1 ? "hráč" : standings.length >= 2 && standings.length <= 4 ? "hráči" : "hráčů"}
             </p>
@@ -204,7 +205,7 @@ const streakLabel = (n: number) =>
 
           {standings.length === 0 ? (
             <div class="mt-8 rounded-2xl border border-white/10 bg-kostka-surface p-8 text-center text-sm text-white/60">
-              Zatím žádné výsledky. Přidej kolo a zapiš je ve{" "}
+              Zatím žádné výsledky. Přidej ligu a zapiš je ve{" "}
               <a href="/leaderboard/sprava" class="font-semibold text-kostka-purple hover:underline">
                 správě
               </a>
