@@ -283,11 +283,14 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
     hráči (Kubqo, Jan N., …) pro ukázku – smazat tlačítkem „Smazat sezónu"
     ve správě, než začne ostrý provoz.
   - **2026-09-10: profilový obrázek hráče.** Migrace
-    `20260910000000_lb_player_avatar.sql` přidává `lb_players.avatar_url text`.
-    Obrázek se ukládá přímo jako `data:` URI (base64) – žádný Storage bucket.
-    Ve `/leaderboard/sprava` je u každého hráče tlačítko „Obrázek" (`<input
-    type=file>` → canvas ořízne na střed a zmenší na 256 px JPEG q0.82, typicky
-    ~10–20 kB) a „Odebrat obrázek". PATCH `/api/admin/leaderboard/players`
+    `20260910000000_lb_player_avatar.sql` přidává `lb_players.avatar_url text`
+    (aplikováno na Supabase, nasazeno). Obrázek se ukládá přímo jako `data:` URI
+    (base64) – žádný Storage bucket. Ve `/leaderboard/sprava` je u každého hráče
+    tlačítko „Obrázek"/„Změnit obrázek" a „Odebrat obrázek". Po výběru souboru se
+    otevře **interaktivní ořez** (IIFE `avatarEditor` v inline scriptu): čtvercový
+    viewport s kruhovou maskou, obrázek se táhne (pointer events) a přibližuje
+    (slider + kolečko myši, zoom 1–4), živý náhled kolečka; „Uložit" vyrenderuje
+    výřez na 256×256 JPEG q0.82 (~5–20 kB). PATCH `/api/admin/leaderboard/players`
     přijímá `avatarUrl` (data URI `image/png|jpeg|webp|gif`, max 700 kB, `null`
     smaže) a validuje formát i délku. `src/lib/leaderboard.ts` protahuje
     `avatarUrl` přes `PlayerRow` → `StandingRow`; pódiový kroužek i řádek
