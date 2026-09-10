@@ -20,6 +20,7 @@ export interface PlayerRow {
   id: string;
   displayName: string;
   note?: string | null;
+  avatarUrl?: string | null;
 }
 
 export interface RoundRow {
@@ -45,6 +46,7 @@ export interface StandingRow {
   rank: number;
   playerId: string;
   displayName: string;
+  avatarUrl: string | null;
   points: number;
   wins: number;
   draws: number;
@@ -77,6 +79,7 @@ export function pointsForEntry(entry: EntryRow, scoring: Scoring): number {
 interface Aggregate {
   playerId: string;
   displayName: string;
+  avatarUrl: string | null;
   points: number;
   wins: number;
   draws: number;
@@ -95,6 +98,7 @@ function aggregate(
     byId.set(p.id, {
       playerId: p.id,
       displayName: p.displayName,
+      avatarUrl: p.avatarUrl ?? null,
       points: 0,
       wins: 0,
       draws: 0,
@@ -200,6 +204,7 @@ export function computeStandings(
       rank: i + 1,
       playerId: a.playerId,
       displayName: a.displayName,
+      avatarUrl: a.avatarUrl,
       points: a.points,
       wins: a.wins,
       draws: a.draws,

@@ -53,7 +53,7 @@ if (season) {
   };
 
   const [{ data: playersRaw }, { data: roundsRaw }] = await Promise.all([
-    service.from("lb_players").select("id, display_name, note").eq("season_id", season.id),
+    service.from("lb_players").select("id, display_name, note, avatar_url").eq("season_id", season.id),
     service
       .from("lb_rounds")
       .select("id, label, played_on, sort_order")
@@ -65,6 +65,7 @@ if (season) {
     id: p.id,
     displayName: p.display_name,
     note: p.note,
+    avatarUrl: p.avatar_url,
   }));
   rounds = (roundsRaw ?? []).map((r) => ({
     id: r.id,
@@ -171,7 +172,11 @@ const hracCount = (n: number) => (n === 1 ? "hráč" : n >= 2 && n <= 4 ? "hrá�
                   <div class={`slot slot-${place}`}>
                     <div class="fig">
                       <div class={`disc disc-${place}`}>
-                        <span>{[...row.displayName.trim()][0]?.toUpperCase() ?? "?"}</span>
+                        {row.avatarUrl ? (
+                          <img src={row.avatarUrl} alt="" class="disc-img" />
+                        ) : (
+                          <span>{[...row.displayName.trim()][0]?.toUpperCase() ?? "?"}</span>
+                        )}
                       </div>
                       <p class="pname">
                         {row.displayName}
@@ -240,6 +245,13 @@ const hracCount = (n: number) => (n === 1 ? "hráč" : n >= 2 && n <= 4 ? "hrá�
                           aria-label={trendMark[row.trend].label}
                         >
                           {trendMark[row.trend].char}
+                        </span>
+                        <span class="lb-avatar shrink-0">
+                          {row.avatarUrl ? (
+                            <img src={row.avatarUrl} alt="" />
+                          ) : (
+                            <span>{[...row.displayName.trim()][0]?.toUpperCase() ?? "?"}</span>
+                          )}
                         </span>
                         <span class="truncate">{row.displayName}</span>
                         {row.streak >= 3 && (
@@ -402,10 +414,37 @@ const hracCount = (n: number) => (n === 1 ? "hráč" : n >= 2 && n <= 4 ? "hrá�
     border-radius: 50%;
     display: grid;
     place-items: center;
+    overflow: hidden;
     font-weight: 800;
     font-size: 1.4rem;
     color: #0a0c11;
     border: 3px solid rgba(255, 255, 255, 0.75);
+  }
+  .disc-img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  .lb-avatar {
+    display: inline-grid;
+    height: 1.6rem;
+    width: 1.6rem;
+    place-items: center;
+    overflow: hidden;
+    border-radius: 9999px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.55);
+  }
+  .lb-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  html[data-theme="light"] .lb-avatar {
+    background: rgba(20, 32, 48, 0.1);
+    color: rgba(20, 32, 48, 0.55);
   }
   .disc-1 {
     width: 74px;

@@ -282,3 +282,14 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   - Na produkci je zatím **demo sezóna „Podzimní liga 2026"** s vymyšlenými
     hráči (Kubqo, Jan N., …) pro ukázku – smazat tlačítkem „Smazat sezónu"
     ve správě, než začne ostrý provoz.
+  - **2026-09-10: profilový obrázek hráče.** Migrace
+    `20260910000000_lb_player_avatar.sql` přidává `lb_players.avatar_url text`.
+    Obrázek se ukládá přímo jako `data:` URI (base64) – žádný Storage bucket.
+    Ve `/leaderboard/sprava` je u každého hráče tlačítko „Obrázek" (`<input
+    type=file>` → canvas ořízne na střed a zmenší na 256 px JPEG q0.82, typicky
+    ~10–20 kB) a „Odebrat obrázek". PATCH `/api/admin/leaderboard/players`
+    přijímá `avatarUrl` (data URI `image/png|jpeg|webp|gif`, max 700 kB, `null`
+    smaže) a validuje formát i délku. `src/lib/leaderboard.ts` protahuje
+    `avatarUrl` přes `PlayerRow` → `StandingRow`; pódiový kroužek i řádek
+    tabulky v `/leaderboard` i `PublicLeagueBoard.astro` ukážou obrázek, jinak
+    fallback na iniciálu jako dřív.

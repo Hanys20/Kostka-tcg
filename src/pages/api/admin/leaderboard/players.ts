@@ -5,6 +5,22 @@ export const prerender = false;
 
 const str = (v: unknown) => (typeof v === "string" ? v.trim() : "");
 
+// Profilový obrázek se ukládá jako `data:` URI (base64). Prohlížeč ho ve správě
+// zmenší na 256 px, takže reálně jde o jednotky až desítky kB – limit 700 kB je
+// jen bezpečnostní strop proti odeslání originálu.
+const AVATAR_MAX_LEN = 700_000;
+const AVATAR_RE = /^data:image\/(png|jpeg|jpg|webp|gif);base64,[A-Za-z0-9+/]+=*$/;
+
+/** Vrátí ověřenou hodnotu avataru, `null` (smazat), nebo `false` když je neplatná. */
+function validateAvatar(value: unknown): string | null | false {
+  if (value === null) return null;
+  if (typeof value !== "string") return false;
+  const trimmed = value.trim();
+  if (!trimmed) return null;
+  if (trimmed.length > AVATAR_MAX_LEN || !AVATAR_RE.test(trimmed)) return false;
+  return trimmed;
+}
+
 export async function GET({ url, cookies }: APIContext) {
   const auth = await requireAdmin(cookies);
   if (!auth.session) return auth.response;
@@ -15,7 +31,7 @@ export async function GET({ url, cookies }: APIContext) {
   const service = createServiceClient();
   const { data, error } = await service
     .from("lb_players")
-    .select("id, season_id, display_name, note, created_at")
+    .select("id, season_id, display_name, note, avatar_url, created_at")
     .eq("season_id", seasonId)
     .order("display_name", { ascending: true });
 
@@ -67,7 +83,7 @@ export async function POST({ request, cookies }: APIContext) {
       const { data, error } = await service
         .from("lb_players")
         .insert(toInsert)
-        .select("id, season_id, display_name, note, created_at");
+        .select("id, season_id, display_name, note, avatar_url, created_at");
       if (error) return jsonResponse({ ok: false, message: error.message }, 500);
       added = data ?? [];
     }
@@ -100,6 +116,16 @@ export async function PATCH({ request, cookies }: APIContext) {
       patch.display_name = name;
     }
     if (body?.note !== undefined) patch.note = str(body.note) || null;
+    if (body?.avatarUrl !== undefined) {
+      const avatar = validateAvatar(body.avatarUrl);
+      if (avatar === false) {
+        return jsonResponse(
+          { ok: false, message: "Neplatný obrázek (očekává se PNG/JPEG/WebP do 700 kB)." },
+          400
+        );
+      }
+      patch.avatar_url = avatar;
+    }
 
     if (!Object.keys(patch).length) return jsonResponse({ ok: true }, 200);
 
