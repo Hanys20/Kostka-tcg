@@ -106,10 +106,19 @@ export async function getUpcomingTournaments(): Promise<TournamentEntry[]> {
     return [];
   }
 
+  // Práh "dnešek od půlnoci" – termín, který už dnes proběhl, zůstává vidět
+  // (typicky liga večer téhož dne), ale včerejší a starší termíny ne. Admin
+  // nepřepíná status na "past" automaticky, takže bez tohoto filtru by
+  // proběhlé termíny zůstávaly viditelné (na homepage i v /turnaje), dokud
+  // je někdo ručně needituje.
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+
   const { data, error } = await supabase
     .from("events")
     .select(EVENT_COLUMNS)
     .eq("status", "upcoming")
+    .gte("starts_at", startOfToday.toISOString())
     .order("starts_at", { ascending: true });
 
   if (error || !data) {

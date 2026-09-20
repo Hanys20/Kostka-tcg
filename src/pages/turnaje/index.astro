@@ -6,21 +6,17 @@ import { getUpcomingTournaments } from "../../data/tournaments";
 
 export const prerender = false;
 
+// getUpcomingTournaments() už vrací jen dosud neproběhlé termíny (viz filtr
+// v src/data/tournaments.ts), takže tady se řeší jen rozdělení podle typu.
 const upcomingTournaments = await getUpcomingTournaments();
 
-// Práh "dnešek od půlnoci" – termín, který už dnes proběhl, se z ligy schová.
-const startOfToday = new Date();
-startOfToday.setHours(0, 0, 0, 0);
-const isNotPast = (e: (typeof upcomingTournaments)[number]) =>
-  !e.startsAt || new Date(e.startsAt) >= startOfToday;
-
-// Liga: jen nadcházející termíny, seřazené podle data, a max nejbližší 4.
+// Liga: seřazené podle data, a max nejbližší 4.
 const upcomingLeague = upcomingTournaments
-  .filter((e) => e.type === "league" && isNotPast(e))
+  .filter((e) => e.type === "league")
   .sort((a, b) => new Date(a.startsAt ?? 0).getTime() - new Date(b.startsAt ?? 0).getTime())
   .slice(0, 4);
 
-// Turnaje, prerelease/preview nových sad a store championshipy – zobrazujeme vždy všechny.
+// Turnaje, prerelease/preview nových sad a store championshipy.
 const upcomingTournamentOnly = upcomingTournaments.filter((e) => e.type === "tournament");
 
 const gameFilters = [
