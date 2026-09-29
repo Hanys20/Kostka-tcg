@@ -296,3 +296,15 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
     `avatarUrl` přes `PlayerRow` → `StandingRow`; pódiový kroužek i řádek
     tabulky v `/leaderboard` i `PublicLeagueBoard.astro` ukážou obrázek, jinak
     fallback na iniciálu jako dřív.
+- **2026-09-29: Coconut turnaj (`/admin/coconut`)** – jednoduchá admin aplikace
+  pro coconut formát: zadání hráčů → rozlosování do podů po 3–4 (5 hráčů = jeden
+  pod po 5) → zápis umístění + loru → další kolo / konec s vítězem. Body 1. = 4,
+  2. = 2, ostatní 1; tie breaker = součet loru (shoda obojího = sdílené místo).
+  Losování zkouší víc náhodných rozdělení a bere to s nejmenším opakováním
+  soupeřů. Logika čistě funkčně v `src/lib/coconut.ts` (testy
+  `tests/coconut.test.mjs`). **Stav turnaje je jen v localStorage prohlížeče**
+  (`kostka-coconut-v1`) – žádná DB, přežije refresh, ale ne jiné zařízení.
+  Stránka je za `getAdminSession`. Odkaz „Coconut" v hlavním menu se ukáže jen
+  adminovi: `adminAuth.ts` nastavuje ne-httpOnly hint cookie `kostka_admin=1`
+  (jen UI, nic neautorizuje) a inline skript v `Layout.astro` podle ní odkryje
+  prvky `[data-admin-only]`.

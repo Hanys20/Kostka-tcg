@@ -8,6 +8,9 @@ const SUPABASE_SERVICE_ROLE_KEY = import.meta.env.SUPABASE_SERVICE_ROLE_KEY;
 const ACCESS_COOKIE = "kostka_admin_at";
 const REFRESH_COOKIE = "kostka_admin_rt";
 const REFRESH_MAX_AGE = 60 * 60 * 24 * 30; // 30 dní
+// Čitelná z JS jen kvůli zobrazení admin odkazů v menu (Layout.astro) –
+// nic neautorizuje, stránky i API ověřují session server-side.
+const ADMIN_HINT_COOKIE = "kostka_admin";
 
 const cookieOptions = {
   httpOnly: true,
@@ -49,11 +52,17 @@ export function setSessionCookies(
 ) {
   cookies.set(ACCESS_COOKIE, session.access_token, { ...cookieOptions, maxAge: session.expires_in });
   cookies.set(REFRESH_COOKIE, session.refresh_token, { ...cookieOptions, maxAge: REFRESH_MAX_AGE });
+  setAdminHint(cookies);
+}
+
+function setAdminHint(cookies: AstroCookies) {
+  cookies.set(ADMIN_HINT_COOKIE, "1", { ...cookieOptions, httpOnly: false, maxAge: REFRESH_MAX_AGE });
 }
 
 export function clearSessionCookies(cookies: AstroCookies) {
   cookies.delete(ACCESS_COOKIE, { path: "/" });
   cookies.delete(REFRESH_COOKIE, { path: "/" });
+  cookies.delete(ADMIN_HINT_COOKIE, { path: "/" });
 }
 
 export type AdminSession = {
@@ -88,7 +97,9 @@ export async function getAdminSession(cookies: AstroCookies): Promise<AdminSessi
   if (accessToken) {
     const { data, error } = await anon.auth.getUser(accessToken);
     if (!error && data.user) {
-      return loadAdminProfile(data.user.id, accessToken);
+      const session = await loadAdminProfile(data.user.id, accessToken);
+      if (session) setAdminHint(cookies);
+      return session;
     }
   }
 

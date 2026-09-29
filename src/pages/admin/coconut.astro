@@ -1,0 +1,648 @@
+---
+import Layout from "../../layouts/Layout.astro";
+import { getAdminSession } from "../../lib/adminAuth";
+
+export const prerender = false;
+
+const session = await getAdminSession(Astro.cookies);
+if (!session) {
+  return Astro.redirect("/admin?next=/admin/coconut");
+}
+---
+
+<Layout title="Coconut turnaj">
+  <section class="mx-auto max-w-6xl px-4 py-10 sm:py-14">
+    <div class="flex flex-wrap items-center justify-between gap-3">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Admin · Coconut</p>
+        <h1 id="cc-title" class="mt-1 text-2xl font-black text-white sm:text-3xl">Coconut turnaj</h1>
+        <p class="mt-2 text-sm text-white/60">
+          Pody po 3–4 hráčích · 1. místo <strong class="text-white">4 b</strong>, 2. místo
+          <strong class="text-white">2 b</strong>, ostatní <strong class="text-white">1 b</strong> ·
+          při shodě bodů rozhoduje součet loru.
+        </p>
+      </div>
+      <a href="/admin" class="text-sm text-white/50 hover:text-kostka-purple">Zpět do adminu</a>
+    </div>
+
+    <p id="cc-msg" class="mt-4 min-h-5 text-sm text-kostka-purple" role="status"></p>
+
+    <!-- FÁZE 1: HRÁČI -->
+    <div id="phase-setup" hidden>
+      <div class="mt-4 rounded-2xl border border-white/10 bg-kostka-surface p-5">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">1 · Hráči</p>
+        <label class="mt-3 block text-xs text-white/50">
+          Název turnaje (volitelné)
+          <input id="cc-name" type="text" placeholder="Coconut 29. 9." class="mt-1 w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" />
+        </label>
+        <form id="cc-add" class="mt-3 flex flex-wrap gap-2">
+          <input id="cc-player" type="text" autocomplete="off" placeholder="Jméno hráče a Enter" class="min-w-[200px] flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" />
+          <button type="submit" class="rounded-full bg-kostka-purple px-5 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90">Přidat</button>
+        </form>
+        <details class="mt-3">
+          <summary class="cursor-pointer text-xs font-semibold text-white/60 hover:text-kostka-purple">Vložit víc hráčů najednou</summary>
+          <form id="cc-bulk" class="mt-2">
+            <textarea id="cc-bulk-text" rows="4" placeholder="Jeden hráč na řádek" class="w-full rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple"></textarea>
+            <button type="submit" class="mt-2 rounded-full border border-white/15 px-4 py-2 text-sm font-semibold text-white hover:border-kostka-purple hover:text-kostka-purple">Přidat všechny</button>
+          </form>
+        </details>
+
+        <div class="mt-5 flex items-center justify-between gap-3">
+          <p class="text-sm text-white/60"><span id="cc-count" class="font-bold text-white">0</span> hráčů</p>
+          <p id="cc-pod-preview" class="text-xs text-white/40"></p>
+        </div>
+        <ul id="cc-players" class="mt-2 grid gap-2 sm:grid-cols-2 lg:grid-cols-3"></ul>
+
+        <button id="cc-start" type="button" class="mt-6 w-full rounded-full bg-kostka-purple px-6 py-3 text-base font-bold text-kostka-bg hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40 sm:w-auto">
+          Rozdělit hráče do podů →
+        </button>
+      </div>
+    </div>
+
+    <!-- FÁZE 2: KOLA -->
+    <div id="phase-play" hidden>
+      <div class="mt-4 grid gap-6 lg:grid-cols-[1fr_340px]">
+        <div>
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <h2 id="cc-round-title" class="text-xl font-black text-white">Kolo 1</h2>
+            <span id="cc-round-status" class="rounded-full px-3 py-1 text-xs font-semibold"></span>
+          </div>
+          <p class="mt-1 text-xs text-white/40">
+            Zadej lore každého hráče a klikni „Seřadit podle loru" – nebo vyber umístění ručně.
+          </p>
+          <div id="cc-pods" class="mt-4 grid gap-4 md:grid-cols-2"></div>
+
+          <div class="mt-6 flex flex-wrap items-center gap-3">
+            <button id="cc-next" type="button" class="rounded-full bg-kostka-purple px-6 py-3 text-sm font-bold text-kostka-bg hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-40">
+              Rozlosovat další kolo →
+            </button>
+            <button id="cc-finish" type="button" class="rounded-full border border-kostka-purple/50 px-6 py-3 text-sm font-bold text-kostka-purple hover:bg-kostka-purple/10 disabled:cursor-not-allowed disabled:opacity-40">
+              🏆 Konec coconut turnaje
+            </button>
+            <button id="cc-redraw" type="button" class="rounded-full border border-white/15 px-4 py-2 text-xs font-semibold text-white/60 hover:border-kostka-purple hover:text-kostka-purple">
+              Přelosovat toto kolo
+            </button>
+          </div>
+          <p id="cc-hint" class="mt-2 text-xs text-white/40"></p>
+
+          <div id="cc-history" class="mt-8 space-y-2"></div>
+        </div>
+
+        <aside class="space-y-4">
+          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-4">
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Průběžné pořadí</p>
+            <div id="cc-standings" class="mt-3"></div>
+          </div>
+
+          <details class="rounded-2xl border border-white/10 bg-kostka-surface p-4">
+            <summary class="cursor-pointer text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Hráči během turnaje</summary>
+            <p class="mt-2 text-xs text-white/40">
+              Pozdě příchozí přidej sem, odešlé odhlas – projeví se od dalšího losování.
+            </p>
+            <form id="cc-late" class="mt-3 flex gap-2">
+              <input id="cc-late-name" type="text" autocomplete="off" placeholder="Jméno hráče" class="min-w-0 flex-1 rounded-xl border border-white/15 bg-white/5 px-3 py-2 text-sm text-white placeholder:text-white/40 outline-none focus:border-kostka-purple" />
+              <button type="submit" class="rounded-full border border-white/15 px-3 py-2 text-xs font-semibold text-white hover:border-kostka-purple hover:text-kostka-purple">Přidat</button>
+            </form>
+            <ul id="cc-roster" class="mt-3 space-y-1"></ul>
+          </details>
+        </aside>
+      </div>
+    </div>
+
+    <!-- FÁZE 3: VÝSLEDKY -->
+    <div id="phase-done" hidden>
+      <div class="mt-4 rounded-2xl border border-kostka-purple/30 bg-kostka-purple/[0.06] p-6 text-center">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Vítěz</p>
+        <p id="cc-winner" class="mt-2 text-3xl font-black text-white sm:text-4xl"></p>
+        <p id="cc-winner-sub" class="mt-2 text-sm text-white/60"></p>
+      </div>
+      <div id="cc-podium" class="mt-6 grid gap-3 sm:grid-cols-3"></div>
+      <div class="mt-6 rounded-2xl border border-white/10 bg-kostka-surface p-4">
+        <p class="text-xs font-semibold uppercase tracking-[0.2em] text-kostka-purple">Konečné pořadí</p>
+        <div id="cc-final" class="mt-3"></div>
+      </div>
+      <div class="mt-6 flex flex-wrap gap-3">
+        <button id="cc-reopen" type="button" class="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:border-kostka-purple hover:text-kostka-purple">
+          ← Vrátit se do turnaje
+        </button>
+        <button id="cc-copy" type="button" class="rounded-full border border-white/15 px-5 py-2.5 text-sm font-semibold text-white hover:border-kostka-purple hover:text-kostka-purple">
+          Zkopírovat výsledky
+        </button>
+      </div>
+    </div>
+
+    <div class="mt-12 border-t border-white/10 pt-4">
+      <button id="cc-reset" type="button" class="text-xs font-semibold text-red-300 hover:text-red-200">
+        Začít nový turnaj (smaže aktuální)
+      </button>
+      <p class="mt-1 text-xs text-white/30">Stav turnaje se ukládá v tomto prohlížeči – obnovení stránky nic nesmaže.</p>
+    </div>
+  </section>
+
+  <script>
+    import {
+      computeStandings,
+      drawPods,
+      makeRound,
+      podError,
+      podSizes,
+      placesFromLore,
+      pointsForPlace,
+      roundComplete,
+      type CoconutPlayer,
+      type CoconutRound,
+      type StandingRow,
+    } from "../../lib/coconut";
+
+    type State = {
+      name: string;
+      phase: "setup" | "play" | "done";
+      players: CoconutPlayer[];
+      rounds: CoconutRound[];
+    };
+
+    const KEY = "kostka-coconut-v1";
+    const $ = (id: string) => document.getElementById(id)!;
+    const esc = (s: unknown) =>
+      String(s).replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]!);
+
+    function fresh(): State {
+      return { name: "", phase: "setup", players: [], rounds: [] };
+    }
+
+    function load(): State {
+      try {
+        const raw = localStorage.getItem(KEY);
+        if (raw) return { ...fresh(), ...JSON.parse(raw) };
+      } catch {}
+      return fresh();
+    }
+
+    let state = load();
+
+    function save() {
+      try {
+        localStorage.setItem(KEY, JSON.stringify(state));
+      } catch {}
+    }
+
+    function say(text: string, isError = false) {
+      const el = $("cc-msg");
+      el.textContent = text;
+      el.className = "mt-4 min-h-5 text-sm " + (isError ? "text-red-300" : "text-kostka-purple");
+    }
+
+    const uid = () => Math.random().toString(36).slice(2, 10);
+    const nameOf = (id: string) => state.players.find((p) => p.id === id)?.name ?? "?";
+    const activeIds = () => state.players.filter((p) => !p.dropped).map((p) => p.id);
+    const currentRound = () => state.rounds[state.rounds.length - 1];
+
+    function addPlayers(names: string[]) {
+      let added = 0;
+      let skipped = 0;
+      for (const raw of names) {
+        const name = raw.trim().replace(/\s+/g, " ");
+        if (!name) continue;
+        const existing = state.players.find((p) => p.name.toLowerCase() === name.toLowerCase());
+        if (existing) {
+          if (existing.dropped) {
+            existing.dropped = false;
+            added++;
+          } else skipped++;
+          continue;
+        }
+        state.players.push({ id: uid(), name });
+        added++;
+      }
+      save();
+      return { added, skipped };
+    }
+
+    function podPreview(n: number) {
+      const sizes = podSizes(n);
+      if (!sizes.length) return "Potřeba aspoň 3 hráči.";
+      const fours = sizes.filter((s) => s === 4).length;
+      const threes = sizes.filter((s) => s === 3).length;
+      if (n === 5) return "1 pod po 5 hráčích (na 3–4 nejde rozdělit)";
+      return [fours && `${fours}× pod po 4`, threes && `${threes}× pod po 3`].filter(Boolean).join(" + ");
+    }
+
+    // —— FÁZE 1 ——
+    function renderSetup() {
+      ($("cc-name") as HTMLInputElement).value = state.name;
+      $("cc-count").textContent = String(state.players.length);
+      $("cc-pod-preview").textContent = podPreview(state.players.length);
+      $("cc-players").innerHTML = state.players.length
+        ? state.players
+            .map(
+              (p, i) => `
+          <li class="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] px-3 py-2">
+            <span class="w-6 text-right text-xs text-white/40">${i + 1}.</span>
+            <span class="min-w-0 flex-1 truncate text-sm font-medium text-white">${esc(p.name)}</span>
+            <button type="button" data-remove="${p.id}" aria-label="Odebrat ${esc(p.name)}" class="rounded-full px-2 text-white/40 hover:text-red-300">✕</button>
+          </li>`
+            )
+            .join("")
+        : '<li class="text-sm text-white/40">Zatím žádní hráči.</li>';
+      ($("cc-start") as HTMLButtonElement).disabled = state.players.length < 3;
+    }
+
+    $("cc-name").addEventListener("input", (e) => {
+      state.name = (e.target as HTMLInputElement).value;
+      save();
+      renderTitle();
+    });
+
+    $("cc-add").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = $("cc-player") as HTMLInputElement;
+      const { skipped } = addPlayers([input.value]);
+      if (skipped) say("Tenhle hráč už v seznamu je.", true);
+      else say("");
+      input.value = "";
+      input.focus();
+      renderSetup();
+    });
+
+    $("cc-bulk").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const ta = $("cc-bulk-text") as HTMLTextAreaElement;
+      const { added, skipped } = addPlayers(ta.value.split("\n"));
+      ta.value = "";
+      say(`Přidáno ${added} hráčů${skipped ? `, ${skipped} už v seznamu bylo` : ""}.`);
+      renderSetup();
+    });
+
+    $("cc-players").addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-remove]");
+      if (!btn) return;
+      state.players = state.players.filter((p) => p.id !== btn.dataset.remove);
+      save();
+      renderSetup();
+    });
+
+    $("cc-start").addEventListener("click", () => {
+      const ids = activeIds();
+      if (ids.length < 3) return;
+      state.rounds = [makeRound(1, drawPods(ids, []))];
+      state.phase = "play";
+      save();
+      say("Kolo 1 rozlosováno. Hodně štěstí!");
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    // —— FÁZE 2 ——
+    function placeLabel(place: number | null) {
+      return place == null ? "" : `+${pointsForPlace(place)} b`;
+    }
+
+    function podHtml(round: CoconutRound, podIdx: number, editable: boolean) {
+      const pod = round.pods[podIdx];
+      const err = podError(pod);
+      const size = pod.players.length;
+      const rows = pod.results
+        .map((r, i) => {
+          const places = Array.from({ length: size }, (_, k) => k + 1)
+            .map(
+              (pl) => `<button type="button" data-place="${pl}" data-row="${i}" ${editable ? "" : "disabled"}
+                aria-pressed="${r.place === pl}" aria-label="${pl}. místo"
+                class="h-9 w-9 rounded-lg border text-sm font-bold transition ${
+                  r.place === pl
+                    ? "border-kostka-purple bg-kostka-purple text-kostka-bg"
+                    : "border-white/15 text-white/60 hover:border-kostka-purple hover:text-kostka-purple"
+                }">${pl}.</button>`
+            )
+            .join("");
+          return `
+          <div class="flex flex-wrap items-center gap-2 border-t border-white/10 py-2.5 first:border-t-0">
+            <span class="min-w-[7rem] flex-1 truncate text-sm font-semibold text-white">${esc(nameOf(r.playerId))}</span>
+            <div class="flex gap-1">${places}</div>
+            <label class="flex items-center gap-1 text-xs text-white/50">
+              <input type="number" min="0" max="99" inputmode="numeric" data-lore="${i}" value="${r.lore ?? ""}" ${editable ? "" : "disabled"}
+                placeholder="lore" aria-label="Lore – ${esc(nameOf(r.playerId))}"
+                class="w-16 rounded-lg border border-white/15 bg-white/5 px-2 py-1.5 text-center text-sm text-white placeholder:text-white/30 outline-none focus:border-kostka-purple" />
+            </label>
+            <span class="w-10 text-right text-xs font-semibold text-kostka-purple" data-pts="${i}">${placeLabel(r.place)}</span>
+          </div>`;
+        })
+        .join("");
+      return `
+        <div class="rounded-2xl border ${err ? "border-white/10" : "border-emerald-400/40"} bg-kostka-surface p-4"
+             data-round="${round.number}" data-pod="${podIdx}">
+          <div class="flex items-center justify-between gap-2">
+            <p class="text-sm font-black text-white">Pod ${podIdx + 1} <span class="font-medium text-white/40">· ${size} hráči</span></p>
+            ${editable ? `<button type="button" data-sort class="rounded-full border border-white/15 px-3 py-1 text-xs font-semibold text-white/70 hover:border-kostka-purple hover:text-kostka-purple">Seřadit podle loru</button>` : ""}
+          </div>
+          <div class="mt-2">${rows}</div>
+          <p class="mt-1 text-xs ${err ? "text-white/40" : "text-emerald-400"}" data-pod-status>${err ?? "✓ Výsledek zadán"}</p>
+        </div>`;
+    }
+
+    function standingsTable(rows: StandingRow[], big = false) {
+      if (!rows.length) return '<p class="text-sm text-white/40">Zatím nic.</p>';
+      return `
+        <table class="w-full border-collapse ${big ? "text-sm" : "text-xs"}">
+          <thead>
+            <tr class="border-b border-white/15 text-left text-white/50">
+              <th class="py-1.5 pr-2 font-semibold">#</th>
+              <th class="py-1.5 pr-2 font-semibold">Hráč</th>
+              <th class="py-1.5 pr-2 text-right font-semibold">Body</th>
+              <th class="py-1.5 pr-2 text-right font-semibold">Lore</th>
+              <th class="py-1.5 text-right font-semibold" title="Výhry / odehrané hry">V/H</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows
+              .map(
+                (r) => `
+              <tr class="border-b border-white/10 ${r.dropped ? "opacity-50" : ""}">
+                <td class="py-1.5 pr-2 font-bold ${r.rank <= 3 ? "text-kostka-purple" : "text-white/60"}">${r.rank}.</td>
+                <td class="py-1.5 pr-2 font-medium text-white">${esc(r.name)}${r.dropped ? ' <span class="text-white/40">(odhlášen)</span>' : ""}</td>
+                <td class="py-1.5 pr-2 text-right font-black text-white">${r.points}</td>
+                <td class="py-1.5 pr-2 text-right text-white/70">${r.lore}</td>
+                <td class="py-1.5 text-right text-white/50">${r.wins}/${r.games}</td>
+              </tr>`
+              )
+              .join("")}
+          </tbody>
+        </table>`;
+    }
+
+    function renderStandings() {
+      $("cc-standings").innerHTML = standingsTable(computeStandings(state.players, state.rounds));
+    }
+
+    function renderControls() {
+      const round = currentRound();
+      const done = round ? roundComplete(round) : false;
+      const pending = round ? round.pods.filter((p) => podError(p)).length : 0;
+      const status = $("cc-round-status");
+      status.textContent = done ? "Všechny pody zadané" : `Čeká se na ${pending} ${pending === 1 ? "pod" : pending < 5 ? "pody" : "podů"}`;
+      status.className =
+        "rounded-full px-3 py-1 text-xs font-semibold " +
+        (done ? "bg-emerald-400/15 text-emerald-400" : "bg-white/5 text-white/60");
+      ($("cc-next") as HTMLButtonElement).disabled = !done || activeIds().length < 3;
+      ($("cc-finish") as HTMLButtonElement).disabled = !done;
+      const hasResults = round?.pods.some((p) => p.results.some((r) => r.place != null || r.lore != null));
+      $("cc-redraw").hidden = !!hasResults;
+      $("cc-hint").textContent = done
+        ? ""
+        : "Další kolo nebo konec turnaje půjde, až budou zadané výsledky všech podů.";
+    }
+
+    function renderPodStatus(roundNumber: number, podIdx: number) {
+      const round = state.rounds.find((r) => r.number === roundNumber)!;
+      const card = document.querySelector<HTMLElement>(`[data-round="${roundNumber}"][data-pod="${podIdx}"]`);
+      if (!card) return;
+      const err = podError(round.pods[podIdx]);
+      const statusEl = card.querySelector<HTMLElement>("[data-pod-status]")!;
+      statusEl.textContent = err ?? "✓ Výsledek zadán";
+      statusEl.className = "mt-1 text-xs " + (err ? "text-white/40" : "text-emerald-400");
+      card.classList.toggle("border-white/10", !!err);
+      card.classList.toggle("border-emerald-400/40", !err);
+    }
+
+    function renderRoster() {
+      $("cc-roster").innerHTML = state.players
+        .map(
+          (p) => `
+        <li class="flex items-center justify-between gap-2 text-sm">
+          <span class="truncate ${p.dropped ? "text-white/40 line-through" : "text-white"}">${esc(p.name)}</span>
+          <button type="button" data-drop="${p.id}" class="shrink-0 text-xs font-semibold ${p.dropped ? "text-kostka-purple" : "text-red-300"} hover:underline">
+            ${p.dropped ? "Vrátit" : "Odhlásit"}
+          </button>
+        </li>`
+        )
+        .join("");
+    }
+
+    function renderPlay() {
+      const round = currentRound();
+      $("cc-round-title").textContent = `Kolo ${round.number}`;
+      $("cc-pods").innerHTML = round.pods.map((_, i) => podHtml(round, i, true)).join("");
+      const past = state.rounds.slice(0, -1).reverse();
+      $("cc-history").innerHTML = past.length
+        ? `<p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/40">Předchozí kola</p>` +
+          past
+            .map(
+              (r) => `
+          <details class="rounded-2xl border border-white/10 bg-kostka-surface/60 p-4">
+            <summary class="cursor-pointer text-sm font-bold text-white">Kolo ${r.number} <span class="font-normal text-white/40">– klikni pro opravu výsledků</span></summary>
+            <div class="mt-3 grid gap-4 md:grid-cols-2">${r.pods.map((_, i) => podHtml(r, i, true)).join("")}</div>
+          </details>`
+            )
+            .join("")
+        : "";
+      renderControls();
+      renderStandings();
+      renderRoster();
+    }
+
+    function podFromEvent(e: Event) {
+      const card = (e.target as HTMLElement).closest<HTMLElement>("[data-pod]");
+      if (!card) return null;
+      const round = state.rounds.find((r) => r.number === Number(card.dataset.round));
+      if (!round) return null;
+      return { card, round, podIdx: Number(card.dataset.pod), pod: round.pods[Number(card.dataset.pod)] };
+    }
+
+    function rerenderPod(round: CoconutRound, podIdx: number, card: HTMLElement) {
+      const wrap = document.createElement("div");
+      wrap.innerHTML = podHtml(round, podIdx, true);
+      card.replaceWith(wrap.firstElementChild!);
+    }
+
+    const playEl = $("phase-play");
+
+    playEl.addEventListener("click", (e) => {
+      const t = e.target as HTMLElement;
+      const placeBtn = t.closest<HTMLElement>("[data-place]");
+      const sortBtn = t.closest<HTMLElement>("[data-sort]");
+      if (!placeBtn && !sortBtn) return;
+      const ctx = podFromEvent(e);
+      if (!ctx) return;
+      const { card, round, podIdx, pod } = ctx;
+
+      if (placeBtn) {
+        const row = Number(placeBtn.dataset.row);
+        const place = Number(placeBtn.dataset.place);
+        const res = pod.results[row];
+        if (res.place === place) {
+          res.place = null;
+        } else {
+          // Stejné umístění může mít jen jeden hráč – druhému ho sundáme.
+          pod.results.forEach((o) => {
+            if (o !== res && o.place === place) o.place = null;
+          });
+          res.place = place;
+        }
+      } else {
+        if (pod.results.some((r) => r.lore == null)) {
+          say("Pro seřazení doplň lore všem hráčům v podu.", true);
+          return;
+        }
+        const places = placesFromLore(pod.results);
+        pod.results.forEach((r, i) => (r.place = places[i]));
+        say(podError(pod) ? "Shoda loru – u shodných hráčů vyber umístění ručně." : "");
+      }
+      save();
+      rerenderPod(round, podIdx, card);
+      renderControls();
+      renderStandings();
+    });
+
+    playEl.addEventListener("input", (e) => {
+      const input = (e.target as HTMLElement).closest<HTMLInputElement>("[data-lore]");
+      if (!input) return;
+      const ctx = podFromEvent(e);
+      if (!ctx) return;
+      const v = input.value.trim();
+      const n = v === "" ? null : Math.max(0, Math.floor(Number(v)));
+      ctx.pod.results[Number(input.dataset.lore)].lore = Number.isFinite(n as number) ? n : null;
+      save();
+      renderPodStatus(ctx.round.number, ctx.podIdx);
+      renderControls();
+      renderStandings();
+    });
+
+    // Enter v lore poli skočí na další lore pole.
+    playEl.addEventListener("keydown", (e) => {
+      const input = (e.target as HTMLElement).closest<HTMLInputElement>("[data-lore]");
+      if (!input || e.key !== "Enter") return;
+      e.preventDefault();
+      const all = [...playEl.querySelectorAll<HTMLInputElement>("#cc-pods [data-lore]")];
+      const next = all[all.indexOf(input) + 1];
+      if (next) next.focus();
+      else input.blur();
+    });
+
+    $("cc-next").addEventListener("click", () => {
+      const round = currentRound();
+      if (!roundComplete(round)) return;
+      const ids = activeIds();
+      if (ids.length < 3) {
+        say("Na další kolo jsou potřeba aspoň 3 aktivní hráči.", true);
+        return;
+      }
+      state.rounds.push(makeRound(round.number + 1, drawPods(ids, state.rounds)));
+      save();
+      say(`Kolo ${round.number + 1} rozlosováno.`);
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    $("cc-redraw").addEventListener("click", () => {
+      const round = currentRound();
+      const ids = activeIds();
+      if (ids.length < 3) return;
+      state.rounds[state.rounds.length - 1] = makeRound(round.number, drawPods(ids, state.rounds.slice(0, -1)));
+      save();
+      say(`Kolo ${round.number} přelosováno.`);
+      render();
+    });
+
+    $("cc-finish").addEventListener("click", () => {
+      if (!roundComplete(currentRound())) return;
+      if (!confirm("Ukončit turnaj a vyhlásit výsledky?")) return;
+      state.phase = "done";
+      save();
+      say("");
+      render();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    $("cc-late").addEventListener("submit", (e) => {
+      e.preventDefault();
+      const input = $("cc-late-name") as HTMLInputElement;
+      const { added, skipped } = addPlayers([input.value]);
+      input.value = "";
+      say(added ? "Hráč přidán – zapojí se od dalšího losování." : skipped ? "Hráč už v turnaji je." : "");
+      renderRoster();
+      renderStandings();
+      renderControls();
+    });
+
+    $("cc-roster").addEventListener("click", (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>("[data-drop]");
+      if (!btn) return;
+      const p = state.players.find((x) => x.id === btn.dataset.drop);
+      if (!p) return;
+      p.dropped = !p.dropped;
+      save();
+      say(p.dropped ? `${p.name} odhlášen – od dalšího kola se nelosuje.` : `${p.name} vrácen do turnaje.`);
+      renderRoster();
+      renderStandings();
+      renderControls();
+    });
+
+    // —— FÁZE 3 ——
+    function renderDone() {
+      const rows = computeStandings(state.players, state.rounds);
+      const winners = rows.filter((r) => r.rank === 1);
+      $("cc-winner").textContent = winners.length ? "🏆 " + winners.map((w) => w.name).join(" & ") : "–";
+      $("cc-winner-sub").textContent = winners.length
+        ? `${winners[0].points} bodů · ${winners[0].lore} loru · ${state.rounds.length} ${state.rounds.length === 1 ? "kolo" : state.rounds.length < 5 ? "kola" : "kol"}` +
+          (winners.length > 1 ? " · dělené 1. místo (shoda bodů i loru)" : "")
+        : "";
+      const medals = ["🥇", "🥈", "🥉"];
+      $("cc-podium").innerHTML = rows
+        .filter((r) => r.rank <= 3)
+        .slice(0, 3)
+        .map(
+          (r) => `
+        <div class="rounded-2xl border border-white/10 bg-kostka-surface p-4 text-center">
+          <p class="text-3xl">${medals[r.rank - 1] ?? ""}</p>
+          <p class="mt-1 text-lg font-black text-white">${esc(r.name)}</p>
+          <p class="text-sm text-white/60">${r.rank}. místo · ${r.points} b · ${r.lore} lore</p>
+        </div>`
+        )
+        .join("");
+      $("cc-final").innerHTML = standingsTable(rows, true);
+    }
+
+    $("cc-reopen").addEventListener("click", () => {
+      state.phase = "play";
+      save();
+      render();
+    });
+
+    $("cc-copy").addEventListener("click", async () => {
+      const rows = computeStandings(state.players, state.rounds);
+      const text =
+        `${state.name || "Coconut turnaj"} – výsledky (${state.rounds.length} kol)\n` +
+        rows.map((r) => `${r.rank}. ${r.name} – ${r.points} b, ${r.lore} lore`).join("\n");
+      try {
+        await navigator.clipboard.writeText(text);
+        say("Výsledky zkopírovány do schránky.");
+      } catch {
+        say("Kopírování se nepovedlo.", true);
+      }
+    });
+
+    $("cc-reset").addEventListener("click", () => {
+      if (state.players.length && !confirm("Opravdu smazat aktuální turnaj a začít nový?")) return;
+      state = fresh();
+      save();
+      say("Nový turnaj připraven.");
+      render();
+    });
+
+    function renderTitle() {
+      $("cc-title").textContent = state.name.trim() || "Coconut turnaj";
+    }
+
+    function render() {
+      if (state.phase !== "setup" && !state.rounds.length) state.phase = "setup";
+      $("phase-setup").hidden = state.phase !== "setup";
+      $("phase-play").hidden = state.phase !== "play";
+      $("phase-done").hidden = state.phase !== "done";
+      renderTitle();
+      if (state.phase === "setup") renderSetup();
+      if (state.phase === "play") renderPlay();
+      if (state.phase === "done") renderDone();
+    }
+
+    render();
+  </script>
+</Layout>

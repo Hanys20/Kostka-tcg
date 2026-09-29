@@ -75,6 +75,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           <li><a href="/turnaje" class="text-white/70 hover:text-kostka-purple">Kalendář</a></li>
           <li><a href="/faq" class="text-white/70 hover:text-kostka-purple">FAQ</a></li>
           <li><a href="/kontakt" class="text-white/70 hover:text-kostka-purple">Kontakt</a></li>
+          <li data-admin-only hidden><a href="/admin/coconut" class="text-kostka-purple hover:underline">Coconut</a></li>
         </ul>
         <div class="flex items-center gap-2 sm:gap-3">
           <button
@@ -170,6 +171,7 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           <a href="/turnaje" class="rounded-xl px-4 py-3 text-base font-semibold uppercase tracking-wide text-white/80 transition hover:bg-white/5 hover:text-kostka-purple">Kalendář</a>
           <a href="/faq" class="rounded-xl px-4 py-3 text-base font-semibold uppercase tracking-wide text-white/80 transition hover:bg-white/5 hover:text-kostka-purple">FAQ</a>
           <a href="/kontakt" class="rounded-xl px-4 py-3 text-base font-semibold uppercase tracking-wide text-white/80 transition hover:bg-white/5 hover:text-kostka-purple">Kontakt</a>
+          <a href="/admin/coconut" data-admin-only hidden class="rounded-xl px-4 py-3 text-base font-semibold uppercase tracking-wide text-kostka-purple transition hover:bg-white/5">Coconut</a>
 
           <div class="mt-4 flex items-center gap-3 border-t border-white/10 px-4 pt-5">
             <a
@@ -245,6 +247,13 @@ const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro 
           if (event.matches && !menu.hidden) closeMenu();
         });
       })();
+    </script>
+
+    <script is:inline>
+      // Admin odkazy v menu jen pro přihlášeného admina (hint cookie z adminAuth.ts).
+      if (/(?:^|;\s*)kostka_admin=1/.test(document.cookie)) {
+        document.querySelectorAll("[data-admin-only]").forEach((el) => (el.hidden = false));
+      }
     </script>
 
     <main>
