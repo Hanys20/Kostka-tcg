@@ -1,0 +1,66 @@
+---
+// Zvýrazněný pruh na homepage, odkazuje na stránku velkého turnaje.
+// Sám se schová po skončení turnaje (championship.showUntil).
+import { championship, getCurrentTier, isChampionshipUpcoming } from "../../data/storeChampionship";
+
+const now = new Date();
+const visible = isChampionshipUpcoming(now);
+const tier = getCurrentTier(now);
+const daysLeft = Math.max(0, Math.floor((new Date(championship.startsAt).getTime() - now.getTime()) / 86_400_000));
+const priceNote =
+  tier.id === "early" ? `Early bird ${tier.czk} Kč do 21. 11.` : tier.id === "standard" ? `Vstupné ${tier.czk} Kč` : `Vstupné na místě ${tier.czk} Kč`;
+---
+
+{visible && (
+  <a href="/store-championship" class="sc-banner group mt-10 flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+    <div class="flex items-start gap-4">
+      <span class="sc-banner__icon flex-none" aria-hidden="true">🌬️</span>
+      <div>
+        <p class="text-[11px] font-bold uppercase tracking-[0.2em] sc-banner__eyebrow">
+          Velký turnaj · sobota 12. 12. 2026
+        </p>
+        <p class="mt-1.5 text-lg font-black text-white sm:text-xl">
+          Hvězdy Hyperia City – Lorcana Store Championship
+        </p>
+        <p class="mt-1 text-sm text-white/65">
+          Hlavní cena <strong class="text-white">Colors of the Wind Enchanted</strong> · foil Woody pro Top 8 · promo pro každého
+        </p>
+        <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-kostka-purple">{priceNote}</p>
+      </div>
+    </div>
+    <div class="flex flex-none items-center gap-4">
+      <div class="text-right">
+        <p class="text-2xl font-black leading-none text-white">{daysLeft}</p>
+        <p class="text-[10px] uppercase tracking-[0.18em] text-white/50">{daysLeft === 1 ? "den" : daysLeft >= 2 && daysLeft <= 4 ? "dny" : "dní"}</p>
+      </div>
+      <span class="rounded-full bg-kostka-purple px-5 py-2.5 text-sm font-semibold text-kostka-bg transition group-hover:opacity-90">
+        Detail a registrace →
+      </span>
+    </div>
+  </a>
+)}
+
+<style>
+  .sc-banner {
+    --gold: #f3c969;
+    position: relative;
+    border: 1px solid color-mix(in srgb, var(--gold) 40%, transparent);
+    background:
+      radial-gradient(circle at 0% 50%, rgba(243, 201, 105, 0.16), transparent 50%),
+      radial-gradient(circle at 100% 50%, color-mix(in srgb, var(--color-kostka-purple) 18%, transparent), transparent 55%),
+      var(--color-kostka-surface);
+    transition: border-color 0.3s, box-shadow 0.3s, transform 0.3s;
+  }
+  .sc-banner:hover {
+    border-color: color-mix(in srgb, var(--gold) 70%, transparent);
+    box-shadow: 0 0 32px rgba(243, 201, 105, 0.18);
+    transform: translateY(-1px);
+  }
+  :global(html[data-theme="light"]) .sc-banner { --gold: #a86f00; }
+  .sc-banner__eyebrow { color: var(--gold); }
+  .sc-banner__icon {
+    display: inline-flex; align-items: center; justify-content: center;
+    width: 3rem; height: 3rem; border-radius: 9999px; font-size: 1.4rem;
+    background: rgba(243, 201, 105, 0.12);
+  }
+</style>

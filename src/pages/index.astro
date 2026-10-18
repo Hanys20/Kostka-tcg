@@ -2,6 +2,7 @@
 import { Image } from "astro:assets";
 import Layout from "../layouts/Layout.astro";
 import TournamentCard from "../components/tournaments/TournamentCard.astro";
+import ChampionshipBanner from "../components/events/ChampionshipBanner.astro";
 import { getUpcomingTournaments } from "../data/tournaments";
 
 export const prerender = false;
@@ -46,7 +47,7 @@ const faqPreview = [
   },
   {
     q: "Musím platit předem?",
-    a: "Ne, startovné se hradí vždy až na místě před začátkem turnaje.",
+    a: "U lig a běžných turnajů ne – startovné se hradí na místě před začátkem. U velkých turnajů můžete zaplatit předem za zvýhodněnou early bird cenu.",
   },
   {
     q: "Jaký je rozdíl mezi ligou a turnajem?",
@@ -94,6 +95,8 @@ const faqPreview = [
           Kdo jsme
         </a>
       </div>
+
+      <ChampionshipBanner />
 
       <div class="mt-12">
         <div class="flex flex-col gap-2">

@@ -1,0 +1,487 @@
+---
+// Sdílená stránka velkého turnaje – renderuje CZ i EN verzi podle `lang`.
+// Všechna data a texty jsou v src/data/storeChampionship.ts.
+import Layout from "../../layouts/Layout.astro";
+import { getUpcomingTournaments } from "../../data/tournaments";
+import { championship, getCurrentTier, isChampionshipEvent, prizes, t, type Lang } from "../../data/storeChampionship";
+
+interface Props {
+  lang: Lang;
+}
+
+const { lang } = Astro.props;
+const tx = t[lang];
+const now = new Date();
+const currentTier = getCurrentTier(now);
+
+// Termín vytvořený v administraci (pokud existuje) dodá obsazenost a PlayHub odkaz.
+const upcoming = await getUpcomingTournaments();
+const linkedEvent = upcoming.find(isChampionshipEvent);
+const registrationUrl = championship.playhubUrl || linkedEvent?.registrationUrl || "";
+const spotsTotal = linkedEvent?.spotsTotal ?? championship.capacity;
+const spotsTaken = linkedEvent?.spotsTaken ?? null;
+const percentFull = spotsTaken !== null && spotsTotal > 0 ? Math.min(100, Math.round((spotsTaken / spotsTotal) * 100)) : 0;
+
+const pay = championship.payment;
+const hasCzkPayment = Boolean(pay.accountCzk);
+const hasEurPayment = Boolean(pay.iban);
+const pick = <T,>(value: T | { cs: T; en: T }): T =>
+  value && typeof value === "object" && "cs" in (value as object) ? (value as { cs: T; en: T })[lang] : (value as T);
+---
+
+<Layout title={tx.metaTitle} description={tx.metaDescription} lang={lang}>
+  <div class="sc">
+    <!-- HERO -->
+    <section class="relative overflow-hidden">
+      <div class="sc-glow sc-glow--a pointer-events-none absolute"></div>
+      <div class="sc-glow sc-glow--b pointer-events-none absolute"></div>
+      <div class="sc-snow pointer-events-none absolute inset-0" aria-hidden="true"></div>
+
+      <div class="relative mx-auto max-w-6xl px-4 pb-14 pt-10 md:pb-20 md:pt-14">
+        <div class="flex items-center justify-between gap-4">
+          <div class="flex items-center gap-3">
+            <span class="h-[3px] w-10 flex-none rounded-full sc-bg-gold"></span>
+            <p class="text-xs font-semibold uppercase tracking-[0.2em] sc-text-gold">{tx.eyebrow}</p>
+          </div>
+          <a
+            href={tx.langSwitch.href}
+            hreflang={lang === "cs" ? "en" : "cs"}
+            class="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/70 hover:border-kostka-purple hover:text-kostka-purple"
+          >
+            {lang === "cs" ? "🇬🇧 " : "🇨🇿 "}{tx.langSwitch.label}
+          </a>
+        </div>
+
+        <h1 class="mt-6 text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-7xl">
+          {tx.title}
+        </h1>
+        <p class="mt-3 text-xl font-semibold text-kostka-purple sm:text-2xl">🎄 {tx.subtitle}</p>
+        <p class="mt-6 max-w-2xl text-base text-white/70 sm:text-lg">{tx.lead}</p>
+
+        <div class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/80">
+          <span class="sc-chip">📅 <strong class="font-bold text-white">{tx.dateLabel}</strong></span>
+          <span class="sc-chip">🕘 {tx.checkIn}</span>
+          <span class="sc-chip">📍 KOSTKA TCG, Ostrava</span>
+          <span class="sc-chip">🎴 {tx.format}</span>
+        </div>
+
+        <!-- Odpočet -->
+        <div class="mt-10" data-countdown={championship.startsAt}>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">{tx.countdown.label}</p>
+          <div class="mt-3 flex gap-3">
+            {(["days", "hours", "minutes", "seconds"] as const).map((unit) => (
+              <div class="sc-count">
+                <span class="sc-count__num" data-unit={unit}>–</span>
+                <span class="sc-count__label">{tx.countdown[unit]}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div class="mt-10 flex flex-wrap items-center gap-4">
+          {registrationUrl ? (
+            <a
+              href={registrationUrl}
+              target="_blank"
+              rel="noreferrer"
+              class="rounded-full bg-kostka-purple px-8 py-3 text-sm font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
+            >
+              {tx.ctaRegister}
+            </a>
+          ) : (
+            <span class="rounded-full border border-kostka-purple/50 bg-kostka-purple/10 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-kostka-purple">
+              {tx.ctaRegisterSoon}
+            </span>
+          )}
+          <a
+            href="#ceny"
+            class="rounded-full border border-white/20 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white hover:border-kostka-purple hover:text-kostka-purple"
+          >
+            {tx.ctaPrizes}
+          </a>
+        </div>
+
+        <div class="mt-8 max-w-sm">
+          <div class="flex items-center justify-between text-xs text-white/50">
+            <span>{spotsTaken !== null ? tx.spots(spotsTaken, spotsTotal) : tx.spotsFallback(spotsTotal)}</span>
+          </div>
+          {spotsTaken !== null && (
+            <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
+              <div class="h-full rounded-full bg-kostka-purple" style={`width: ${percentFull}%`}></div>
+            </div>
+          )}
+        </div>
+      </div>
+    </section>
+
+    <!-- CENY -->
+    <section id="ceny" class="scroll-mt-24 bg-kostka-surface/40 py-16 md:py-24">
+      <div class="mx-auto max-w-6xl px-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.prizesEyebrow}</p>
+        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.prizesTitle}</h2>
+
+        <!-- Hlavní cena -->
+        <div class="sc-grand mt-8 grid items-center gap-8 rounded-3xl p-6 sm:p-10 md:grid-cols-[auto_1fr]">
+          <div class="sc-card sc-card--enchanted mx-auto" aria-hidden="true">
+            <span class="sc-card__shine"></span>
+            <span class="sc-card__title">{prizes.grand.name}</span>
+            <span class="sc-card__sub">{prizes.grand.variant}</span>
+          </div>
+          <div>
+            <span class="inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] sc-tag-gold">
+              🌬️ {tx.grandPrizeTag}
+            </span>
+            <h3 class="mt-4 text-3xl font-black text-white sm:text-4xl">
+              {prizes.grand.name} <span class="sc-text-gold">– {prizes.grand.variant}</span>
+            </h3>
+            <p class="mt-3 text-white/65">{prizes.grand.place[lang]}</p>
+          </div>
+        </div>
+
+        <!-- Top 3 -->
+        <h3 class="mt-14 text-lg font-bold text-white">{tx.podiumTitle}</h3>
+        <div class="mt-5 grid gap-4 sm:grid-cols-3">
+          {prizes.podium.map((p) => (
+            <div class={`sc-podium sc-podium--${p.place} rounded-2xl border border-white/10 bg-kostka-surface p-5`}>
+              <p class="text-xs font-semibold uppercase tracking-[0.18em] sc-place">{tx.placeLabel(p.place)}</p>
+              <p class="mt-3 text-xl font-bold text-white">{p.name}</p>
+              <p class="text-sm text-white/60">{p.subtitle}</p>
+              <p class="mt-3 text-xs uppercase tracking-wide text-white/45">{p.note[lang]}</p>
+            </div>
+          ))}
+        </div>
+
+        <div class="mt-4 grid gap-4 md:grid-cols-2">
+          <div class="rounded-2xl border border-kostka-purple/40 bg-kostka-purple/[0.06] p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-kostka-purple">⭐ {tx.top8Title}</p>
+            <p class="mt-3 text-xl font-bold text-white">{prizes.top8.name} – {prizes.top8.subtitle}</p>
+            <p class="mt-2 text-sm text-white/60">{tx.top8Text}</p>
+          </div>
+          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
+            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">🚕 {tx.everyoneTitle}</p>
+            <ul class="mt-3 space-y-1.5">
+              {prizes.everyone.map((item) => (
+                <li class="text-white">
+                  <span class="font-bold">{pick(item.name)}</span>
+                  <span class="text-white/55"> – {pick(item.subtitle)}</span>
+                </li>
+              ))}
+            </ul>
+            <p class="mt-3 text-sm text-white/55">{tx.everyoneText}</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- VSTUPNÉ -->
+    <section class="mx-auto max-w-6xl px-4 py-16 md:py-24">
+      <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.priceEyebrow}</p>
+      <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.priceTitle}</h2>
+
+      <div class="mt-8 grid gap-4 sm:grid-cols-3" data-price-tiers>
+        {championship.priceTiers.map((tier) => {
+          const isCurrent = tier.id === currentTier.id;
+          return (
+            <div
+              class={`sc-tier relative rounded-2xl border p-6 ${isCurrent ? "is-current" : ""}`}
+              data-tier={tier.id}
+              data-until={tier.until ?? ""}
+            >
+              <span class="sc-tier__badge">{tx.currentBadge}</span>
+              <p class="text-sm font-semibold uppercase tracking-wide text-white/70">{tx.tiers[tier.id].label}</p>
+              <p class="mt-3 text-4xl font-black text-white">
+                {tier.czk} <span class="text-lg font-bold text-white/60">Kč</span>
+              </p>
+              <p class="mt-1 text-sm text-white/55">€{tier.eur}</p>
+              <p class="mt-4 text-xs uppercase tracking-wide text-white/45">{tx.tiers[tier.id].until}</p>
+            </div>
+          );
+        })}
+      </div>
+      <p class="mt-5 text-sm text-white/60">⭐ {tx.regularNote}</p>
+
+      <div class="mt-8 rounded-2xl border border-white/10 bg-kostka-surface p-6">
+        <p class="text-lg font-bold text-white">{tx.giftTitle}</p>
+        <p class="mt-2 text-sm text-white/65">{tx.giftText}</p>
+      </div>
+    </section>
+
+    <!-- JAK SE PŘIHLÁSIT -->
+    <section class="bg-kostka-surface/40 py-16 md:py-24">
+      <div class="mx-auto max-w-6xl px-4">
+        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.howEyebrow}</p>
+        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.howTitle}</h2>
+
+        <div class="mt-8 grid gap-4 md:grid-cols-2">
+          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
+            <span class="sc-step">1</span>
+            <h3 class="mt-4 text-xl font-bold text-white">{tx.step1Title}</h3>
+            <p class="mt-2 text-sm text-white/65">{tx.step1Text}</p>
+            <div class="mt-5">
+              {registrationUrl ? (
+                <a
+                  href={registrationUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  class="inline-flex rounded-full bg-kostka-purple px-6 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90"
+                >
+                  {tx.ctaRegister} ↗
+                </a>
+              ) : (
+                <span class="inline-flex rounded-full border border-kostka-purple/50 px-6 py-2.5 text-sm font-semibold text-kostka-purple">
+                  {tx.ctaRegisterSoon}
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
+            <span class="sc-step">2</span>
+            <h3 class="mt-4 text-xl font-bold text-white">{tx.step2Title}</h3>
+            <p class="mt-2 text-sm text-white/65">{tx.step2Text}</p>
+
+            {hasCzkPayment || hasEurPayment ? (
+              <div class="mt-5 grid gap-3 sm:grid-cols-2">
+                {hasCzkPayment && (
+                  <dl class="sc-pay">
+                    <dt class="sc-pay__head">🇨🇿 {tx.paymentCzk}</dt>
+                    <dt>{tx.account}</dt>
+                    <dd>{pay.accountCzk}</dd>
+                    <dt>{tx.vs}</dt>
+                    <dd>{pay.variableSymbol}</dd>
+                    <dt>{tx.message}</dt>
+                    <dd>{tx.messageValue}</dd>
+                  </dl>
+                )}
+                {hasEurPayment && (
+                  <dl class="sc-pay">
+                    <dt class="sc-pay__head">🇪🇺 {tx.paymentEur}</dt>
+                    <dt>IBAN</dt>
+                    <dd>{pay.iban}</dd>
+                    {pay.bic && <dt>BIC</dt>}
+                    {pay.bic && <dd>{pay.bic}</dd>}
+                    <dt>{tx.message}</dt>
+                    <dd>{pay.variableSymbol} + {tx.messageValue}</dd>
+                  </dl>
+                )}
+              </div>
+            ) : (
+              <p class="mt-5 rounded-xl border border-dashed border-white/15 px-4 py-3 text-sm text-white/55">
+                {tx.paymentPending}
+              </p>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- PROGRAM + PRAKTICKÉ INFO -->
+    <section class="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:grid-cols-2 md:py-24">
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.scheduleEyebrow}</p>
+        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.scheduleTitle}</h2>
+        <ol class="mt-8 space-y-4 border-l border-white/10 pl-6">
+          {tx.schedule.map((item) => (
+            <li class="relative">
+              <span class="absolute -left-[29px] top-1.5 h-2.5 w-2.5 rounded-full bg-kostka-purple"></span>
+              <p class="text-sm font-bold text-kostka-purple">{item.time}</p>
+              <p class="text-white/80">{item.text}</p>
+            </li>
+          ))}
+        </ol>
+        <p class="mt-6 text-xs text-white/45">{tx.scheduleNote}</p>
+      </div>
+
+      <div>
+        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.infoEyebrow}</p>
+        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.infoTitle}</h2>
+        <div class="mt-8 grid gap-3">
+          {tx.info.map((item) => (
+            <div class="rounded-2xl border border-white/10 bg-kostka-surface p-5">
+              <p class="text-sm font-bold text-white">{item.title}</p>
+              <p class="mt-1 text-sm text-white/65">{item.text}</p>
+            </div>
+          ))}
+        </div>
+        <a
+          href={championship.mapUrl}
+          target="_blank"
+          rel="noreferrer"
+          class="mt-5 inline-block text-sm font-semibold text-kostka-purple hover:underline"
+        >
+          {tx.mapLink} →
+        </a>
+      </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="bg-kostka-surface/40 py-16 md:py-24">
+      <div class="mx-auto max-w-3xl px-4">
+        <h2 class="text-2xl font-bold text-white md:text-3xl">{tx.faqTitle}</h2>
+        <div class="mt-8 divide-y divide-white/10">
+          {tx.faq.map((item) => (
+            <details class="group py-4">
+              <summary class="cursor-pointer list-none font-semibold text-white marker:content-none">{item.q}</summary>
+              <p class="mt-2 text-white/65">{item.a}</p>
+            </details>
+          ))}
+        </div>
+        <p class="mt-12 text-center text-lg font-bold text-white">{tx.closing}</p>
+      </div>
+    </section>
+  </div>
+
+  <style>
+    .sc {
+      --sc-gold: #f3c969;
+      --sc-gold-soft: rgba(243, 201, 105, 0.14);
+      --sc-ice: #9fd8ff;
+    }
+    :global(html[data-theme="light"]) .sc {
+      --sc-gold: #a86f00;
+      --sc-gold-soft: rgba(168, 111, 0, 0.1);
+      --sc-ice: #2a7fc0;
+    }
+    .sc-text-gold { color: var(--sc-gold); }
+    .sc-bg-gold { background: var(--sc-gold); }
+    .sc-tag-gold { color: var(--sc-gold); background: var(--sc-gold-soft); border: 1px solid color-mix(in srgb, var(--sc-gold) 45%, transparent); }
+
+    .sc-glow { border-radius: 9999px; filter: blur(120px); }
+    .sc-glow--a { top: -10rem; right: -6rem; width: 34rem; height: 34rem; background: color-mix(in srgb, var(--color-kostka-purple) 28%, transparent); }
+    .sc-glow--b { bottom: -14rem; left: -8rem; width: 28rem; height: 28rem; background: color-mix(in srgb, var(--sc-ice) 16%, transparent); }
+
+    /* Jemný „sníh" z teček – čistě CSS, žádné obrázky */
+    .sc-snow {
+      background-image:
+        radial-gradient(circle, rgba(255, 255, 255, 0.35) 1px, transparent 1.5px),
+        radial-gradient(circle, rgba(255, 255, 255, 0.2) 1px, transparent 1.5px);
+      background-size: 120px 120px, 70px 70px;
+      background-position: 0 0, 35px 50px;
+      mask-image: linear-gradient(to bottom, black, transparent 85%);
+      animation: sc-snow 40s linear infinite;
+      opacity: 0.5;
+    }
+    :global(html[data-theme="light"]) .sc-snow { opacity: 0; }
+    @keyframes sc-snow { to { background-position: 0 1200px, 35px 750px; } }
+
+    .sc-chip {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: color-mix(in srgb, var(--color-kostka-surface) 70%, transparent);
+      border-radius: 9999px; padding: 0.45rem 0.9rem;
+    }
+
+    .sc-count {
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      min-width: 4.25rem; padding: 0.75rem 0.5rem;
+      border-radius: 1rem; border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--color-kostka-surface);
+    }
+    .sc-count__num { font-size: 1.75rem; font-weight: 900; line-height: 1; color: var(--kostka-text); font-variant-numeric: tabular-nums; }
+    .sc-count__label { margin-top: 0.35rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--kostka-muted); }
+
+    .sc-grand {
+      border: 1px solid color-mix(in srgb, var(--sc-gold) 35%, transparent);
+      background:
+        radial-gradient(circle at 15% 50%, var(--sc-gold-soft), transparent 55%),
+        var(--color-kostka-surface);
+    }
+
+    /* Stylizovaná karta (bez oficiálního artu) */
+    .sc-card {
+      position: relative; overflow: hidden;
+      width: 11rem; aspect-ratio: 5 / 7; border-radius: 0.9rem;
+      display: flex; flex-direction: column; justify-content: flex-end;
+      padding: 1rem; color: #fff;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+    }
+    .sc-card--enchanted {
+      background:
+        linear-gradient(160deg, rgba(255, 255, 255, 0.18), transparent 40%),
+        conic-gradient(from 200deg at 60% 40%, #3b2a7a, #2b7fb8, #6fd3c1, #f3c969, #c06bd8, #3b2a7a);
+      border: 2px solid rgba(255, 255, 255, 0.55);
+    }
+    .sc-card__shine {
+      position: absolute; inset: -40%;
+      background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
+      animation: sc-shine 4.5s ease-in-out infinite;
+    }
+    @keyframes sc-shine { 0% { transform: translateX(-60%); } 60%, 100% { transform: translateX(60%); } }
+    .sc-card__title { position: relative; font-weight: 900; font-size: 1.05rem; line-height: 1.1; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
+    .sc-card__sub { position: relative; margin-top: 0.25rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.9; }
+
+    .sc-podium--1 { border-color: color-mix(in srgb, var(--sc-gold) 55%, transparent); }
+    .sc-podium--1 .sc-place { color: var(--sc-gold); }
+    .sc-podium--2 .sc-place { color: #c9d1dc; }
+    .sc-podium--3 .sc-place { color: #d39a6a; }
+    :global(html[data-theme="light"]) .sc-podium--2 .sc-place { color: #5c6878; }
+    :global(html[data-theme="light"]) .sc-podium--3 .sc-place { color: #9a5a26; }
+
+    .sc-tier { border-color: rgba(255, 255, 255, 0.1); background: var(--color-kostka-surface); transition: border-color 0.3s; }
+    .sc-tier__badge {
+      display: none; position: absolute; top: -0.7rem; right: 1rem;
+      border-radius: 9999px; padding: 0.2rem 0.7rem;
+      font-size: 0.65rem; font-weight: 800; text-transform: uppercase; letter-spacing: 0.12em;
+      background: var(--color-kostka-purple); color: var(--color-kostka-bg);
+    }
+    .sc-tier.is-current { border-color: var(--color-kostka-purple); box-shadow: 0 0 28px color-mix(in srgb, var(--color-kostka-purple) 25%, transparent); }
+    .sc-tier.is-current .sc-tier__badge { display: inline-block; }
+    .sc-tier.is-past { opacity: 0.45; }
+    .sc-tier.is-past p:nth-of-type(2) { text-decoration: line-through; }
+
+    .sc-step {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+      font-weight: 900; background: var(--color-kostka-purple); color: var(--color-kostka-bg);
+    }
+
+    .sc-pay {
+      display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem;
+      border-radius: 0.9rem; border: 1px solid rgba(255, 255, 255, 0.1);
+      background: color-mix(in srgb, var(--color-kostka-bg) 60%, transparent);
+      padding: 1rem; font-size: 0.85rem;
+    }
+    .sc-pay dt { color: var(--kostka-muted); }
+    .sc-pay dd { color: var(--kostka-text); font-weight: 700; word-break: break-word; }
+    .sc-pay .sc-pay__head { grid-column: 1 / -1; color: var(--kostka-text); font-weight: 800; margin-bottom: 0.25rem; }
+
+    @media (prefers-reduced-motion: reduce) {
+      .sc-snow, .sc-card__shine { animation: none; }
+    }
+  </style>
+
+  <script>
+    // Odpočet do začátku turnaje
+    const box = document.querySelector<HTMLElement>("[data-countdown]");
+    if (box) {
+      const target = new Date(box.dataset.countdown!).getTime();
+      const set = (unit: string, value: number) => {
+        const el = box.querySelector<HTMLElement>(`[data-unit="${unit}"]`);
+        if (el) el.textContent = String(value).padStart(unit === "days" ? 1 : 2, "0");
+      };
+      const tick = () => {
+        const diff = Math.max(0, target - Date.now());
+        set("days", Math.floor(diff / 86_400_000));
+        set("hours", Math.floor((diff / 3_600_000) % 24));
+        set("minutes", Math.floor((diff / 60_000) % 60));
+        set("seconds", Math.floor((diff / 1000) % 60));
+        if (diff === 0) clearInterval(timer);
+      };
+      const timer = setInterval(tick, 1000);
+      tick();
+    }
+
+    // Cenové fáze – zvýrazní aktuální i bez nového renderu (např. z cache)
+    const tiers = Array.from(document.querySelectorAll<HTMLElement>("[data-price-tiers] [data-tier]"));
+    if (tiers.length) {
+      const now = Date.now();
+      const current = tiers.find((el) => !el.dataset.until || now <= new Date(el.dataset.until).getTime()) ?? tiers[tiers.length - 1];
+      let passed = true;
+      for (const el of tiers) {
+        if (el === current) passed = false;
+        el.classList.toggle("is-current", el === current);
+        el.classList.toggle("is-past", passed);
+      }
+    }
+  </script>
+</Layout>

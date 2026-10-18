@@ -4,12 +4,13 @@ import "../styles/global.css";
 interface Props {
   title: string;
   description?: string;
+  lang?: "cs" | "en";
 }
 
-const { title, description = "KOSTKA TCG – herna pro hráče, od hráčů pro hráče. Turnaje a ligy Lorcana, Pokémon a Riftbound v Ostravě." } = Astro.props;
+const { title, lang = "cs", description = "KOSTKA TCG – herna pro hráče, od hráčů pro hráče. Turnaje a ligy Lorcana, Pokémon a Riftbound v Ostravě." } = Astro.props;
 ---
 
-<html lang="cs">
+<html lang={lang}>
   <head>
     <meta charset="utf-8" />
     <link rel="icon" type="image/svg+xml" href="/images/logo-icon.svg" />

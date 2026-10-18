@@ -1,5 +1,6 @@
 ---
 import { gameBadgeColors, type TournamentEntry } from "../../data/tournaments";
+import { isChampionshipEvent } from "../../data/storeChampionship";
 
 interface Props {
   event: TournamentEntry;
@@ -8,13 +9,23 @@ interface Props {
 const { event } = Astro.props;
 const spotsLeft = event.spotsTotal - event.spotsTaken;
 const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
-const actionHref = event.registrationUrl || `/turnaje/${event.slug}`;
-const actionLabel = event.registrationUrl ? "Otevřít PlayHub" : spotsLeft > 0 ? "Rezervovat místo" : "Obsazeno – náhradník";
+// Velký turnaj (Store Championship) vede na vlastní stránku s cenami a early bird,
+// ne rovnou na PlayHub – registrace na PlayHubu je odkázaná až odtamtud.
+const isFeatured = isChampionshipEvent(event);
+const actionHref = isFeatured ? "/store-championship" : event.registrationUrl || `/turnaje/${event.slug}`;
+const actionLabel = isFeatured
+  ? "Detail a registrace"
+  : event.registrationUrl
+    ? "Otevřít PlayHub"
+    : spotsLeft > 0
+      ? "Rezervovat místo"
+      : "Obsazeno – náhradník";
+const opensExternally = !isFeatured && Boolean(event.registrationUrl);
 ---
 
 <article
   id={`event-${event.slug}`}
-  class="group relative flex scroll-mt-28 flex-col overflow-hidden rounded-2xl border border-white/10 bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-purple/40"
+  class={`group relative flex scroll-mt-28 flex-col overflow-hidden rounded-2xl border bg-kostka-surface p-5 transition-all duration-500 hover:-translate-y-0.5 hover:border-kostka-purple/40 ${isFeatured ? "featured-event border-amber-300/50" : "border-white/10"}`}
   data-game={event.game}
   data-full={spotsLeft <= 0}
 >
@@ -23,13 +34,22 @@ const actionLabel = event.registrationUrl ? "Otevřít PlayHub" : spotsLeft > 0 
     <span class={`rounded-full px-3 py-1 text-xs font-semibold ${gameBadgeColors[event.game]}`}>
       {event.game}
     </span>
-    <span class="text-xs font-semibold uppercase tracking-wide text-white/40">
-      {event.type === "league" ? "Liga" : "Turnaj"}
-    </span>
+    {isFeatured ? (
+      <span class="featured-event__tag rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.14em]">
+        ⭐ Velký turnaj
+      </span>
+    ) : (
+      <span class="text-xs font-semibold uppercase tracking-wide text-white/40">
+        {event.type === "league" ? "Liga" : "Turnaj"}
+      </span>
+    )}
   </div>
 
   <h3 class="mt-3 text-lg font-bold text-white">{event.title}</h3>
   <p class="mt-1 text-sm text-white/50">{event.date} · {event.time}</p>
+  {isFeatured && (
+    <p class="mt-2 text-sm text-white/70">🌬️ Hlavní cena Colors of the Wind Enchanted</p>
+  )}
 
   <div class="mt-4">
     <div class="flex items-center justify-between text-xs text-white/40">
@@ -43,10 +63,28 @@ const actionLabel = event.registrationUrl ? "Otevřít PlayHub" : spotsLeft > 0 
 
   <a
     href={actionHref}
-    target={event.registrationUrl ? "_blank" : undefined}
-    rel={event.registrationUrl ? "noreferrer" : undefined}
+    target={opensExternally ? "_blank" : undefined}
+    rel={opensExternally ? "noreferrer" : undefined}
     class="mt-5 inline-flex items-center justify-center rounded-full bg-kostka-purple px-4 py-2 text-sm font-semibold text-kostka-bg hover:opacity-90"
   >
     {actionLabel}
   </a>
 </article>
+
+<style>
+  .featured-event {
+    background:
+      radial-gradient(circle at 100% 0%, rgba(243, 201, 105, 0.14), transparent 55%),
+      var(--color-kostka-surface);
+  }
+  .featured-event__tag {
+    color: #f3c969;
+    background: rgba(243, 201, 105, 0.12);
+    border: 1px solid rgba(243, 201, 105, 0.4);
+  }
+  :global(html[data-theme="light"]) .featured-event__tag {
+    color: #8a5a00;
+    background: rgba(168, 111, 0, 0.1);
+    border-color: rgba(168, 111, 0, 0.35);
+  }
+</style>
