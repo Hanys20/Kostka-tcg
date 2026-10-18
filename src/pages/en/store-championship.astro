@@ -1,8 +1,15 @@
 ---
 import StoreChampionshipPage from "../../components/events/StoreChampionshipPage.astro";
+import { isRevealed } from "../../data/storeChampionship";
+import { getChampionshipNow } from "../../lib/championshipPreview";
 
 // English version for players from Poland and abroad.
 export const prerender = false;
+
+const { now, previewing, canPreview } = await getChampionshipNow(Astro.url, Astro.cookies);
+if (!isRevealed("announce", now) && !canPreview) {
+  return Astro.rewrite("/404");
+}
 ---
 
-<StoreChampionshipPage lang="en" />
+<StoreChampionshipPage lang="en" now={now} previewing={previewing} canPreview={canPreview} />

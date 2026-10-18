@@ -4,24 +4,45 @@
 // sahání do šablon. Stránky: /store-championship (CZ) a /en/store-championship (EN),
 // banner na homepage a zvýrazněná karta v kalendáři čtou odsud.
 //
-// Časy jsou v pražském čase (v prosinci/listopadu platí SEČ = +01:00).
+// Časy jsou v pražském čase (do 25. 10. letní +02:00, potom SEČ +01:00).
 
 export type Lang = "cs" | "en";
 
 export const championship = {
   slug: "store-championship",
-  // Začátek check-inu – podle něj se počítá odpočet i to, kdy banner zmizí.
-  startsAt: "2026-12-12T09:00:00+01:00",
+  // Start 1. kola – podle něj se počítá odpočet. Registrace na místě od 9:30.
+  startsAt: "2026-12-12T10:00:00+01:00",
   // Den, do kterého se banner/stránka ukazuje jako „nadcházející" (včetně).
   showUntil: "2026-12-13T23:59:59+01:00",
   capacity: 32,
   venue: "KOSTKA TCG, Dolní 782/65, 700 30 Ostrava-Zábřeh",
   mapUrl: "https://maps.google.com/?q=Doln%C3%AD+782%2F65%2C+Ostrava-Z%C3%A1b%C5%99eh",
+  instagramUrl: "https://www.instagram.com/kostkatcg/",
 
-  // Odkaz na event v PlayHubu (Ravensburger). Dokud je prázdný, stránka ukáže
-  // „registrace se otevírá 31. 10." místo tlačítka.
+  // Postupné odhalování podle propagačního plánu. Dokud datum nenastane, obsah
+  // se na serveru vůbec nevyrenderuje – není v HTML ani ve zdrojáku stránky,
+  // takže se nedá vyspoilerovat. 18:00 = zhruba kdy jde ven příspěvek/story,
+  // podle potřeby posuň.
+  reveals: {
+    // Stránka, banner a karta v kalendáři se objeví (do té doby 404).
+    announce: "2026-10-24T18:00:00+02:00",
+    // Vstupné, early bird a postup přihlášky (= otevření registrace).
+    pricing: "2026-10-31T00:00:00+01:00",
+    // Promo za účast pro každého hráče (Donald + Woody + ozdoba).
+    everyone: "2026-11-07T18:00:00+01:00",
+    // Foil Woody pro Top 8.
+    top8: "2026-11-11T18:00:00+01:00",
+    // Oversized karty pro Top 3.
+    podium: "2026-11-14T18:00:00+01:00",
+    // Nápověda k hlavní ceně (jen „Enchanted", bez názvu karty).
+    grandHint: "2026-11-18T18:00:00+01:00",
+    // Odhalení hlavní ceny Colors of the Wind Enchanted.
+    grand: "2026-11-20T18:00:00+01:00",
+  },
+
+  // Odkaz na event v PlayHubu (Ravensburger). Dokud je prázdný, vezme se
+  // z termínu v administraci, jinak stránka ukáže „registrace se otevírá…".
   playhubUrl: "",
-  registrationOpens: "2026-10-31T00:00:00+01:00",
 
   // Cenové fáze – automaticky se přepínají podle data.
   priceTiers: [
@@ -42,6 +63,30 @@ export const championship = {
   },
 } as const;
 
+export type RevealStage = keyof typeof championship.reveals;
+
+export function isRevealed(stage: RevealStage, now: Date = new Date()) {
+  return now >= new Date(championship.reveals[stage]);
+}
+
+// Datum odhalení pro texty typu „odhalíme v sobotu 14. 11." / "revealed Saturday 14 Nov".
+export function revealDate(stage: RevealStage, lang: Lang) {
+  const d = new Date(championship.reveals[stage]);
+  const tz = "Europe/Prague";
+  if (lang === "cs") {
+    const day = d.toLocaleDateString("cs-CZ", { timeZone: tz, day: "numeric" });
+    const month = d.toLocaleDateString("cs-CZ", { timeZone: tz, month: "numeric" });
+    return {
+      weekday: d.toLocaleDateString("cs-CZ", { timeZone: tz, weekday: "long" }),
+      date: `${parseInt(day, 10)}. ${parseInt(month, 10)}.`,
+    };
+  }
+  return {
+    weekday: d.toLocaleDateString("en-GB", { timeZone: tz, weekday: "long" }),
+    date: d.toLocaleDateString("en-GB", { timeZone: tz, day: "numeric", month: "short" }),
+  };
+}
+
 export type PriceTierId = (typeof championship.priceTiers)[number]["id"];
 
 export function getCurrentTier(now: Date = new Date()) {
@@ -52,7 +97,7 @@ export function getCurrentTier(now: Date = new Date()) {
 }
 
 export function isChampionshipUpcoming(now: Date = new Date()) {
-  return now <= new Date(championship.showUntil);
+  return isRevealed("announce", now) && now <= new Date(championship.showUntil);
 }
 
 // Pozná termín turnaje mezi událostmi ze Supabase (admin ho vytvoří jako běžný
@@ -69,61 +114,98 @@ export function isChampionshipEvent(event: { title?: string; startsAt?: string; 
 }
 
 // ---------------------------------------------------------------------------
-// Texty (CZ / EN)
+// Ceny – každá skupina má svou fázi odhalení
 // ---------------------------------------------------------------------------
 
 export const prizes = {
   grand: {
+    stage: "grand" as const,
     name: "Colors of the Wind",
     variant: "Enchanted",
-    place: { cs: "Hlavní cena pro vítěze", en: "Grand prize for the winner" },
+    note: { cs: "pro vítěze turnaje", en: "for the tournament winner" },
   },
-  podium: [
-    { place: 1, name: "Miguel Rivera", subtitle: "Street Musician", note: { cs: "oversized karta + trofej", en: "oversized card + trophy" } },
-    { place: 2, name: "Goofy", subtitle: "Dancing Superstar", note: { cs: "oversized karta", en: "oversized card" } },
-    { place: 3, name: "Cinderella", subtitle: "Unintentional Icon", note: { cs: "oversized karta", en: "oversized card" } },
-  ],
-  top8: { name: "Woody", subtitle: "Store Championship promo", finish: "foil" },
-  everyone: [
-    { name: "Donald Duck", subtitle: "Taxi Driver", note: { cs: "promo karta", en: "promo card" } },
-    { name: "Woody", subtitle: "promo", note: { cs: "nonfoil promo", en: "non-foil promo" } },
-    { name: { cs: "Vánoční ozdoba Kostky", en: "Kostka Christmas ornament" }, subtitle: { cs: "z 3D tiskárny", en: "3D printed" } },
-  ],
+  podium: {
+    stage: "podium" as const,
+    items: [
+      { place: 1, name: "Miguel Rivera", subtitle: "Street Musician", note: { cs: "oversized karta + trofej", en: "oversized card + trophy" } },
+      { place: 2, name: "Goofy", subtitle: "Dancing Superstar", note: { cs: "oversized karta", en: "oversized card" } },
+      { place: 3, name: "Cinderella", subtitle: "Unintentional Icon", note: { cs: "oversized karta", en: "oversized card" } },
+    ],
+  },
+  top8: { stage: "top8" as const, name: "Woody", subtitle: "Store Championship promo", finish: "foil" },
+  everyone: {
+    stage: "everyone" as const,
+    items: [
+      { name: "Donald Duck", subtitle: "Taxi Driver", note: { cs: "promo karta", en: "promo card" } },
+      { name: "Woody", subtitle: { cs: "nonfoil promo", en: "non-foil promo" } },
+      { name: { cs: "Vánoční ozdoba Kostky", en: "Kostka Christmas ornament" }, subtitle: { cs: "z 3D tiskárny", en: "3D printed" } },
+    ],
+  },
 } as const;
+
+// ---------------------------------------------------------------------------
+// Texty (CZ / EN)
+// ---------------------------------------------------------------------------
 
 export const t = {
   cs: {
     metaTitle: "Hvězdy Hyperia City – Lorcana Store Championship 12. 12. 2026",
     metaDescription:
+      "Největší Lorcana turnaj v Kostce: Store Championship v sobotu 12. 12. 2026 v Ostravě. Ceny odhalujeme postupně – sleduj nás.",
+    metaDescriptionGrand:
       "Největší Lorcana turnaj v Kostce: Store Championship 12. 12. 2026 v Ostravě. Hlavní cena Colors of the Wind Enchanted, foil Woody pro Top 8, promo karty pro každého.",
     langSwitch: { label: "English", href: "/en/store-championship" },
     eyebrow: "Disney Lorcana Store Championship",
     title: "Hvězdy Hyperia City",
     subtitle: "Vánoční noc ve městě",
-    lead:
-      "Město nikdy nespí – a dnes v něm hledáme novou hvězdu. Největší Lorcana turnaj v historii Kostky. A tentokrát městem zavane opravdu silný vítr…",
-    dateLabel: "sobota 12. 12. 2026",
-    checkIn: "registrace od 9:00",
-    format: "Core Constructed · Bo3 · Swiss + Top 8",
+    lead: "Největší Lorcana turnaj v historii Kostky. Město nikdy nespí – a 12. 12. v něm hledáme novou hvězdu.",
+
+    facts: {
+      when: "Kdy",
+      whenValue: "sobota 12. 12. 2026",
+      time: "Čas",
+      timeValue: "registrace 9:30 · start 10:00",
+      where: "Kde",
+      whereValue: "KOSTKA TCG, Ostrava-Zábřeh",
+      format: "Formát",
+      formatValue: "Core Constructed · Bo3 · Swiss + Top 8",
+      capacity: "Kapacita",
+    },
+    spots: (taken: number, total: number) => `${taken} / ${total} hráčů`,
+    spotsFallback: (total: number) => `${total} hráčů`,
+
     ctaRegister: "Registrovat na PlayHubu",
-    ctaRegisterSoon: "Registrace se otevírá 31. 10.",
-    ctaPrizes: "Zobrazit ceny",
-    countdown: { days: "dní", hours: "hod", minutes: "min", seconds: "s", label: "Do turnaje zbývá" },
-    spots: (taken: number, total: number) => `Obsazeno ${taken} z ${total} míst`,
-    spotsFallback: (total: number) => `Kapacita ${total} hráčů`,
+    ctaRegisterSoon: (date: string) => `Registrace od ${date}`,
+    countdown: { days: "dní", hours: "hod", minutes: "min", seconds: "s", label: "Do startu zbývá" },
+    nextReveal: (what: string, weekday: string, date: string) => `Další odhalení: ${what} – ${weekday} ${date}`,
+    followUs: "Sleduj nás na Instagramu",
+
+    nav: { prizes: "Ceny", entry: "Vstupné a přihláška", schedule: "Program", info: "Info", faq: "FAQ" },
 
     prizesEyebrow: "Ceny",
     prizesTitle: "O co se hraje",
-    grandPrizeTag: "Hlavní cena",
-    podiumTitle: "Top 3",
+    prizesLead: "Ceny odhalujeme postupně. Co je zamčené, odemkneme v uvedený den – na webu i na Instagramu.",
+    revealedCount: (n: number, total: number) => `Odhaleno ${n} z ${total}`,
+    stageNames: {
+      everyone: "Ceny za účast",
+      top8: "Top 8",
+      podium: "Top 3",
+      grand: "Hlavní cena",
+    },
+    lockedLabel: (weekday: string, date: string) => `Odhalíme ${weekday} ${date}`,
+    grandTag: "Hlavní cena",
+    grandMysteryTitle: "Tajná hlavní cena",
+    grandMysteryText: "Tentokrát městem zavane opravdu silný vítr… 🌬️",
+    grandHintTitle: "Nápověda: je to Enchanted ✨",
+    grandHintText: "Víc zatím neprozradíme. Celou kartu ukážeme už brzy.",
     placeLabel: (n: number) => `${n}. místo`,
-    top8Title: "Top 8",
-    top8Text: "Každý hráč v Top 8 získá foil Woodyho – Store Championship promo.",
-    everyoneTitle: "Pro každého hráče",
-    everyoneText: "Do Hyperia City vás odvezeme – kdo dorazí, neodjede s prázdnou.",
+    top8Text: "Každý hráč v Top 8",
+    everyoneText: "Každý hráč – nikdo neodjede s prázdnou",
 
-    priceEyebrow: "Vstupné",
-    priceTitle: "Čím dřív, tím levněji",
+    entryEyebrow: "Vstupné a přihláška",
+    entryTitle: "Čím dřív, tím levněji",
+    entryLocked: (weekday: string, date: string) =>
+      `Registraci a vstupné zveřejníme ${weekday} ${date}. Early bird bude platit jen omezenou dobu – sleduj nás, ať ti neuteče.`,
     tiers: {
       early: { label: "Early bird", until: "do 21. 11." },
       standard: { label: "Standard", until: "22. 11. – 9. 12." },
@@ -131,102 +213,125 @@ export const t = {
     },
     currentBadge: "Teď platí",
     regularNote: "Stálí hráči naší ligy mají slevu 50 Kč (2 €) z aktuální ceny.",
-    giftTitle: "🎁 Vstup jako dárek",
-    giftText:
-      "Startovné můžete koupit i jako dárkový poukaz pod stromeček – s 3D tištěnou kartičkou Kostky. Stačí se ozvat na kostkatcg@gmail.com nebo se zastavit v herně.",
-
-    howEyebrow: "Přihláška",
-    howTitle: "Jak se přihlásit",
-    step1Title: "Zaregistruj se na PlayHubu",
-    step1Text:
-      "Místo na turnaji zabíráš v oficiálním systému Ravensburger PlayHub. Bez registrace tam nemůžeme výsledky započítat.",
+    stepsTitle: "Jak se přihlásit – 3 kroky",
+    step1Title: "Registrace na PlayHubu",
+    step1Text: "Místo zabíráš v oficiálním systému Ravensburger PlayHub. Bez toho nemůžeme započítat výsledky.",
     step2Title: "Zaplať předem a ušetři",
-    step2Text:
-      "Early bird cena platí při platbě převodem do 21. 11. Do zprávy pro příjemce napiš své jméno z PlayHubu, ať platbu spárujeme. Kdo nezaplatí předem, platí na místě aktuální cenu.",
+    step2Text: "Early bird platí při převodu do 21. 11. Do zprávy napiš své jméno z PlayHubu. Kdo nezaplatí předem, platí na místě aktuální cenu.",
+    step3Title: "Dorazit 12. 12. v 9:30",
+    step3Text: "Na registraci si vezmi deck a decklist. V 10:00 startuje první kolo.",
     paymentCzk: "Platba v Kč",
     paymentEur: "Platba v EUR",
     account: "Číslo účtu",
     vs: "Variabilní symbol",
-    message: "Zpráva pro příjemce",
+    message: "Zpráva",
     messageValue: "jméno z PlayHubu",
-    paymentPending: "Platební údaje sem doplníme do otevření registrace (31. 10.).",
+    paymentPending: "Platební údaje doplníme do otevření registrace.",
+    giftText: "🎁 Vstup jde koupit i jako dárkový poukaz pod stromeček – napiš na kostkatcg@gmail.com nebo se zastav v herně.",
 
     scheduleEyebrow: "Program",
     scheduleTitle: "Jak poběží den",
     schedule: [
-      { time: "9:00", text: "Check-in, kontrola decklistů, výdej promo karet" },
-      { time: "9:45", text: "Zahájení turnaje" },
-      { time: "10:00", text: "Swiss kola – „Ulice“, „Taxi stanoviště“, „Náměstí“, „Klub“, „Bulvár“" },
-      { time: "~13:00", text: "Pauza na oběd" },
-      { time: "~16:30", text: "Top 8 – „Červený koberec“" },
-      { time: "~19:30", text: "Finále, předání cen a společná fotka" },
+      { time: "9:30", title: "Registrace", text: "Check-in, kontrola decklistů" },
+      { time: "10:00", title: "Start turnaje", text: "Swiss kola po 50 minutách" },
+      { time: "~13:00", title: "Pauza na oběd", text: "" },
+      { time: "~16:30", title: "Top 8", text: "Vyřazovací část – „Červený koberec“" },
+      { time: "~19:30", title: "Finále a předání cen", text: "Společná fotka všech hvězd" },
     ],
-    scheduleNote: "Počet kol Swissu se řídí počtem hráčů (do 16 hráčů 4 kola, 17–32 hráčů 5 kol). Časy jsou orientační.",
+    scheduleNote: "Do 16 hráčů 4 kola Swissu, 17–32 hráčů 5 kol. Časy po startu jsou orientační.",
 
     infoEyebrow: "Praktické info",
     infoTitle: "Než vyrazíš",
     info: [
-      { title: "Kde", text: "KOSTKA TCG, Dolní 782/65, Ostrava-Zábřeh" },
-      { title: "Jídlo a pití", text: "Občerstvení přímo ke stolu díky Čajovně Antakarana v budově." },
-      { title: "Z Polska", text: "Z Katovic zhruba 1,5 hodiny autem, z Krakova kolem 2,5 hodiny." },
-      { title: "Co s sebou", text: "Deck, sleevy, lore counter a decklist (formulář dostaneš i na místě)." },
+      { icon: "📍", title: "Adresa", text: "KOSTKA TCG, Dolní 782/65, Ostrava-Zábřeh" },
+      { icon: "🎒", title: "Co s sebou", text: "Deck, sleevy, lore counter a decklist (formulář dostaneš i na místě)." },
+      { icon: "☕", title: "Jídlo a pití", text: "Občerstvení až ke stolu díky Čajovně Antakarana v budově." },
+      { icon: "🚗", title: "Z Polska", text: "Z Katovic zhruba 1,5 hodiny autem, z Krakova kolem 2,5 hodiny." },
     ],
     mapLink: "Otevřít v mapě",
 
-    faqTitle: "Časté dotazy k turnaji",
+    faqTitle: "Časté dotazy",
     faq: [
-      {
-        q: "Jaký je formát?",
-        a: "Core Constructed, zápasy na dvě vítězné hry (Bo3), Swiss a poté vyřazovací Top 8.",
-      },
-      {
-        q: "Můžu přijet i jako začátečník?",
-        a: "Jasně. Promo karty za účast dostane každý hráč a atmosféra je přátelská. Jen počítej s tím, že jde o celodenní akci.",
-      },
-      {
-        q: "Co když zaplatím a nebudu moct přijet?",
-        a: "Dej nám vědět nejpozději 9. 12. – peníze vrátíme, nebo vstup převedeme na kamaráda.",
-      },
-      {
-        q: "Musím platit předem?",
-        a: "Nemusíš. Platba předem jen zajistí nižší cenu. Na místě se platí aktuální cena podle tabulky výše.",
-      },
+      { q: "Jaký je formát?", a: "Core Constructed, zápasy na dvě vítězné hry (Bo3), Swiss a poté vyřazovací Top 8." },
+      { q: "Můžu přijet i jako začátečník?", a: "Jasně. Atmosféra je přátelská a ceny za účast dostane každý hráč. Jen počítej s celodenní akcí." },
+      { q: "Musím platit předem?", a: "Nemusíš. Platba předem jen zajistí nižší cenu, na místě se platí aktuální cena." },
+      { q: "Co když zaplatím a nebudu moct přijet?", a: "Dej nám vědět nejpozději 9. 12. – peníze vrátíme, nebo vstup převedeme na kamaráda." },
     ],
     closing: "Naskoč do taxíku, cesta ke slávě začíná u nás. 🌟",
+
+    preview: {
+      label: "Náhled k datu",
+      today: "Dnes",
+      stages: {
+        announce: "Oznámení",
+        pricing: "Registrace",
+        everyone: "Za účast",
+        top8: "Top 8",
+        podium: "Top 3",
+        grandHint: "Nápověda",
+        grand: "Enchanted",
+      },
+    },
   },
 
   en: {
     metaTitle: "Stars of Hyperia City – Lorcana Store Championship, 12 Dec 2026",
     metaDescription:
+      "The biggest Lorcana tournament at Kostka: Store Championship on Saturday 12 December 2026 in Ostrava, Czech Republic. Prizes are being revealed step by step.",
+    metaDescriptionGrand:
       "The biggest Lorcana tournament at Kostka: Store Championship on 12 December 2026 in Ostrava, Czech Republic. Grand prize Colors of the Wind Enchanted, foil Woody for Top 8, promos for every player.",
     langSwitch: { label: "Čeština", href: "/store-championship" },
     eyebrow: "Disney Lorcana Store Championship",
     title: "Stars of Hyperia City",
     subtitle: "A Christmas Night in the City",
-    lead:
-      "The city never sleeps – and tonight it's looking for a new star. The biggest Lorcana tournament in Kostka's history. And this time, a powerful wind is blowing through the streets…",
-    dateLabel: "Saturday, 12 December 2026",
-    checkIn: "check-in from 9:00",
-    format: "Core Constructed · Bo3 · Swiss + Top 8",
+    lead: "The biggest Lorcana tournament in Kostka's history. The city never sleeps – and on 12 December it's looking for a new star.",
+
+    facts: {
+      when: "When",
+      whenValue: "Saturday, 12 Dec 2026",
+      time: "Time",
+      timeValue: "check-in 9:30 · start 10:00",
+      where: "Where",
+      whereValue: "KOSTKA TCG, Ostrava, CZ",
+      format: "Format",
+      formatValue: "Core Constructed · Bo3 · Swiss + Top 8",
+      capacity: "Capacity",
+    },
+    spots: (taken: number, total: number) => `${taken} / ${total} players`,
+    spotsFallback: (total: number) => `${total} players`,
+
     ctaRegister: "Register on PlayHub",
-    ctaRegisterSoon: "Registration opens 31 Oct",
-    ctaPrizes: "See the prizes",
+    ctaRegisterSoon: (date: string) => `Registration opens ${date}`,
     countdown: { days: "days", hours: "hrs", minutes: "min", seconds: "sec", label: "Starts in" },
-    spots: (taken: number, total: number) => `${taken} of ${total} spots taken`,
-    spotsFallback: (total: number) => `Limited to ${total} players`,
+    nextReveal: (what: string, weekday: string, date: string) => `Next reveal: ${what} – ${weekday} ${date}`,
+    followUs: "Follow us on Instagram",
+
+    nav: { prizes: "Prizes", entry: "Entry & sign-up", schedule: "Schedule", info: "Info", faq: "FAQ" },
 
     prizesEyebrow: "Prizes",
     prizesTitle: "What's at stake",
-    grandPrizeTag: "Grand prize",
-    podiumTitle: "Top 3",
+    prizesLead: "We're revealing the prizes step by step. Locked ones unlock on the date shown – here and on Instagram.",
+    revealedCount: (n: number, total: number) => `${n} of ${total} revealed`,
+    stageNames: {
+      everyone: "Participation prizes",
+      top8: "Top 8",
+      podium: "Top 3",
+      grand: "Grand prize",
+    },
+    lockedLabel: (weekday: string, date: string) => `Revealed ${weekday} ${date}`,
+    grandTag: "Grand prize",
+    grandMysteryTitle: "Secret grand prize",
+    grandMysteryText: "This time, a powerful wind is blowing through the city… 🌬️",
+    grandHintTitle: "Hint: it's an Enchanted ✨",
+    grandHintText: "That's all we'll say for now. The full card is coming very soon.",
     placeLabel: (n: number) => (n === 1 ? "1st place" : n === 2 ? "2nd place" : "3rd place"),
-    top8Title: "Top 8",
-    top8Text: "Every Top 8 player receives a foil Woody – Store Championship promo.",
-    everyoneTitle: "For every player",
-    everyoneText: "Hop in the taxi – nobody leaves Hyperia City empty-handed.",
+    top8Text: "Every Top 8 player",
+    everyoneText: "Every player – nobody leaves empty-handed",
 
-    priceEyebrow: "Entry fee",
-    priceTitle: "The sooner, the cheaper",
+    entryEyebrow: "Entry & sign-up",
+    entryTitle: "The sooner, the cheaper",
+    entryLocked: (weekday: string, date: string) =>
+      `Registration and entry fees go live on ${weekday} ${date}. The early bird price only lasts a limited time – follow us so you don't miss it.`,
     tiers: {
       early: { label: "Early bird", until: "until 21 Nov" },
       standard: { label: "Standard", until: "22 Nov – 9 Dec" },
@@ -234,67 +339,64 @@ export const t = {
     },
     currentBadge: "Current price",
     regularNote: "Regular players of our league get 50 CZK (€2) off the current price.",
-    giftTitle: "🎁 Entry as a gift",
-    giftText:
-      "The entry fee is also available as a gift voucher – with a 3D printed Kostka card. Just email kostkatcg@gmail.com or drop by the store.",
-
-    howEyebrow: "Sign-up",
-    howTitle: "How to register",
+    stepsTitle: "How to register – 3 steps",
     step1Title: "Register on PlayHub",
-    step1Text:
-      "Your seat is reserved in the official Ravensburger PlayHub system. Without it we can't record your results.",
+    step1Text: "Your seat is reserved in the official Ravensburger PlayHub system. Without it we can't record your results.",
     step2Title: "Pay in advance and save",
-    step2Text:
-      "The early bird price applies to bank transfers made by 21 Nov. Put your PlayHub name in the payment reference so we can match it. If you don't pay in advance, you pay the current price on site.",
+    step2Text: "The early bird price applies to bank transfers made by 21 Nov. Put your PlayHub name in the payment reference. Otherwise you pay the current price on site.",
+    step3Title: "Arrive on 12 Dec at 9:30",
+    step3Text: "Bring your deck and decklist to check-in. Round one starts at 10:00.",
     paymentCzk: "Payment in CZK",
     paymentEur: "Payment in EUR",
     account: "Account",
     vs: "Variable symbol",
-    message: "Payment reference",
+    message: "Reference",
     messageValue: "your PlayHub name",
-    paymentPending: "Payment details will be added before registration opens (31 Oct).",
+    paymentPending: "Payment details will be added before registration opens.",
+    giftText: "🎁 Entry is also available as a gift voucher – email kostkatcg@gmail.com or drop by the store.",
 
     scheduleEyebrow: "Schedule",
     scheduleTitle: "How the day runs",
     schedule: [
-      { time: "9:00", text: "Check-in, decklist check, promo cards handed out" },
-      { time: "9:45", text: "Opening" },
-      { time: "10:00", text: "Swiss rounds – “Street”, “Taxi Rank”, “Square”, “Club”, “Boulevard”" },
-      { time: "~13:00", text: "Lunch break" },
-      { time: "~16:30", text: "Top 8 – “Red Carpet”" },
-      { time: "~19:30", text: "Finals, prize ceremony and group photo" },
+      { time: "9:30", title: "Check-in", text: "Registration and decklist check" },
+      { time: "10:00", title: "Tournament starts", text: "50-minute Swiss rounds" },
+      { time: "~13:00", title: "Lunch break", text: "" },
+      { time: "~16:30", title: "Top 8", text: "Single elimination – “Red Carpet”" },
+      { time: "~19:30", title: "Finals & prize ceremony", text: "Group photo of all the stars" },
     ],
-    scheduleNote: "The number of Swiss rounds depends on attendance (up to 16 players: 4 rounds, 17–32 players: 5 rounds). Times are approximate.",
+    scheduleNote: "Up to 16 players: 4 Swiss rounds, 17–32 players: 5 rounds. Times after the start are approximate.",
 
     infoEyebrow: "Practical info",
     infoTitle: "Before you travel",
     info: [
-      { title: "Where", text: "KOSTKA TCG, Dolní 782/65, Ostrava-Zábřeh, Czech Republic" },
-      { title: "Food & drinks", text: "Served right to your table by Čajovna Antakarana in the same building." },
-      { title: "From Poland", text: "About 1.5 hours by car from Katowice, around 2.5 hours from Kraków." },
-      { title: "What to bring", text: "Your deck, sleeves, a lore counter and a decklist (forms available on site)." },
+      { icon: "📍", title: "Address", text: "KOSTKA TCG, Dolní 782/65, Ostrava-Zábřeh, Czech Republic" },
+      { icon: "🎒", title: "What to bring", text: "Your deck, sleeves, a lore counter and a decklist (forms available on site)." },
+      { icon: "☕", title: "Food & drinks", text: "Served right to your table by Čajovna Antakarana in the same building." },
+      { icon: "🚗", title: "From Poland", text: "About 1.5 hours by car from Katowice, around 2.5 hours from Kraków." },
     ],
     mapLink: "Open in maps",
 
-    faqTitle: "Tournament FAQ",
+    faqTitle: "FAQ",
     faq: [
-      {
-        q: "What's the format?",
-        a: "Core Constructed, best-of-three matches (Bo3), Swiss rounds followed by a single-elimination Top 8.",
-      },
-      {
-        q: "Can I join as a newer player?",
-        a: "Absolutely. Every player gets the participation promos, and the atmosphere is friendly. Just keep in mind it's an all-day event.",
-      },
-      {
-        q: "What if I pay and can't make it?",
-        a: "Let us know by 9 Dec – we'll refund you or transfer your entry to a friend.",
-      },
-      {
-        q: "Do I have to pay in advance?",
-        a: "No. Paying in advance just gets you a lower price. On site you pay the current price from the table above.",
-      },
+      { q: "What's the format?", a: "Core Constructed, best-of-three matches (Bo3), Swiss rounds followed by a single-elimination Top 8." },
+      { q: "Can I join as a newer player?", a: "Absolutely. The atmosphere is friendly and every player gets participation prizes. Just keep in mind it's an all-day event." },
+      { q: "Do I have to pay in advance?", a: "No. Paying in advance just gets you a lower price. On site you pay the current price." },
+      { q: "What if I pay and can't make it?", a: "Let us know by 9 Dec – we'll refund you or transfer your entry to a friend." },
     ],
     closing: "Hop in the taxi – the road to stardom starts here. 🌟",
+
+    preview: {
+      label: "Preview as of",
+      today: "Today",
+      stages: {
+        announce: "Announce",
+        pricing: "Sign-up",
+        everyone: "Participation",
+        top8: "Top 8",
+        podium: "Top 3",
+        grandHint: "Hint",
+        grand: "Enchanted",
+      },
+    },
   },
 } as const;

@@ -1,23 +1,40 @@
 ---
 // Sdílená stránka velkého turnaje – renderuje CZ i EN verzi podle `lang`.
 // Všechna data a texty jsou v src/data/storeChampionship.ts.
+//
+// Ceny se odhalují postupně (championship.reveals). Neodhalené části se
+// vůbec nevyrenderují – v HTML je jen zamčená dlaždice s datem odhalení.
 import Layout from "../../layouts/Layout.astro";
 import { getUpcomingTournaments } from "../../data/tournaments";
-import { championship, getCurrentTier, isChampionshipEvent, prizes, t, type Lang } from "../../data/storeChampionship";
+import {
+  championship,
+  getCurrentTier,
+  isChampionshipEvent,
+  isRevealed,
+  prizes,
+  revealDate,
+  t,
+  type Lang,
+  type RevealStage,
+} from "../../data/storeChampionship";
 
 interface Props {
   lang: Lang;
+  now: Date;
+  previewing: boolean;
+  canPreview: boolean;
 }
 
-const { lang } = Astro.props;
+const { lang, now, previewing, canPreview } = Astro.props;
 const tx = t[lang];
-const now = new Date();
 const currentTier = getCurrentTier(now);
+const shown = (stage: RevealStage) => isRevealed(stage, now);
+const when = (stage: RevealStage) => revealDate(stage, lang);
 
 // Termín vytvořený v administraci (pokud existuje) dodá obsazenost a PlayHub odkaz.
 const upcoming = await getUpcomingTournaments();
 const linkedEvent = upcoming.find(isChampionshipEvent);
-const registrationUrl = championship.playhubUrl || linkedEvent?.registrationUrl || "";
+const registrationUrl = shown("pricing") ? championship.playhubUrl || linkedEvent?.registrationUrl || "" : "";
 const spotsTotal = linkedEvent?.spotsTotal ?? championship.capacity;
 const spotsTaken = linkedEvent?.spotsTaken ?? null;
 const percentFull = spotsTaken !== null && spotsTotal > 0 ? Math.min(100, Math.round((spotsTaken / spotsTotal) * 100)) : 0;
@@ -27,301 +44,389 @@ const hasCzkPayment = Boolean(pay.accountCzk);
 const hasEurPayment = Boolean(pay.iban);
 const pick = <T,>(value: T | { cs: T; en: T }): T =>
   value && typeof value === "object" && "cs" in (value as object) ? (value as { cs: T; en: T })[lang] : (value as T);
+
+// Odhalování cen – pořadí podle data (pro pruh s postupem).
+const prizeStages = ["everyone", "top8", "podium", "grand"] as const;
+const revealedCount = prizeStages.filter(shown).length;
+
+// Nejbližší další odhalení (ukazuje se v heru jako teaser).
+const nextStageNames: Record<Lang, Partial<Record<RevealStage, string>>> = {
+  cs: { pricing: "registrace a vstupné", everyone: "ceny za účast", top8: "ceny pro Top 8", podium: "ceny pro Top 3", grandHint: "nápověda k hlavní ceně", grand: "hlavní cena" },
+  en: { pricing: "registration & entry fees", everyone: "participation prizes", top8: "Top 8 prizes", podium: "Top 3 prizes", grandHint: "grand prize hint", grand: "grand prize" },
+};
+const nextStage = (["pricing", "everyone", "top8", "podium", "grandHint", "grand"] as const).find((s) => !shown(s));
+
+// Odkazy náhledu (jen na preview URL / pro adminy): stav stránky k datu každé fáze.
+const nahled = Astro.url.searchParams.get("nahled");
+const withPreview = (href: string) => (previewing && nahled ? `${href}?nahled=${encodeURIComponent(nahled)}` : href);
+const previewStages = Object.keys(championship.reveals) as RevealStage[];
+const previewDate = (stage: RevealStage) => championship.reveals[stage].slice(0, 10);
+const nowLabel = now.toLocaleDateString(lang === "cs" ? "cs-CZ" : "en-GB", { timeZone: "Europe/Prague", day: "numeric", month: "numeric", year: "numeric" });
 ---
 
-<Layout title={tx.metaTitle} description={tx.metaDescription} lang={lang}>
+<Layout title={tx.metaTitle} description={shown("grand") ? tx.metaDescriptionGrand : tx.metaDescription} lang={lang}>
   <div class="sc">
+    {canPreview && (
+      <div class="sc-preview">
+        <div class="mx-auto flex max-w-6xl flex-wrap items-center gap-2 px-4 py-2.5 text-xs">
+          <span class="font-bold">👁 {tx.preview.label} {nowLabel}:</span>
+          <a href="?" class:list={["sc-preview__link", { "is-active": !previewing }]}>{tx.preview.today}</a>
+          {previewStages.map((stage) => (
+            <a
+              href={`?nahled=${previewDate(stage)}`}
+              class:list={["sc-preview__link", { "is-active": previewing && nahled === previewDate(stage) }]}
+            >
+              {tx.preview.stages[stage]} {when(stage).date}
+            </a>
+          ))}
+        </div>
+      </div>
+    )}
+
     <!-- HERO -->
     <section class="relative overflow-hidden">
       <div class="sc-glow sc-glow--a pointer-events-none absolute"></div>
       <div class="sc-glow sc-glow--b pointer-events-none absolute"></div>
       <div class="sc-snow pointer-events-none absolute inset-0" aria-hidden="true"></div>
 
-      <div class="relative mx-auto max-w-6xl px-4 pb-14 pt-10 md:pb-20 md:pt-14">
+      <div class="relative mx-auto max-w-6xl px-4 pb-12 pt-8 md:pb-16 md:pt-12">
         <div class="flex items-center justify-between gap-4">
-          <div class="flex items-center gap-3">
-            <span class="h-[3px] w-10 flex-none rounded-full sc-bg-gold"></span>
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] sc-text-gold">{tx.eyebrow}</p>
-          </div>
+          <p class="text-xs font-semibold uppercase tracking-[0.2em] sc-text-gold">{tx.eyebrow}</p>
           <a
-            href={tx.langSwitch.href}
+            href={withPreview(tx.langSwitch.href)}
             hreflang={lang === "cs" ? "en" : "cs"}
-            class="rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/70 hover:border-kostka-purple hover:text-kostka-purple"
+            class="flex-none rounded-full border border-white/15 px-3 py-1.5 text-xs font-semibold uppercase tracking-wide text-white/70 hover:border-kostka-purple hover:text-kostka-purple"
           >
             {lang === "cs" ? "🇬🇧 " : "🇨🇿 "}{tx.langSwitch.label}
           </a>
         </div>
 
-        <h1 class="mt-6 text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-7xl">
-          {tx.title}
-        </h1>
-        <p class="mt-3 text-xl font-semibold text-kostka-purple sm:text-2xl">🎄 {tx.subtitle}</p>
-        <p class="mt-6 max-w-2xl text-base text-white/70 sm:text-lg">{tx.lead}</p>
+        <div class="mt-6 grid gap-10 lg:grid-cols-[1.25fr_1fr] lg:items-end">
+          <div>
+            <h1 class="text-4xl font-black leading-[1.05] tracking-tight text-white sm:text-5xl lg:text-6xl">{tx.title}</h1>
+            <p class="mt-3 text-xl font-semibold text-kostka-purple sm:text-2xl">🎄 {tx.subtitle}</p>
+            <p class="mt-5 max-w-xl text-base text-white/70 sm:text-lg">{tx.lead}</p>
 
-        <div class="mt-8 flex flex-wrap gap-x-6 gap-y-3 text-sm text-white/80">
-          <span class="sc-chip">📅 <strong class="font-bold text-white">{tx.dateLabel}</strong></span>
-          <span class="sc-chip">🕘 {tx.checkIn}</span>
-          <span class="sc-chip">📍 KOSTKA TCG, Ostrava</span>
-          <span class="sc-chip">🎴 {tx.format}</span>
-        </div>
-
-        <!-- Odpočet -->
-        <div class="mt-10" data-countdown={championship.startsAt}>
-          <p class="text-xs font-semibold uppercase tracking-[0.2em] text-white/50">{tx.countdown.label}</p>
-          <div class="mt-3 flex gap-3">
-            {(["days", "hours", "minutes", "seconds"] as const).map((unit) => (
-              <div class="sc-count">
-                <span class="sc-count__num" data-unit={unit}>–</span>
-                <span class="sc-count__label">{tx.countdown[unit]}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-
-        <div class="mt-10 flex flex-wrap items-center gap-4">
-          {registrationUrl ? (
-            <a
-              href={registrationUrl}
-              target="_blank"
-              rel="noreferrer"
-              class="rounded-full bg-kostka-purple px-8 py-3 text-sm font-semibold uppercase tracking-wide text-kostka-bg hover:opacity-90"
-            >
-              {tx.ctaRegister}
-            </a>
-          ) : (
-            <span class="rounded-full border border-kostka-purple/50 bg-kostka-purple/10 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-kostka-purple">
-              {tx.ctaRegisterSoon}
-            </span>
-          )}
-          <a
-            href="#ceny"
-            class="rounded-full border border-white/20 px-8 py-3 text-sm font-semibold uppercase tracking-wide text-white hover:border-kostka-purple hover:text-kostka-purple"
-          >
-            {tx.ctaPrizes}
-          </a>
-        </div>
-
-        <div class="mt-8 max-w-sm">
-          <div class="flex items-center justify-between text-xs text-white/50">
-            <span>{spotsTaken !== null ? tx.spots(spotsTaken, spotsTotal) : tx.spotsFallback(spotsTotal)}</span>
-          </div>
-          {spotsTaken !== null && (
-            <div class="mt-1.5 h-1.5 w-full overflow-hidden rounded-full bg-white/10">
-              <div class="h-full rounded-full bg-kostka-purple" style={`width: ${percentFull}%`}></div>
+            <div class="mt-8 flex flex-wrap items-center gap-3">
+              {registrationUrl ? (
+                <a href={registrationUrl} target="_blank" rel="noreferrer" class="sc-btn sc-btn--primary">{tx.ctaRegister} ↗</a>
+              ) : shown("pricing") ? (
+                <a href="#vstupne" class="sc-btn sc-btn--primary">{tx.nav.entry} ↓</a>
+              ) : (
+                <span class="sc-btn sc-btn--soon">{tx.ctaRegisterSoon(when("pricing").date)}</span>
+              )}
+              <a href="#ceny" class="sc-btn sc-btn--ghost">{tx.nav.prizes} ↓</a>
             </div>
-          )}
+          </div>
+
+          <!-- Klíčové údaje + odpočet -->
+          <div class="sc-panel rounded-3xl p-5 sm:p-6">
+            <dl class="grid grid-cols-[auto_1fr] gap-x-4 gap-y-3 text-sm">
+              <dt class="sc-dt">📅 {tx.facts.when}</dt>
+              <dd class="font-bold text-white">{tx.facts.whenValue}</dd>
+              <dt class="sc-dt">🕘 {tx.facts.time}</dt>
+              <dd class="font-bold text-white">{tx.facts.timeValue}</dd>
+              <dt class="sc-dt">📍 {tx.facts.where}</dt>
+              <dd class="text-white">
+                <a href={championship.mapUrl} target="_blank" rel="noreferrer" class="hover:text-kostka-purple hover:underline">{tx.facts.whereValue}</a>
+              </dd>
+              <dt class="sc-dt">🎴 {tx.facts.format}</dt>
+              <dd class="text-white">{tx.facts.formatValue}</dd>
+              <dt class="sc-dt">👥 {tx.facts.capacity}</dt>
+              <dd class="text-white">
+                {spotsTaken !== null ? tx.spots(spotsTaken, spotsTotal) : tx.spotsFallback(spotsTotal)}
+                {spotsTaken !== null && (
+                  <span class="mt-1.5 block h-1.5 w-full max-w-[12rem] overflow-hidden rounded-full bg-white/10">
+                    <span class="block h-full rounded-full bg-kostka-purple" style={`width: ${percentFull}%`}></span>
+                  </span>
+                )}
+              </dd>
+            </dl>
+
+            <div class="mt-5 border-t border-white/10 pt-5" data-countdown={championship.startsAt}>
+              <p class="text-[11px] font-semibold uppercase tracking-[0.2em] text-white/50">{tx.countdown.label}</p>
+              <div class="mt-2.5 grid grid-cols-4 gap-2">
+                {(["days", "hours", "minutes", "seconds"] as const).map((unit) => (
+                  <div class="sc-count">
+                    <span class="sc-count__num" data-unit={unit}>–</span>
+                    <span class="sc-count__label">{tx.countdown[unit]}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
+
+        {nextStage && nextStageNames[lang][nextStage] && (
+          <a href={championship.instagramUrl} target="_blank" rel="noreferrer" class="sc-next mt-8 inline-flex flex-wrap items-center gap-x-3 gap-y-1 rounded-full px-4 py-2 text-sm">
+            <span>🔒 {tx.nextReveal(nextStageNames[lang][nextStage]!, when(nextStage).weekday, when(nextStage).date)}</span>
+            <span class="font-semibold text-kostka-purple">{tx.followUs} →</span>
+          </a>
+        )}
       </div>
     </section>
+
+    <!-- Rychlá navigace -->
+    <nav class="border-y border-white/10 bg-kostka-surface/40" aria-label={lang === "cs" ? "Obsah stránky" : "On this page"}>
+      <div class="sc-nav mx-auto flex max-w-6xl gap-1 overflow-x-auto px-4 py-2">
+        <a href="#ceny">{tx.nav.prizes}</a>
+        <a href="#vstupne">{tx.nav.entry}</a>
+        <a href="#program">{tx.nav.schedule}</a>
+        <a href="#info">{tx.nav.info}</a>
+        <a href="#faq">{tx.nav.faq}</a>
+      </div>
+    </nav>
 
     <!-- CENY -->
-    <section id="ceny" class="scroll-mt-24 bg-kostka-surface/40 py-16 md:py-24">
-      <div class="mx-auto max-w-6xl px-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.prizesEyebrow}</p>
-        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.prizesTitle}</h2>
-
-        <!-- Hlavní cena -->
-        <div class="sc-grand mt-8 grid items-center gap-8 rounded-3xl p-6 sm:p-10 md:grid-cols-[auto_1fr]">
-          <div class="sc-card sc-card--enchanted mx-auto" aria-hidden="true">
-            <span class="sc-card__shine"></span>
-            <span class="sc-card__title">{prizes.grand.name}</span>
-            <span class="sc-card__sub">{prizes.grand.variant}</span>
-          </div>
-          <div>
-            <span class="inline-block rounded-full px-3 py-1 text-xs font-bold uppercase tracking-[0.18em] sc-tag-gold">
-              🌬️ {tx.grandPrizeTag}
-            </span>
-            <h3 class="mt-4 text-3xl font-black text-white sm:text-4xl">
-              {prizes.grand.name} <span class="sc-text-gold">– {prizes.grand.variant}</span>
-            </h3>
-            <p class="mt-3 text-white/65">{prizes.grand.place[lang]}</p>
-          </div>
+    <section id="ceny" class="mx-auto max-w-6xl scroll-mt-24 px-4 py-14 md:py-20">
+      <div class="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p class="sc-eyebrow">{tx.prizesEyebrow}</p>
+          <h2 class="sc-h2">{tx.prizesTitle}</h2>
+          <p class="mt-2 max-w-xl text-sm text-white/60">{tx.prizesLead}</p>
         </div>
+        <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/50">{tx.revealedCount(revealedCount, prizeStages.length)}</p>
+      </div>
 
+      <!-- Postup odhalování -->
+      <ol class="sc-progress mt-6 grid grid-cols-4 gap-2">
+        {prizeStages.map((stage) => (
+          <li class:list={["sc-progress__item", { "is-done": shown(stage) }]}>
+            <span class="sc-progress__bar"></span>
+            <span class="mt-2 block text-[11px] font-semibold uppercase tracking-wide">{shown(stage) ? "✓" : "🔒"} {tx.stageNames[stage]}</span>
+            <span class="block text-[11px] text-white/45">{when(stage).date}</span>
+          </li>
+        ))}
+      </ol>
+
+      <!-- Hlavní cena -->
+      <div class="sc-grand mt-8 grid items-center gap-8 rounded-3xl p-6 sm:p-8 md:grid-cols-[auto_1fr]">
+        {shown("grand") ? (
+          <>
+            <div class="sc-card sc-card--enchanted mx-auto" aria-hidden="true">
+              <span class="sc-card__shine"></span>
+              <span class="sc-card__title">{prizes.grand.name}</span>
+              <span class="sc-card__sub">{prizes.grand.variant}</span>
+            </div>
+            <div>
+              <span class="sc-tag">🌬️ {tx.grandTag}</span>
+              <h3 class="mt-4 text-3xl font-black text-white sm:text-4xl">
+                {prizes.grand.name} <span class="sc-text-gold">– {prizes.grand.variant}</span>
+              </h3>
+              <p class="mt-2 text-white/65">{prizes.grand.note[lang]}</p>
+            </div>
+          </>
+        ) : (
+          <>
+            <div class:list={["sc-card sc-card--mystery mx-auto", { "is-hint": shown("grandHint") }]} aria-hidden="true">
+              {shown("grandHint") && <span class="sc-card__shine"></span>}
+              <span class="sc-card__q">?</span>
+            </div>
+            <div>
+              <span class="sc-tag">🌬️ {tx.grandTag}</span>
+              <h3 class="mt-4 text-2xl font-black text-white sm:text-3xl">
+                {shown("grandHint") ? tx.grandHintTitle : tx.grandMysteryTitle}
+              </h3>
+              <p class="mt-2 text-white/65">{shown("grandHint") ? tx.grandHintText : tx.grandMysteryText}</p>
+              <p class="sc-lock mt-5">🔒 {tx.lockedLabel(when("grand").weekday, when("grand").date)}</p>
+            </div>
+          </>
+        )}
+      </div>
+
+      <div class="mt-4 grid gap-4 lg:grid-cols-3">
         <!-- Top 3 -->
-        <h3 class="mt-14 text-lg font-bold text-white">{tx.podiumTitle}</h3>
-        <div class="mt-5 grid gap-4 sm:grid-cols-3">
-          {prizes.podium.map((p) => (
-            <div class={`sc-podium sc-podium--${p.place} rounded-2xl border border-white/10 bg-kostka-surface p-5`}>
-              <p class="text-xs font-semibold uppercase tracking-[0.18em] sc-place">{tx.placeLabel(p.place)}</p>
-              <p class="mt-3 text-xl font-bold text-white">{p.name}</p>
-              <p class="text-sm text-white/60">{p.subtitle}</p>
-              <p class="mt-3 text-xs uppercase tracking-wide text-white/45">{p.note[lang]}</p>
-            </div>
-          ))}
-        </div>
-
-        <div class="mt-4 grid gap-4 md:grid-cols-2">
-          <div class="rounded-2xl border border-kostka-purple/40 bg-kostka-purple/[0.06] p-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-kostka-purple">⭐ {tx.top8Title}</p>
-            <p class="mt-3 text-xl font-bold text-white">{prizes.top8.name} – {prizes.top8.subtitle}</p>
-            <p class="mt-2 text-sm text-white/60">{tx.top8Text}</p>
-          </div>
-          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
-            <p class="text-xs font-semibold uppercase tracking-[0.18em] text-white/55">🚕 {tx.everyoneTitle}</p>
-            <ul class="mt-3 space-y-1.5">
-              {prizes.everyone.map((item) => (
-                <li class="text-white">
-                  <span class="font-bold">{pick(item.name)}</span>
-                  <span class="text-white/55"> – {pick(item.subtitle)}</span>
-                </li>
+        <div class="sc-box lg:col-span-3">
+          <p class="sc-box__head">🏆 {tx.stageNames.podium}</p>
+          {shown("podium") ? (
+            <div class="mt-4 grid gap-3 sm:grid-cols-3">
+              {prizes.podium.items.map((p) => (
+                <div class={`sc-podium sc-podium--${p.place} rounded-2xl p-4`}>
+                  <p class="text-xs font-semibold uppercase tracking-[0.18em] sc-place">{tx.placeLabel(p.place)}</p>
+                  <p class="mt-2 text-lg font-bold text-white">{p.name}</p>
+                  <p class="text-sm text-white/60">{p.subtitle}</p>
+                  <p class="mt-2 text-xs uppercase tracking-wide text-white/45">{p.note[lang]}</p>
+                </div>
               ))}
-            </ul>
-            <p class="mt-3 text-sm text-white/55">{tx.everyoneText}</p>
-          </div>
+            </div>
+          ) : (
+            <p class="sc-lock mt-4">🔒 {tx.lockedLabel(when("podium").weekday, when("podium").date)}</p>
+          )}
+        </div>
+
+        <!-- Top 8 -->
+        <div class="sc-box">
+          <p class="sc-box__head">⭐ {tx.stageNames.top8}</p>
+          {shown("top8") ? (
+            <>
+              <p class="mt-3 text-lg font-bold text-white">{prizes.top8.finish} {prizes.top8.name}</p>
+              <p class="text-sm text-white/60">{prizes.top8.subtitle}</p>
+              <p class="mt-3 text-xs uppercase tracking-wide text-white/45">{tx.top8Text}</p>
+            </>
+          ) : (
+            <p class="sc-lock mt-4">🔒 {tx.lockedLabel(when("top8").weekday, when("top8").date)}</p>
+          )}
+        </div>
+
+        <!-- Za účast -->
+        <div class="sc-box lg:col-span-2">
+          <p class="sc-box__head">🚕 {tx.stageNames.everyone}</p>
+          {shown("everyone") ? (
+            <>
+              <ul class="mt-3 grid gap-2 sm:grid-cols-3">
+                {prizes.everyone.items.map((item) => (
+                  <li>
+                    <p class="font-bold text-white">{pick(item.name)}</p>
+                    <p class="text-sm text-white/60">{pick(item.subtitle)}</p>
+                  </li>
+                ))}
+              </ul>
+              <p class="mt-3 text-xs uppercase tracking-wide text-white/45">{tx.everyoneText}</p>
+            </>
+          ) : (
+            <p class="sc-lock mt-4">🔒 {tx.lockedLabel(when("everyone").weekday, when("everyone").date)}</p>
+          )}
         </div>
       </div>
     </section>
 
-    <!-- VSTUPNÉ -->
-    <section class="mx-auto max-w-6xl px-4 py-16 md:py-24">
-      <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.priceEyebrow}</p>
-      <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.priceTitle}</h2>
-
-      <div class="mt-8 grid gap-4 sm:grid-cols-3" data-price-tiers>
-        {championship.priceTiers.map((tier) => {
-          const isCurrent = tier.id === currentTier.id;
-          return (
-            <div
-              class={`sc-tier relative rounded-2xl border p-6 ${isCurrent ? "is-current" : ""}`}
-              data-tier={tier.id}
-              data-until={tier.until ?? ""}
-            >
-              <span class="sc-tier__badge">{tx.currentBadge}</span>
-              <p class="text-sm font-semibold uppercase tracking-wide text-white/70">{tx.tiers[tier.id].label}</p>
-              <p class="mt-3 text-4xl font-black text-white">
-                {tier.czk} <span class="text-lg font-bold text-white/60">Kč</span>
-              </p>
-              <p class="mt-1 text-sm text-white/55">€{tier.eur}</p>
-              <p class="mt-4 text-xs uppercase tracking-wide text-white/45">{tx.tiers[tier.id].until}</p>
-            </div>
-          );
-        })}
-      </div>
-      <p class="mt-5 text-sm text-white/60">⭐ {tx.regularNote}</p>
-
-      <div class="mt-8 rounded-2xl border border-white/10 bg-kostka-surface p-6">
-        <p class="text-lg font-bold text-white">{tx.giftTitle}</p>
-        <p class="mt-2 text-sm text-white/65">{tx.giftText}</p>
-      </div>
-    </section>
-
-    <!-- JAK SE PŘIHLÁSIT -->
-    <section class="bg-kostka-surface/40 py-16 md:py-24">
+    <!-- VSTUPNÉ A PŘIHLÁŠKA -->
+    <section id="vstupne" class="scroll-mt-24 bg-kostka-surface/40 py-14 md:py-20">
       <div class="mx-auto max-w-6xl px-4">
-        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.howEyebrow}</p>
-        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.howTitle}</h2>
+        <p class="sc-eyebrow">{tx.entryEyebrow}</p>
+        <h2 class="sc-h2">{tx.entryTitle}</h2>
 
-        <div class="mt-8 grid gap-4 md:grid-cols-2">
-          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
-            <span class="sc-step">1</span>
-            <h3 class="mt-4 text-xl font-bold text-white">{tx.step1Title}</h3>
-            <p class="mt-2 text-sm text-white/65">{tx.step1Text}</p>
-            <div class="mt-5">
-              {registrationUrl ? (
-                <a
-                  href={registrationUrl}
-                  target="_blank"
-                  rel="noreferrer"
-                  class="inline-flex rounded-full bg-kostka-purple px-6 py-2.5 text-sm font-semibold text-kostka-bg hover:opacity-90"
-                >
-                  {tx.ctaRegister} ↗
-                </a>
-              ) : (
-                <span class="inline-flex rounded-full border border-kostka-purple/50 px-6 py-2.5 text-sm font-semibold text-kostka-purple">
-                  {tx.ctaRegisterSoon}
-                </span>
-              )}
+        {!shown("pricing") ? (
+          <p class="sc-lock mt-6 max-w-2xl text-base">🔒 {tx.entryLocked(when("pricing").weekday, when("pricing").date)}</p>
+        ) : (
+          <>
+            <div class="mt-8 grid gap-3 sm:grid-cols-3" data-price-tiers data-live={previewing ? undefined : ""}>
+              {championship.priceTiers.map((tier, i) => {
+                const currentIndex = championship.priceTiers.findIndex((x) => x.id === currentTier.id);
+                return (
+                  <div
+                    class:list={["sc-tier relative rounded-2xl border p-5", { "is-current": i === currentIndex, "is-past": i < currentIndex }]}
+                    data-tier={tier.id}
+                    data-until={tier.until ?? ""}
+                  >
+                    <span class="sc-tier__badge">{tx.currentBadge}</span>
+                    <p class="text-sm font-semibold uppercase tracking-wide text-white/70">{tx.tiers[tier.id].label}</p>
+                    <p class="sc-tier__price mt-2 text-3xl font-black text-white">
+                      {tier.czk} <span class="text-base font-bold text-white/60">Kč</span>
+                      <span class="ml-1 text-base font-bold text-white/50">/ €{tier.eur}</span>
+                    </p>
+                    <p class="mt-2 text-xs uppercase tracking-wide text-white/45">{tx.tiers[tier.id].until}</p>
+                  </div>
+                );
+              })}
             </div>
-          </div>
+            <p class="mt-4 text-sm text-white/60">⭐ {tx.regularNote}</p>
 
-          <div class="rounded-2xl border border-white/10 bg-kostka-surface p-6">
-            <span class="sc-step">2</span>
-            <h3 class="mt-4 text-xl font-bold text-white">{tx.step2Title}</h3>
-            <p class="mt-2 text-sm text-white/65">{tx.step2Text}</p>
+            <h3 class="mt-12 text-lg font-bold text-white">{tx.stepsTitle}</h3>
+            <ol class="mt-5 grid gap-4 md:grid-cols-3">
+              <li class="sc-box">
+                <span class="sc-step">1</span>
+                <p class="mt-3 font-bold text-white">{tx.step1Title}</p>
+                <p class="mt-1.5 text-sm text-white/65">{tx.step1Text}</p>
+                <div class="mt-4">
+                  {registrationUrl ? (
+                    <a href={registrationUrl} target="_blank" rel="noreferrer" class="sc-btn sc-btn--primary sc-btn--sm">{tx.ctaRegister} ↗</a>
+                  ) : (
+                    <span class="text-sm font-semibold text-kostka-purple">PlayHub – {lang === "cs" ? "odkaz brzy doplníme" : "link coming soon"}</span>
+                  )}
+                </div>
+              </li>
+              <li class="sc-box">
+                <span class="sc-step">2</span>
+                <p class="mt-3 font-bold text-white">{tx.step2Title}</p>
+                <p class="mt-1.5 text-sm text-white/65">{tx.step2Text}</p>
+                {hasCzkPayment || hasEurPayment ? (
+                  <div class="mt-4 grid gap-3">
+                    {hasCzkPayment && (
+                      <dl class="sc-pay">
+                        <dt class="sc-pay__head">🇨🇿 {tx.paymentCzk}</dt>
+                        <dt>{tx.account}</dt>
+                        <dd>{pay.accountCzk}</dd>
+                        <dt>{tx.vs}</dt>
+                        <dd>{pay.variableSymbol}</dd>
+                        <dt>{tx.message}</dt>
+                        <dd>{tx.messageValue}</dd>
+                      </dl>
+                    )}
+                    {hasEurPayment && (
+                      <dl class="sc-pay">
+                        <dt class="sc-pay__head">🇪🇺 {tx.paymentEur}</dt>
+                        <dt>IBAN</dt>
+                        <dd>{pay.iban}</dd>
+                        {pay.bic && <dt>BIC</dt>}
+                        {pay.bic && <dd>{pay.bic}</dd>}
+                        <dt>{tx.message}</dt>
+                        <dd>{pay.variableSymbol} + {tx.messageValue}</dd>
+                      </dl>
+                    )}
+                  </div>
+                ) : (
+                  <p class="mt-4 rounded-xl border border-dashed border-white/15 px-3 py-2 text-xs text-white/55">{tx.paymentPending}</p>
+                )}
+              </li>
+              <li class="sc-box">
+                <span class="sc-step">3</span>
+                <p class="mt-3 font-bold text-white">{tx.step3Title}</p>
+                <p class="mt-1.5 text-sm text-white/65">{tx.step3Text}</p>
+              </li>
+            </ol>
 
-            {hasCzkPayment || hasEurPayment ? (
-              <div class="mt-5 grid gap-3 sm:grid-cols-2">
-                {hasCzkPayment && (
-                  <dl class="sc-pay">
-                    <dt class="sc-pay__head">🇨🇿 {tx.paymentCzk}</dt>
-                    <dt>{tx.account}</dt>
-                    <dd>{pay.accountCzk}</dd>
-                    <dt>{tx.vs}</dt>
-                    <dd>{pay.variableSymbol}</dd>
-                    <dt>{tx.message}</dt>
-                    <dd>{tx.messageValue}</dd>
-                  </dl>
-                )}
-                {hasEurPayment && (
-                  <dl class="sc-pay">
-                    <dt class="sc-pay__head">🇪🇺 {tx.paymentEur}</dt>
-                    <dt>IBAN</dt>
-                    <dd>{pay.iban}</dd>
-                    {pay.bic && <dt>BIC</dt>}
-                    {pay.bic && <dd>{pay.bic}</dd>}
-                    <dt>{tx.message}</dt>
-                    <dd>{pay.variableSymbol} + {tx.messageValue}</dd>
-                  </dl>
-                )}
-              </div>
-            ) : (
-              <p class="mt-5 rounded-xl border border-dashed border-white/15 px-4 py-3 text-sm text-white/55">
-                {tx.paymentPending}
-              </p>
-            )}
-          </div>
-        </div>
+            <p class="mt-6 text-sm text-white/65">{tx.giftText}</p>
+          </>
+        )}
       </div>
     </section>
 
     <!-- PROGRAM + PRAKTICKÉ INFO -->
-    <section class="mx-auto grid max-w-6xl gap-12 px-4 py-16 md:grid-cols-2 md:py-24">
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.scheduleEyebrow}</p>
-        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.scheduleTitle}</h2>
-        <ol class="mt-8 space-y-4 border-l border-white/10 pl-6">
-          {tx.schedule.map((item) => (
+    <section class="mx-auto grid max-w-6xl gap-12 px-4 py-14 md:grid-cols-2 md:py-20">
+      <div id="program" class="scroll-mt-24">
+        <p class="sc-eyebrow">{tx.scheduleEyebrow}</p>
+        <h2 class="sc-h2">{tx.scheduleTitle}</h2>
+        <ol class="mt-8 space-y-5 border-l border-white/10 pl-6">
+          {tx.schedule.map((item, i) => (
             <li class="relative">
-              <span class="absolute -left-[29px] top-1.5 h-2.5 w-2.5 rounded-full bg-kostka-purple"></span>
-              <p class="text-sm font-bold text-kostka-purple">{item.time}</p>
-              <p class="text-white/80">{item.text}</p>
+              <span class:list={["sc-dot absolute -left-[30px] top-1", { "is-key": i < 2 }]}></span>
+              <p class="text-sm font-black text-kostka-purple">{item.time}</p>
+              <p class="font-bold text-white">{item.title}</p>
+              {item.text && <p class="text-sm text-white/60">{item.text}</p>}
             </li>
           ))}
         </ol>
         <p class="mt-6 text-xs text-white/45">{tx.scheduleNote}</p>
       </div>
 
-      <div>
-        <p class="text-xs font-semibold uppercase tracking-wide text-kostka-purple">{tx.infoEyebrow}</p>
-        <h2 class="mt-2 text-2xl font-bold text-white md:text-3xl">{tx.infoTitle}</h2>
-        <div class="mt-8 grid gap-3">
+      <div id="info" class="scroll-mt-24">
+        <p class="sc-eyebrow">{tx.infoEyebrow}</p>
+        <h2 class="sc-h2">{tx.infoTitle}</h2>
+        <div class="mt-8 grid gap-3 sm:grid-cols-2 md:grid-cols-1 lg:grid-cols-2">
           {tx.info.map((item) => (
-            <div class="rounded-2xl border border-white/10 bg-kostka-surface p-5">
-              <p class="text-sm font-bold text-white">{item.title}</p>
+            <div class="sc-box">
+              <p class="text-sm font-bold text-white">{item.icon} {item.title}</p>
               <p class="mt-1 text-sm text-white/65">{item.text}</p>
             </div>
           ))}
         </div>
-        <a
-          href={championship.mapUrl}
-          target="_blank"
-          rel="noreferrer"
-          class="mt-5 inline-block text-sm font-semibold text-kostka-purple hover:underline"
-        >
+        <a href={championship.mapUrl} target="_blank" rel="noreferrer" class="mt-5 inline-block text-sm font-semibold text-kostka-purple hover:underline">
           {tx.mapLink} →
         </a>
       </div>
     </section>
 
     <!-- FAQ -->
-    <section class="bg-kostka-surface/40 py-16 md:py-24">
+    <section id="faq" class="scroll-mt-24 bg-kostka-surface/40 py-14 md:py-20">
       <div class="mx-auto max-w-3xl px-4">
-        <h2 class="text-2xl font-bold text-white md:text-3xl">{tx.faqTitle}</h2>
-        <div class="mt-8 divide-y divide-white/10">
+        <h2 class="sc-h2">{tx.faqTitle}</h2>
+        <div class="mt-6 divide-y divide-white/10">
           {tx.faq.map((item) => (
-            <details class="group py-4">
-              <summary class="cursor-pointer list-none font-semibold text-white marker:content-none">{item.q}</summary>
+            <details class="sc-faq py-4">
+              <summary class="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-white">
+                {item.q}<span class="sc-faq__icon" aria-hidden="true">+</span>
+              </summary>
               <p class="mt-2 text-white/65">{item.a}</p>
             </details>
           ))}
@@ -343,8 +448,14 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
       --sc-ice: #2a7fc0;
     }
     .sc-text-gold { color: var(--sc-gold); }
-    .sc-bg-gold { background: var(--sc-gold); }
-    .sc-tag-gold { color: var(--sc-gold); background: var(--sc-gold-soft); border: 1px solid color-mix(in srgb, var(--sc-gold) 45%, transparent); }
+    .sc-eyebrow { font-size: 0.75rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.05em; color: var(--color-kostka-purple); }
+    .sc-h2 { margin-top: 0.5rem; font-size: 1.5rem; font-weight: 700; color: var(--kostka-text); }
+    @media (min-width: 768px) { .sc-h2 { font-size: 1.875rem; } }
+
+    .sc-preview { background: #f3c969; color: #2a2000; }
+    .sc-preview__link { border-radius: 9999px; padding: 0.15rem 0.6rem; background: rgba(0, 0, 0, 0.08); font-weight: 600; }
+    .sc-preview__link:hover { background: rgba(0, 0, 0, 0.16); }
+    .sc-preview__link.is-active { background: #2a2000; color: #f3c969; }
 
     .sc-glow { border-radius: 9999px; filter: blur(120px); }
     .sc-glow--a { top: -10rem; right: -6rem; width: 34rem; height: 34rem; background: color-mix(in srgb, var(--color-kostka-purple) 28%, transparent); }
@@ -364,21 +475,72 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
     :global(html[data-theme="light"]) .sc-snow { opacity: 0; }
     @keyframes sc-snow { to { background-position: 0 1200px, 35px 750px; } }
 
-    .sc-chip {
-      display: inline-flex; align-items: center; gap: 0.4rem;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: color-mix(in srgb, var(--color-kostka-surface) 70%, transparent);
-      border-radius: 9999px; padding: 0.45rem 0.9rem;
+    .sc-btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      border-radius: 9999px; padding: 0.8rem 1.75rem;
+      font-size: 0.85rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em;
+      transition: opacity 0.2s, border-color 0.2s, color 0.2s;
     }
+    .sc-btn--sm { padding: 0.55rem 1.1rem; font-size: 0.8rem; text-transform: none; letter-spacing: 0; }
+    .sc-btn--primary { background: var(--color-kostka-purple); color: var(--color-kostka-bg); }
+    .sc-btn--primary:hover { opacity: 0.9; }
+    .sc-btn--ghost { border: 1px solid rgba(255, 255, 255, 0.2); color: var(--kostka-text); }
+    .sc-btn--ghost:hover { border-color: var(--color-kostka-purple); color: var(--color-kostka-purple); }
+    .sc-btn--soon {
+      border: 1px solid color-mix(in srgb, var(--color-kostka-purple) 50%, transparent);
+      background: color-mix(in srgb, var(--color-kostka-purple) 10%, transparent);
+      color: var(--color-kostka-purple);
+    }
+
+    .sc-panel {
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      background: color-mix(in srgb, var(--color-kostka-surface) 85%, transparent);
+      backdrop-filter: blur(6px);
+    }
+    .sc-dt { color: var(--kostka-muted); white-space: nowrap; }
 
     .sc-count {
       display: flex; flex-direction: column; align-items: center; justify-content: center;
-      min-width: 4.25rem; padding: 0.75rem 0.5rem;
-      border-radius: 1rem; border: 1px solid rgba(255, 255, 255, 0.1);
-      background: var(--color-kostka-surface);
+      padding: 0.6rem 0.25rem; border-radius: 0.8rem;
+      background: color-mix(in srgb, var(--color-kostka-bg) 60%, transparent);
     }
-    .sc-count__num { font-size: 1.75rem; font-weight: 900; line-height: 1; color: var(--kostka-text); font-variant-numeric: tabular-nums; }
-    .sc-count__label { margin-top: 0.35rem; font-size: 0.65rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--kostka-muted); }
+    .sc-count__num { font-size: 1.5rem; font-weight: 900; line-height: 1; color: var(--kostka-text); font-variant-numeric: tabular-nums; }
+    .sc-count__label { margin-top: 0.3rem; font-size: 0.6rem; text-transform: uppercase; letter-spacing: 0.15em; color: var(--kostka-muted); }
+
+    .sc-next {
+      border: 1px dashed color-mix(in srgb, var(--sc-gold) 50%, transparent);
+      background: var(--sc-gold-soft);
+      color: var(--kostka-text);
+    }
+
+    .sc-nav a {
+      flex: none; border-radius: 9999px; padding: 0.4rem 0.9rem;
+      font-size: 0.8rem; font-weight: 600; color: var(--kostka-muted); white-space: nowrap;
+    }
+    .sc-nav a:hover { color: var(--color-kostka-purple); background: color-mix(in srgb, var(--color-kostka-purple) 10%, transparent); }
+
+    .sc-progress__item { color: var(--kostka-muted); }
+    .sc-progress__bar { display: block; height: 4px; border-radius: 9999px; background: rgba(255, 255, 255, 0.1); }
+    .sc-progress__item.is-done { color: var(--kostka-text); }
+    .sc-progress__item.is-done .sc-progress__bar { background: var(--sc-gold); }
+
+    .sc-tag {
+      display: inline-block; border-radius: 9999px; padding: 0.25rem 0.75rem;
+      font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em;
+      color: var(--sc-gold); background: var(--sc-gold-soft);
+      border: 1px solid color-mix(in srgb, var(--sc-gold) 45%, transparent);
+    }
+    .sc-lock {
+      display: inline-flex; align-items: center; gap: 0.4rem;
+      border-radius: 0.8rem; border: 1px dashed rgba(255, 255, 255, 0.18);
+      padding: 0.6rem 0.9rem; font-size: 0.85rem; font-weight: 600; color: var(--kostka-muted);
+    }
+
+    .sc-box {
+      border-radius: 1rem; border: 1px solid rgba(255, 255, 255, 0.1);
+      background: var(--color-kostka-surface); padding: 1.25rem;
+    }
+    .sc-box__head { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.18em; color: var(--kostka-muted); }
 
     .sc-grand {
       border: 1px solid color-mix(in srgb, var(--sc-gold) 35%, transparent);
@@ -390,7 +552,7 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
     /* Stylizovaná karta (bez oficiálního artu) */
     .sc-card {
       position: relative; overflow: hidden;
-      width: 11rem; aspect-ratio: 5 / 7; border-radius: 0.9rem;
+      width: 10rem; aspect-ratio: 5 / 7; border-radius: 0.9rem;
       display: flex; flex-direction: column; justify-content: flex-end;
       padding: 1rem; color: #fff;
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
@@ -401,6 +563,18 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
         conic-gradient(from 200deg at 60% 40%, #3b2a7a, #2b7fb8, #6fd3c1, #f3c969, #c06bd8, #3b2a7a);
       border: 2px solid rgba(255, 255, 255, 0.55);
     }
+    .sc-card--mystery {
+      justify-content: center; align-items: center;
+      background: linear-gradient(160deg, #2b2840, #15141c);
+      border: 2px dashed rgba(255, 255, 255, 0.25);
+    }
+    .sc-card--mystery.is-hint {
+      background:
+        linear-gradient(160deg, rgba(0, 0, 0, 0.55), rgba(0, 0, 0, 0.7)),
+        conic-gradient(from 200deg at 60% 40%, #3b2a7a, #2b7fb8, #6fd3c1, #f3c969, #c06bd8, #3b2a7a);
+      border-style: solid; border-color: rgba(255, 255, 255, 0.4);
+    }
+    .sc-card__q { position: relative; font-size: 4rem; font-weight: 900; line-height: 1; opacity: 0.8; }
     .sc-card__shine {
       position: absolute; inset: -40%;
       background: linear-gradient(115deg, transparent 40%, rgba(255, 255, 255, 0.55) 50%, transparent 60%);
@@ -410,6 +584,7 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
     .sc-card__title { position: relative; font-weight: 900; font-size: 1.05rem; line-height: 1.1; text-shadow: 0 2px 8px rgba(0, 0, 0, 0.5); }
     .sc-card__sub { position: relative; margin-top: 0.25rem; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.2em; opacity: 0.9; }
 
+    .sc-podium { border: 1px solid rgba(255, 255, 255, 0.1); background: color-mix(in srgb, var(--color-kostka-bg) 50%, transparent); }
     .sc-podium--1 { border-color: color-mix(in srgb, var(--sc-gold) 55%, transparent); }
     .sc-podium--1 .sc-place { color: var(--sc-gold); }
     .sc-podium--2 .sc-place { color: #c9d1dc; }
@@ -427,23 +602,29 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
     .sc-tier.is-current { border-color: var(--color-kostka-purple); box-shadow: 0 0 28px color-mix(in srgb, var(--color-kostka-purple) 25%, transparent); }
     .sc-tier.is-current .sc-tier__badge { display: inline-block; }
     .sc-tier.is-past { opacity: 0.45; }
-    .sc-tier.is-past p:nth-of-type(2) { text-decoration: line-through; }
+    .sc-tier.is-past .sc-tier__price { text-decoration: line-through; }
 
     .sc-step {
       display: inline-flex; align-items: center; justify-content: center;
-      width: 2.25rem; height: 2.25rem; border-radius: 9999px;
+      width: 2rem; height: 2rem; border-radius: 9999px;
       font-weight: 900; background: var(--color-kostka-purple); color: var(--color-kostka-bg);
     }
+
+    .sc-dot { width: 0.7rem; height: 0.7rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.25); }
+    .sc-dot.is-key { background: var(--color-kostka-purple); box-shadow: 0 0 0 4px color-mix(in srgb, var(--color-kostka-purple) 20%, transparent); }
 
     .sc-pay {
       display: grid; grid-template-columns: auto 1fr; gap: 0.25rem 0.75rem;
       border-radius: 0.9rem; border: 1px solid rgba(255, 255, 255, 0.1);
       background: color-mix(in srgb, var(--color-kostka-bg) 60%, transparent);
-      padding: 1rem; font-size: 0.85rem;
+      padding: 0.9rem; font-size: 0.8rem;
     }
     .sc-pay dt { color: var(--kostka-muted); }
     .sc-pay dd { color: var(--kostka-text); font-weight: 700; word-break: break-word; }
     .sc-pay .sc-pay__head { grid-column: 1 / -1; color: var(--kostka-text); font-weight: 800; margin-bottom: 0.25rem; }
+
+    .sc-faq__icon { flex: none; font-size: 1.25rem; color: var(--color-kostka-purple); transition: transform 0.2s; }
+    .sc-faq[open] .sc-faq__icon { transform: rotate(45deg); }
 
     @media (prefers-reduced-motion: reduce) {
       .sc-snow, .sc-card__shine { animation: none; }
@@ -451,7 +632,7 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
   </style>
 
   <script>
-    // Odpočet do začátku turnaje
+    // Odpočet do startu turnaje
     const box = document.querySelector<HTMLElement>("[data-countdown]");
     if (box) {
       const target = new Date(box.dataset.countdown!).getTime();
@@ -471,8 +652,9 @@ const pick = <T,>(value: T | { cs: T; en: T }): T =>
       tick();
     }
 
-    // Cenové fáze – zvýrazní aktuální i bez nového renderu (např. z cache)
-    const tiers = Array.from(document.querySelectorAll<HTMLElement>("[data-price-tiers] [data-tier]"));
+    // Cenové fáze – zvýrazní aktuální i bez nového renderu (např. stránka
+    // otevřená přes půlnoc). V náhledu k jinému datu se nepřepisuje.
+    const tiers = Array.from(document.querySelectorAll<HTMLElement>("[data-price-tiers][data-live] [data-tier]"));
     if (tiers.length) {
       const now = Date.now();
       const current = tiers.find((el) => !el.dataset.until || now <= new Date(el.dataset.until).getTime()) ?? tiers[tiers.length - 1];

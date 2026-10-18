@@ -1,6 +1,7 @@
 ---
 import { gameBadgeColors, type TournamentEntry } from "../../data/tournaments";
-import { isChampionshipEvent } from "../../data/storeChampionship";
+import { isChampionshipEvent, isRevealed, revealDate } from "../../data/storeChampionship";
+import { getChampionshipNow } from "../../lib/championshipPreview";
 
 interface Props {
   event: TournamentEntry;
@@ -11,7 +12,13 @@ const spotsLeft = event.spotsTotal - event.spotsTaken;
 const percentFull = Math.round((event.spotsTaken / event.spotsTotal) * 100);
 // Velký turnaj (Store Championship) vede na vlastní stránku s cenami a early bird,
 // ne rovnou na PlayHub – registrace na PlayHubu je odkázaná až odtamtud.
-const isFeatured = isChampionshipEvent(event);
+// Zvýraznění se zapne až po oznámení turnaje (do té doby je to běžná karta).
+const isChampionship = isChampionshipEvent(event);
+const { now } = isChampionship ? await getChampionshipNow(Astro.url, Astro.cookies) : { now: new Date() };
+const isFeatured = isChampionship && isRevealed("announce", now);
+const featuredPrize = isRevealed("grand", now)
+  ? "🌬️ Hlavní cena Colors of the Wind Enchanted"
+  : `🌬️ Tajná hlavní cena – odhalení ${revealDate("grand", "cs").date}`;
 const actionHref = isFeatured ? "/store-championship" : event.registrationUrl || `/turnaje/${event.slug}`;
 const actionLabel = isFeatured
   ? "Detail a registrace"
@@ -48,7 +55,7 @@ const opensExternally = !isFeatured && Boolean(event.registrationUrl);
   <h3 class="mt-3 text-lg font-bold text-white">{event.title}</h3>
   <p class="mt-1 text-sm text-white/50">{event.date} · {event.time}</p>
   {isFeatured && (
-    <p class="mt-2 text-sm text-white/70">🌬️ Hlavní cena Colors of the Wind Enchanted</p>
+    <p class="mt-2 text-sm text-white/70">{featuredPrize}</p>
   )}
 
   <div class="mt-4">

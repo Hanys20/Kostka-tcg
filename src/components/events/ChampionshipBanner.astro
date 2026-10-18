@@ -1,18 +1,32 @@
 ---
 // Zvýrazněný pruh na homepage, odkazuje na stránku velkého turnaje.
 // Sám se schová po skončení turnaje (championship.showUntil).
-import { championship, getCurrentTier, isChampionshipUpcoming } from "../../data/storeChampionship";
+// Obsah se řídí postupným odhalováním (championship.reveals) – neodhalené
+// ceny se nevyrenderují.
+import { championship, getCurrentTier, isChampionshipUpcoming, isRevealed, revealDate } from "../../data/storeChampionship";
+import { getChampionshipNow } from "../../lib/championshipPreview";
 
-const now = new Date();
+const { now } = await getChampionshipNow(Astro.url, Astro.cookies);
 const visible = isChampionshipUpcoming(now);
 const tier = getCurrentTier(now);
 const daysLeft = Math.max(0, Math.floor((new Date(championship.startsAt).getTime() - now.getTime()) / 86_400_000));
-const priceNote =
-  tier.id === "early" ? `Early bird ${tier.czk} Kč do 21. 11.` : tier.id === "standard" ? `Vstupné ${tier.czk} Kč` : `Vstupné na místě ${tier.czk} Kč`;
+const priceNote = !isRevealed("pricing", now)
+  ? `Registrace od ${revealDate("pricing", "cs").date}`
+  : tier.id === "early"
+    ? `Early bird ${tier.czk} Kč do 21. 11.`
+    : tier.id === "standard"
+      ? `Vstupné ${tier.czk} Kč`
+      : `Vstupné na místě ${tier.czk} Kč`;
+const prizeLine = isRevealed("grand", now)
+  ? ["Hlavní cena ", "Colors of the Wind Enchanted"]
+  : isRevealed("grandHint", now)
+    ? ["Hlavní cena: ", `Enchanted – celou kartu odhalíme ${revealDate("grand", "cs").date}`]
+    : ["Tajná hlavní cena – ", `odhalíme ${revealDate("grand", "cs").date}`];
+const extras = [isRevealed("top8", now) && "foil Woody pro Top 8", isRevealed("everyone", now) && "promo pro každého"].filter(Boolean);
 ---
 
 {visible && (
-  <a href="/store-championship" class="sc-banner group mt-10 flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+  <a href={`/store-championship${Astro.url.searchParams.has("nahled") ? `?nahled=${encodeURIComponent(Astro.url.searchParams.get("nahled")!)}` : ""}`} class="sc-banner group mt-10 flex flex-col gap-5 rounded-2xl p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
     <div class="flex items-start gap-4">
       <span class="sc-banner__icon flex-none" aria-hidden="true">🌬️</span>
       <div>
@@ -23,7 +37,7 @@ const priceNote =
           Hvězdy Hyperia City – Lorcana Store Championship
         </p>
         <p class="mt-1 text-sm text-white/65">
-          Hlavní cena <strong class="text-white">Colors of the Wind Enchanted</strong> · foil Woody pro Top 8 · promo pro každého
+          {prizeLine[0]}<strong class="text-white">{prizeLine[1]}</strong>{extras.map((x) => ` · ${x}`)}
         </p>
         <p class="mt-2 text-xs font-semibold uppercase tracking-wide text-kostka-purple">{priceNote}</p>
       </div>

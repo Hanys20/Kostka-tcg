@@ -1,8 +1,16 @@
 ---
 import StoreChampionshipPage from "../components/events/StoreChampionshipPage.astro";
+import { isRevealed } from "../data/storeChampionship";
+import { getChampionshipNow } from "../lib/championshipPreview";
 
-// Obsazenost a PlayHub odkaz se čtou živě ze Supabase.
+// Obsah se odemyká podle data (postupné odhalování cen), obsazenost a PlayHub
+// odkaz se čtou živě ze Supabase – proto se renderuje na serveru.
 export const prerender = false;
+
+const { now, previewing, canPreview } = await getChampionshipNow(Astro.url, Astro.cookies);
+if (!isRevealed("announce", now) && !canPreview) {
+  return Astro.rewrite("/404");
+}
 ---
 
-<StoreChampionshipPage lang="cs" />
+<StoreChampionshipPage lang="cs" now={now} previewing={previewing} canPreview={canPreview} />
