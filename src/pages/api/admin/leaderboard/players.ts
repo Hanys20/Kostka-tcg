@@ -39,6 +39,54 @@ export async function GET({ url, cookies }: APIContext) {
   return jsonResponse({ ok: true, players: data ?? [] }, 200);
 }
 
+/**
+ * Zkopíruje vybrané hráče (jméno, poznámku i obrázek) z jiné sezóny do `seasonId`.
+ * Hráče, kteří už v cílové sezóně jsou (podle jména), přeskočí. Body ani účasti
+ * se nepřenáší – v nové sezóně začínají od nuly.
+ */
+async function copyPlayers(seasonId: string, ids: string[]) {
+  if (!ids.length) return jsonResponse({ ok: false, message: "Vyber aspoň jednoho hráče." }, 400);
+
+  const service = createServiceClient();
+  const { data: source, error: sourceError } = await service
+    .from("lb_players")
+    .select("season_id, display_name, note, avatar_url")
+    .in("id", ids);
+  if (sourceError) return jsonResponse({ ok: false, message: sourceError.message }, 500);
+
+  const { data: existing } = await service
+    .from("lb_players")
+    .select("display_name")
+    .eq("season_id", seasonId);
+  const seen = new Set((existing ?? []).map((p) => p.display_name.toLowerCase()));
+
+  const toInsert = [];
+  for (const p of source ?? []) {
+    if (p.season_id === seasonId) continue;
+    const key = p.display_name.toLowerCase();
+    if (seen.has(key)) continue;
+    seen.add(key);
+    toInsert.push({
+      season_id: seasonId,
+      display_name: p.display_name,
+      note: p.note,
+      avatar_url: p.avatar_url,
+    });
+  }
+
+  let added: unknown[] = [];
+  if (toInsert.length) {
+    const { data, error } = await service
+      .from("lb_players")
+      .insert(toInsert)
+      .select("id, season_id, display_name, note, avatar_url, created_at");
+    if (error) return jsonResponse({ ok: false, message: error.message }, 500);
+    added = data ?? [];
+  }
+
+  return jsonResponse({ ok: true, added, skipped: ids.length - toInsert.length }, 201);
+}
+
 export async function POST({ request, cookies }: APIContext) {
   const auth = await requireAdmin(cookies);
   if (!auth.session) return auth.response;
@@ -47,6 +95,10 @@ export async function POST({ request, cookies }: APIContext) {
     const body = await request.json();
     const seasonId = str(body?.seasonId);
     if (!seasonId) return jsonResponse({ ok: false, message: "Chybí id sezóny." }, 400);
+
+    if (Array.isArray(body?.copyPlayerIds)) {
+      return copyPlayers(seasonId, body.copyPlayerIds.map(str).filter(Boolean));
+    }
 
     const rawNames: string[] = Array.isArray(body?.names)
       ? body.names
