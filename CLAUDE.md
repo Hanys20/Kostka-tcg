@@ -355,3 +355,13 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   za hodinu, útok na bednu, souboj o čelo, nejvíc her / co-op výher / úkolů, max 4)
   – počítají se z `state.history` (body po 5min oknech za ~3 h, zapisuje Tabule)
   a přepočítávají se jen jednou za 15 minut, aby se neměnily s každým zápisem.
+  **Vyřazení (ELIMINATED):** tlačítko u řádku na Tabuli (s potvrzením; „↩ Vrátit do hry“
+  vrací) nastaví `p.eliminated` + `eliminatedAt`; body zůstávají, hráč je zašedlý
+  a přeškrtnutý na Tabuli i leaderboardu. Hlášení = krátký tón (WebAudio) + anglický
+  hlas přes `speechSynthesis` „The player number {ID} was eliminated“ (`announceElimination`).
+  Tabule hlásí hned po kliknutí (zap/vyp tlačítkem 🔊, `kostka-maraton-voice-tabule`);
+  leaderboard ukáže červenou tabuli přes obrazovku a hlásí nová vyřazení mladší 5 min
+  (při načtení stránky stará neohlašuje). Prohlížeč pustí zvuk až po kliknutí do stránky –
+  proto tlačítko vlevo dole „Klikni pro zapnutí zvuku“ (`kostka-maraton-voice-lb`).
+  Když je Tabule otevřená ve stejném prohlížeči (čerstvý writer-lock), leaderboard
+  nemluví, aby hlášení nezaznělo dvakrát.

@@ -242,6 +242,18 @@ table.grid{border-collapse:collapse;width:100%;min-width:1080px}
 .coop-tg.on{color:var(--brand-700)}
 .coop-n{background:var(--brand-050);color:var(--brand-700);border-radius:999px;padding:0 .4rem;font-family:var(--font-head);text-transform:none}
 table.tiers .tier-coop .v{color:var(--brand-700)}
+
+.row-acts{display:flex;align-items:center;gap:.3rem;justify-content:flex-end}
+.elim-btn{border:1px solid #d98f83;background:#fff;color:var(--danger);font-family:var(--font-head);font-weight:700;
+  letter-spacing:.06em;font-size:.72rem;padding:.35rem .5rem;border-radius:7px;white-space:nowrap}
+.elim-btn:hover{background:#fdf1ef}
+.elim-btn.on{color:var(--ink-soft);border-color:var(--line);letter-spacing:.02em}
+.elim-btn.on:hover{background:#f4f7f8}
+.grid tbody tr.is-elim td{opacity:.45}
+.grid tbody tr.is-elim td.col-menu{opacity:1}
+.grid tbody tr.is-elim .name-main{text-decoration:line-through}
+.elim-tag{display:inline-block;margin-left:.35rem;font-family:var(--font-head);font-size:.62rem;font-weight:700;letter-spacing:.08em;
+  color:#fff;background:var(--danger);border-radius:5px;padding:.08rem .35rem;vertical-align:middle;text-decoration:none}
 .total-badge{font-family:var(--font-head);font-weight:700;font-size:1.15rem;background:var(--brand-050);color:var(--brand-700);
   border-radius:8px;padding:.2rem .5rem;display:inline-block;min-width:2.6ch;text-align:center}
 
@@ -373,6 +385,20 @@ body.lb-mode{
   text-transform:uppercase;letter-spacing:.08em;font-size:.85rem;padding:.35rem .8rem;border-radius:999px;
   opacity:.35;transition:opacity .2s}
 .lb-theme:hover,.lb-theme:focus-visible{opacity:1}
+.lb-sound{right:auto;left:1.2vw}
+.lb-sound.locked{opacity:1;border-color:var(--lb-live);color:var(--lb-live)}
+
+.rowx.elim,.pod.elim{opacity:.45}
+.rowx.elim .nm,.pod.elim .name{text-decoration:line-through;text-decoration-thickness:.08em}
+.x-tag{font-family:var(--font-head);font-weight:700;letter-spacing:.08em;color:#B02A15;margin-right:.4em;text-decoration:none;display:inline-block}
+body.lb-night .x-tag{color:#ff8a75}
+
+.elim-flash{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;pointer-events:none;
+  background:rgba(120,10,0,.82);color:#fff;text-align:center;font-family:var(--font-head);text-transform:uppercase;
+  animation:elimFlash 4.2s ease forwards}
+.elim-flash b{display:block;font-size:clamp(3rem,14vh,9rem);letter-spacing:.06em;line-height:1}
+.elim-flash span{display:block;font-size:clamp(1.2rem,4.5vh,3rem);letter-spacing:.2em;margin-top:1.5vh}
+@keyframes elimFlash{0%{opacity:0}8%{opacity:1}80%{opacity:1}100%{opacity:0}}
 
 .board{position:fixed;inset:0;display:flex;flex-direction:column;padding:2.4vh 3vw}
 
@@ -585,6 +611,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     <button class="btn" id="btnUndo">↩︎ Zpět</button>
     <div class="spacer"></div>
     <div class="search"><input type="search" id="search" placeholder="Hledat jméno nebo ID…" autocomplete="off"></div>
+    <button class="btn" id="btnVoice" title="Hlasové hlášení „The player number X was eliminated“ na tomhle počítači"></button>
     <button class="btn" id="btnBackup">⬇︎ Záloha</button>
     <button class="btn" id="btnSettings">⚙︎ Nastavení</button>
   </div>
@@ -764,6 +791,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     <div>Čeká se na první body…</div>
   </div>
 
+  <button type="button" class="lb-theme lb-sound" id="lbSound" title="Hlasové hlášení vyřazených hráčů"></button>
   <button type="button" class="lb-theme" id="lbTheme" title="Přepnout denní / noční režim (klávesa N). Automaticky noční 22:00–7:00."></button>
   <footer class="lb-foot" id="lbFoot">Kostka · maraton deskových her</footer>
 </div>
@@ -927,6 +955,8 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         places: places,
         coop: coop,
         manual: num(p.manual, 0),
+        eliminated: !!p.eliminated,
+        eliminatedAt: p.eliminated ? (p.eliminatedAt || 0) : null,
         createdAt: p.createdAt || now()
       };
     });
@@ -1389,6 +1419,42 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       this._persist();
     },
 
+    setEliminated: function (id, on) {
+      var p = this._find(id); if (!p) return;
+      p.eliminated = !!on;
+      p.eliminatedAt = on ? now() : null;
+      this._pushLog({ type: 'eliminate', participantId: p.id, label: this.displayName(p), num: p.num, on: !!on });
+      this._persist();
+    },
+
+    // Hlasové hlášení vyřazení (anglicky). Prohlížeč ho pustí až po první interakci se stránkou.
+    announceElimination: function (num) {
+      try {
+        var synth = global.speechSynthesis;
+        if (!synth || !global.SpeechSynthesisUtterance) return;
+        try {
+          var AC = global.AudioContext || global.webkitAudioContext;
+          var ac = Store._ac || (Store._ac = new AC());
+          if (ac.state === 'suspended') ac.resume();
+          [196, 147].forEach(function (f, i) {
+            var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * 0.28;
+            o.type = 'triangle'; o.frequency.value = f;
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(0.35, t + 0.03);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
+            o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 0.55);
+          });
+        } catch (e) {}
+        var u = new SpeechSynthesisUtterance('The player number ' + num + ' was eliminated');
+        u.lang = 'en-US'; u.rate = 0.9; u.pitch = 0.85;
+        var voices = synth.getVoices();
+        var v = voices.filter(function (x) { return /^en[-_]US/i.test(x.lang); })[0] ||
+                voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
+        if (v) u.voice = v;
+        setTimeout(function () { synth.speak(u); }, 650);
+      } catch (e) {}
+    },
+
     removeParticipant: function (id) {
       var p = this._find(id); if (!p) return;
       var label = this.displayName(p);
@@ -1560,7 +1626,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       diffs.forEach(function (d) {
         head.push(d.id + '_ucast', d.id + '_1', d.id + '_2', d.id + '_3', d.id + '_coop');
       });
-      head.push('rucni', 'celkem');
+      head.push('rucni', 'celkem', 'vyrazen');
       var rows = [head];
       this.ranking().forEach(function (r) {
         var p = r.p;
@@ -1573,7 +1639,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
           var pl = p.places[d.id] || [0, 0, 0];
           row.push(p.games[d.id] || 0, pl[0], pl[1], pl[2], (p.coop && p.coop[d.id]) || 0);
         });
-        row.push(p.manual, r.points);
+        row.push(p.manual, r.points, p.eliminated ? 'ano' : 'ne');
         rows.push(row);
       });
       return rows.map(function (r) {
@@ -1618,6 +1684,17 @@ function initAdmin() {
   var search = '';
   var flashIds = {};
   var coopRows = {};   // u kterých účastníků je zaškrtnuté „co-op hra" (jen tohle okno)
+
+  // Hlášení vyřazení na tomhle počítači (zap/vyp si pamatuje jen tohle zařízení).
+  var VOICE_KEY = 'kostka-maraton-voice-tabule';
+  var voiceOn = true;
+  try { voiceOn = localStorage.getItem(VOICE_KEY) !== 'off'; } catch (e) {}
+  function renderVoiceBtn() { $('#btnVoice').textContent = voiceOn ? '🔊 Hlášení' : '🔇 Hlášení vyp.'; }
+  renderVoiceBtn();
+  $('#btnVoice').addEventListener('click', function () {
+    voiceOn = !voiceOn; renderVoiceBtn();
+    try { localStorage.setItem(VOICE_KEY, voiceOn ? 'on' : 'off'); } catch (e) {}
+  });
 
   // Řazení tabulky si pamatuje jen tohle zařízení – leaderboard ani ostatní okna neovlivní.
   var SORT_KEY = 'kostka-maraton-sort';
@@ -1746,11 +1823,13 @@ function initAdmin() {
       if (p.displayMode === 'nick' && p.nickname.trim()) sub = (p.firstName + ' ' + p.lastName).trim();
       else if (p.nickname.trim()) sub = '„' + p.nickname.trim() + '“';
 
-      return '<tr data-id="' + p.id + '"' + (flashIds[p.id] ? ' class="flash"' : '') + '>' +
+      var trCls = (flashIds[p.id] ? 'flash ' : '') + (p.eliminated ? 'is-elim' : '');
+      return '<tr data-id="' + p.id + '"' + (trCls ? ' class="' + trCls.trim() + '"' : '') + '>' +
         '<td class="col-id"><span class="pid">' + p.num + '</span></td>' +
         '<td class="col-rank"><span class="' + (pts > 0 && rank <= 3 ? 'rank-medal' : '') + '">' + medal + '</span></td>' +
         '<td class="col-name"><div class="name-cell">' +
           '<div><div class="name-main">' + esc(r.name) + '</div>' +
+          (p.eliminated ? '<span class="elim-tag">VYŘAZEN</span>' : '') +
           (sub ? '<div class="name-sub">' + esc(sub) + '</div>' : '') + '</div>' +
           '<button class="name-toggle" data-act="toggleMode" title="Přepnout zobrazení jméno / přezdívka">' +
             (p.displayMode === 'nick' && p.nickname.trim() ? 'přezdívka' : 'jméno') + '</button>' +
@@ -1762,7 +1841,10 @@ function initAdmin() {
         '<td class="col-manual"><button class="manual-btn' + (p.manual ? ' has' : '') + '" data-act="manual">' +
           (p.manual ? (p.manual > 0 ? '+' : '') + p.manual + ' b' : '+ body') + '</button></td>' +
         '<td class="col-total"><span class="total-badge">' + pts + '</span></td>' +
-        '<td class="col-menu"><div class="row-menu"><button class="dots" data-act="menu" aria-label="Možnosti">⋯</button></div></td>' +
+        '<td class="col-menu"><div class="row-acts">' +
+          '<button type="button" class="elim-btn' + (p.eliminated ? ' on' : '') + '" data-act="elim"' +
+            (p.eliminated ? ' title="Vrátit hráče zpět do hry">↩ Vrátit do hry' : ' title="Hráč vypadl – ohlásí se">ELIMINATED') + '</button>' +
+          '<div class="row-menu"><button class="dots" data-act="menu" aria-label="Možnosti">⋯</button></div></div></td>' +
       '</tr>';
     }).join('');
 
@@ -1779,7 +1861,10 @@ function initAdmin() {
     var tasks = state.participants.reduce(function (s, p) { return s + p.tasksDone.length; }, 0);
     var leader = ranking[0];
     var cells = [
-      ['Účastníci', state.participants.length],
+      ['Účastníci' + (function () {
+        var n = state.participants.filter(function (p) { return p.eliminated; }).length;
+        return n ? ' · vyřazeno ' + n : '';
+      })(), state.participants.length],
       ['Zaplaceno startovné · hotově ' + cash + ' · QR ' + qr, paid + ' / ' + state.participants.length],
       ['Odehrané hry / splněné úkoly', games + ' / ' + tasks],
       ['Vede', leader && leader.points > 0 ? S.displayName(leader.p) + ' · ' + leader.points + ' b' : '—']
@@ -1811,6 +1896,7 @@ function initAdmin() {
       else if (e.type === 'import') d = 'Import ' + e.count + ' účastníků';
       else if (e.type === 'undo') d = '↩︎ Vráceno zpět: ' + esc(e.label || '');
       else if (e.type === 'reset-scores') d = 'Body vynulovány';
+      else if (e.type === 'eliminate') d = (e.on ? '✖ Vyřazen' : '↩ Vrácen do hry') + ' č. ' + e.num + ' ' + esc(e.label || '');
       else d = e.type;
       return '<div class="li"><div class="t">' + fmtTime(e.ts) + '</div><div class="d">' + d + '</div></div>';
     }).join('');
@@ -1848,6 +1934,12 @@ function initAdmin() {
     if (act === 'toggleMode') {
       var p = S.state.participants.find(function (x) { return x.id === id; });
       S.updateParticipant(id, { displayMode: p.displayMode === 'nick' ? 'name' : 'nick' });
+    } else if (act === 'elim') {
+      var pe = S.state.participants.find(function (x) { return x.id === id; });
+      if (pe.eliminated) { S.setEliminated(id, false); return; }
+      if (!confirm('Vyřadit hráče č. ' + pe.num + ' (' + S.displayName(pe) + ')? Ozve se hlášení.')) return;
+      S.setEliminated(id, true);
+      if (voiceOn) S.announceElimination(pe.num);
     } else if (act === 'pay') {
       var pp = S.state.participants.find(function (x) { return x.id === id; });
       var v = e.target.getAttribute('data-v');
@@ -2390,7 +2482,63 @@ function initLeaderboard() {
     }
   }, 20e3);
 
+  /* ---------- vyřazení ----------
+   * Nově vyřazený hráč (oproti minulému stavu, vyřazený před chvílí) = červená tabule
+   * přes celou obrazovku + hlasové hlášení. Při prvním načtení se staré vyřazení neohlašují. */
+  var SOUND_KEY = 'kostka-maraton-voice-lb';
+  var soundOn = true, needsUnlock = true, prevElim = null;
+  try { soundOn = localStorage.getItem(SOUND_KEY) !== 'off'; } catch (e) {}
+  try { needsUnlock = !(navigator.userActivation && navigator.userActivation.hasBeenActive); } catch (e) {}
+  function renderSoundBtn() {
+    var b = $('#lbSound');
+    b.classList.toggle('locked', soundOn && needsUnlock);
+    b.textContent = !soundOn ? '🔇 Hlášení vyp.' : needsUnlock ? '🔈 Klikni pro zapnutí zvuku' : '🔊 Hlášení';
+  }
+  $('#lbSound').addEventListener('click', function () {
+    // Prohlížeč pustí zvuk až po kliknutí do stránky – první klik jen odemkne, další přepíná.
+    var wasLocked = needsUnlock; needsUnlock = false;
+    if (!(wasLocked && soundOn)) {
+      soundOn = !soundOn;
+      try { localStorage.setItem(SOUND_KEY, soundOn ? 'on' : 'off'); } catch (e) {}
+    }
+    renderSoundBtn();
+  });
+  ['click', 'keydown'].forEach(function (ev) {
+    document.addEventListener(ev, function () { if (needsUnlock) { needsUnlock = false; renderSoundBtn(); } });
+  });
+  renderSoundBtn();
+
+  // Tabule otevřená ve stejném prohlížeči hlásí sama – leaderboard by to jinak řekl podruhé.
+  function tabuleSpeaksHere() {
+    try {
+      var lock = JSON.parse(localStorage.getItem('kostka-maraton-writer-lock') || 'null');
+      return !!lock && Date.now() - lock.ts < 6000 && localStorage.getItem('kostka-maraton-voice-tabule') !== 'off';
+    } catch (e) { return false; }
+  }
+
+  function showElimination(p) {
+    var el = document.createElement('div');
+    el.className = 'elim-flash';
+    el.innerHTML = '<div><b>Eliminated</b><span>Hráč č. ' + p.num + ' · ' + esc(S.displayName(p)) + '</span></div>';
+    document.body.appendChild(el);
+    setTimeout(function () { el.remove(); }, 4300);
+    if (soundOn && !tabuleSpeaksHere()) S.announceElimination(p.num);
+  }
+
+  function checkEliminations(state) {
+    var now = Date.now(), cur = {};
+    state.participants.forEach(function (p) { if (p.eliminated) cur[p.id] = p; });
+    if (prevElim) {
+      Object.keys(cur).forEach(function (id) {
+        var p = cur[id];
+        if (!prevElim[id] && p.eliminatedAt && Math.abs(now - p.eliminatedAt) < 5 * 60e3) showElimination(p);
+      });
+    }
+    prevElim = cur;
+  }
+
   function render(state) {
+    checkEliminations(state);
     $('#lbTitle').textContent = (state.settings.eventName || 'KOSTKA') + ' ' + (state.settings.subtitle || '');
     $('#lbEdition').textContent = (state.settings.edition ? state.settings.edition + ' · ' : '') + 'Průběžné pořadí';
 
@@ -2438,9 +2586,9 @@ function initLeaderboard() {
       if (!r) return '<div class="pod ' + slotClass[i] + '" style="visibility:hidden"></div>';
       var rank = r.rank;
       var bumped = prevPoints[r.p.id] != null && prevPoints[r.p.id] !== r.points && !firstRender;
-      return '<div class="pod ' + slotClass[i] + (bumped ? ' bumped' : '') + '" data-id="' + r.p.id + '">' +
+      return '<div class="pod ' + slotClass[i] + (bumped ? ' bumped' : '') + (r.p.eliminated ? ' elim' : '') + '" data-id="' + r.p.id + '">' +
         '<div class="badge">' + rank + '</div>' +
-        '<div class="rank-word">' + (RANK_WORD[rank] || rank + '. místo') + '</div>' +
+        '<div class="rank-word">' + (RANK_WORD[rank] || rank + '. místo') + (r.p.eliminated ? ' · vyřazen' : '') + '</div>' +
         '<div class="name">' + esc(r.name) + '</div>' +
         '<div class="pts">' + r.points + ' <small>b</small></div>' +
         '<div class="bar"></div>' +
@@ -2479,9 +2627,10 @@ function initLeaderboard() {
         if (r.rank < oldRank) { mv = 'up'; arrow = '▲'; }
         else { mv = 'down'; arrow = '▼'; }
       }
+      el.classList.toggle('elim', !!r.p.eliminated);
       el.innerHTML =
         '<span class="rk">' + r.rank + '</span>' +
-        '<span class="nm">' + esc(r.name) + '</span>' +
+        '<span class="nm">' + (r.p.eliminated ? '<span class="x-tag">✖</span>' : '') + esc(r.name) + '</span>' +
         '<span class="ps"><span class="mv ' + mv + '">' + arrow + '</span>' + r.points + '</span>';
       listInner.appendChild(el);
     });
