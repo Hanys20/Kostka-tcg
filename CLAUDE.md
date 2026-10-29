@@ -357,8 +357,11 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   a přepočítávají se jen jednou za 15 minut, aby se neměnily s každým zápisem.
   **Vyřazení (ELIMINATED):** tlačítko u řádku na Tabuli (s potvrzením; „↩ Vrátit do hry“
   vrací) nastaví `p.eliminated` + `eliminatedAt`; body zůstávají, hráč je zašedlý
-  a přeškrtnutý na Tabuli i leaderboardu. Hlášení = krátký tón (WebAudio) + anglický
-  hlas přes `speechSynthesis` „The player number {ID} was eliminated“ (`announceElimination`).
+  a přeškrtnutý na Tabuli i leaderboardu. Hlášení (`announceElimination`) je laděné do
+  creepy „hlášení z ampliónu“ (inspirace Squid Game, nic z něj nekopíruje): WebAudio gong
+  ze tří sestupných zvonových tónů s dozvukem haly, temný dron a šum reproduktoru, pak
+  pomalý tichý anglický hlas přes `speechSynthesis` (rate 0.78, pitch 0.7, preferuje ženské
+  hlasy Zira/Aria/Jenny/Samantha…) „The player number {ID}... was eliminated.“ ~1,5 s po gongu.
   Tabule hlásí hned po kliknutí (zap/vyp tlačítkem 🔊, `kostka-maraton-voice-tabule`);
   leaderboard ukáže červenou tabuli přes obrazovku a hlásí nová vyřazení mladší 5 min
   (při načtení stránky stará neohlašuje). Prohlížeč pustí zvuk až po kliknutí do stránky –

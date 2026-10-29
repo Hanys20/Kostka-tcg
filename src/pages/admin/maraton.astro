@@ -395,7 +395,7 @@ body.lb-night .x-tag{color:#ff8a75}
 
 .elim-flash{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;pointer-events:none;
   background:rgba(120,10,0,.82);color:#fff;text-align:center;font-family:var(--font-head);text-transform:uppercase;
-  animation:elimFlash 4.2s ease forwards}
+  animation:elimFlash 6s ease forwards}
 .elim-flash b{display:block;font-size:clamp(3rem,14vh,9rem);letter-spacing:.06em;line-height:1}
 .elim-flash span{display:block;font-size:clamp(1.2rem,4.5vh,3rem);letter-spacing:.2em;margin-top:1.5vh}
 @keyframes elimFlash{0%{opacity:0}8%{opacity:1}80%{opacity:1}100%{opacity:0}}
@@ -1427,31 +1427,85 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       this._persist();
     },
 
-    // Hlasové hlášení vyřazení (anglicky). Prohlížeč ho pustí až po první interakci se stránkou.
+    /* Hlasové hlášení vyřazení (anglicky) v „hlášení z ampliónu“ stylu: dozvukový zvonkový
+       gong, tichý temný dron a šum reproduktoru pod klidným, pomalým ženským hlasem.
+       Prohlížeč zvuk pustí až po první interakci se stránkou. */
     announceElimination: function (num) {
+      var CHIME_MS = 1500;
+      try {
+        var AC = global.AudioContext || global.webkitAudioContext;
+        var ac = Store._ac || (Store._ac = new AC());
+        if (ac.state === 'suspended') ac.resume();
+        var t0 = ac.currentTime + 0.05, END = 6.5;
+
+        var master = ac.createGain(); master.gain.value = 0.55; master.connect(ac.destination);
+
+        // Dozvuk velké haly – impulzní odezva z doznívajícího šumu.
+        if (!Store._ir) {
+          var len = Math.floor(ac.sampleRate * 3), ir = ac.createBuffer(2, len, ac.sampleRate);
+          for (var ch = 0; ch < 2; ch++) {
+            var dd = ir.getChannelData(ch);
+            for (var i = 0; i < len; i++) dd[i] = (Math.random() * 2 - 1) * Math.pow(1 - i / len, 3.2);
+          }
+          Store._ir = ir;
+        }
+        var verb = ac.createConvolver(); verb.buffer = Store._ir;
+        var wet = ac.createGain(); wet.gain.value = 0.7;
+        verb.connect(wet); wet.connect(master);
+
+        // Gong ampliónu: tři sestupné zvonové tóny (základ + neharmonický alikvót).
+        [659.3, 523.3, 392.0].forEach(function (f, k) {
+          var t = t0 + k * 0.42;
+          [[1, 0.32], [2.76, 0.08], [5.4, 0.03]].forEach(function (pt) {
+            var o = ac.createOscillator(), g = ac.createGain();
+            o.type = 'sine'; o.frequency.value = f * pt[0];
+            g.gain.setValueAtTime(0.0001, t);
+            g.gain.exponentialRampToValueAtTime(pt[1], t + 0.012);
+            g.gain.exponentialRampToValueAtTime(0.0001, t + 1.6);
+            o.connect(g); g.connect(master); g.connect(verb);
+            o.start(t); o.stop(t + 1.7);
+          });
+        });
+
+        // Temný rozladěný dron pod celým hlášením.
+        var lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.frequency.value = 260;
+        var dg = ac.createGain();
+        dg.gain.setValueAtTime(0.0001, t0);
+        dg.gain.exponentialRampToValueAtTime(0.16, t0 + 1.2);
+        dg.gain.setValueAtTime(0.16, t0 + END - 1.5);
+        dg.gain.exponentialRampToValueAtTime(0.0001, t0 + END);
+        lp.connect(dg); dg.connect(master); dg.connect(verb);
+        [55, 55.7, 82.4].forEach(function (f) {
+          var o = ac.createOscillator(); o.type = 'sawtooth'; o.frequency.value = f;
+          o.connect(lp); o.start(t0); o.stop(t0 + END + 0.1);
+        });
+
+        // Slabý šum reproduktoru během hlasu.
+        var nb = ac.createBuffer(1, ac.sampleRate * 2, ac.sampleRate), nd = nb.getChannelData(0);
+        for (var j = 0; j < nd.length; j++) nd[j] = Math.random() * 2 - 1;
+        var ns = ac.createBufferSource(); ns.buffer = nb; ns.loop = true;
+        var bp = ac.createBiquadFilter(); bp.type = 'bandpass'; bp.frequency.value = 2400; bp.Q.value = 0.8;
+        var ng = ac.createGain();
+        ng.gain.setValueAtTime(0.0001, t0 + 1.0);
+        ng.gain.exponentialRampToValueAtTime(0.025, t0 + 1.4);
+        ng.gain.setValueAtTime(0.025, t0 + END - 1.2);
+        ng.gain.exponentialRampToValueAtTime(0.0001, t0 + END);
+        ns.connect(bp); bp.connect(ng); ng.connect(master);
+        ns.start(t0 + 1.0); ns.stop(t0 + END + 0.1);
+      } catch (e) {}
+
       try {
         var synth = global.speechSynthesis;
         if (!synth || !global.SpeechSynthesisUtterance) return;
-        try {
-          var AC = global.AudioContext || global.webkitAudioContext;
-          var ac = Store._ac || (Store._ac = new AC());
-          if (ac.state === 'suspended') ac.resume();
-          [196, 147].forEach(function (f, i) {
-            var o = ac.createOscillator(), g = ac.createGain(), t = ac.currentTime + i * 0.28;
-            o.type = 'triangle'; o.frequency.value = f;
-            g.gain.setValueAtTime(0.0001, t);
-            g.gain.exponentialRampToValueAtTime(0.35, t + 0.03);
-            g.gain.exponentialRampToValueAtTime(0.0001, t + 0.5);
-            o.connect(g); g.connect(ac.destination); o.start(t); o.stop(t + 0.55);
-          });
-        } catch (e) {}
-        var u = new SpeechSynthesisUtterance('The player number ' + num + ' was eliminated');
-        u.lang = 'en-US'; u.rate = 0.9; u.pitch = 0.85;
-        var voices = synth.getVoices();
-        var v = voices.filter(function (x) { return /^en[-_]US/i.test(x.lang); })[0] ||
-                voices.filter(function (x) { return /^en/i.test(x.lang); })[0];
+        // Pauza po čísle dělá hlášení chladnější a pomalejší.
+        var u = new SpeechSynthesisUtterance('The player number ' + num + '... was eliminated.');
+        u.lang = 'en-US'; u.rate = 0.78; u.pitch = 0.7; u.volume = 1;
+        var voices = synth.getVoices().filter(function (x) { return /^en/i.test(x.lang); });
+        // Klidný ženský hlas, pokud je v systému (Windows/Chrome/macOS názvy).
+        var v = voices.filter(function (x) { return /zira|aria|jenny|samantha|google us english|female|susan|hazel|libby|sonia|emma|ava/i.test(x.name); })[0] ||
+                voices.filter(function (x) { return /^en[-_]US/i.test(x.lang); })[0] || voices[0];
         if (v) u.voice = v;
-        setTimeout(function () { synth.speak(u); }, 650);
+        setTimeout(function () { synth.speak(u); }, CHIME_MS);
       } catch (e) {}
     },
 
@@ -1663,6 +1717,9 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       return { firstName: tokens.slice(0, -1).join(' '), lastName: tokens[tokens.length - 1], nickname: nick };
     }).filter(Boolean);
   };
+
+  // Chrome načítá seznam hlasů líně – načti ho hned, ať první hlášení nemá výchozí hlas.
+  try { if (global.speechSynthesis) global.speechSynthesis.getVoices(); } catch (e) {}
 
   global.KMH = Store;
 })(window);
@@ -2521,7 +2578,7 @@ function initLeaderboard() {
     el.className = 'elim-flash';
     el.innerHTML = '<div><b>Eliminated</b><span>Hráč č. ' + p.num + ' · ' + esc(S.displayName(p)) + '</span></div>';
     document.body.appendChild(el);
-    setTimeout(function () { el.remove(); }, 4300);
+    setTimeout(function () { el.remove(); }, 6100);
     if (soundOn && !tabuleSpeaksHere()) S.announceElimination(p.num);
   }
 
