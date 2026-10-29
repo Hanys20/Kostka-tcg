@@ -324,3 +324,8 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   obnovou/importem/nulováním), přepnutí Tabule ↔ Leaderboard v jednom okně = reload.
   Stránka je za `getAdminSession`, `noindex`; odkaz „Maraton" v menu je
   `[data-admin-only]` jako Coconut.
+  Kontrast je laděný na projektor za denního světla: Leaderboard má výchozí
+  **denní režim** (bílé pozadí, skoro černý text, body tmavě tyrkysové `#005466`,
+  2px okraje) a **noční režim** (čistě černé pozadí, bílý text) – přepínač vpravo
+  dole nebo klávesa N, volba se pamatuje v prohlížeči (`kostka-maraton-lb-theme`).
+  Světle tyrkysovou `#00BBD6` nepoužívat pro text na světlém pozadí (málo kontrastu).
