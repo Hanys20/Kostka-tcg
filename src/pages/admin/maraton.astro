@@ -564,8 +564,8 @@ body.lb-mode{
       <div class="field">
         <label>Na leaderboardu zobrazit jako</label>
         <select id="fMode">
+          <option value="nick">Přezdívku (když chybí, ukáže se jméno)</option>
           <option value="name">Jméno + iniciála příjmení</option>
-          <option value="nick">Přezdívku</option>
         </select>
       </div>
       <label style="display:flex;gap:.5rem;align-items:center;font-weight:600">
@@ -583,7 +583,7 @@ body.lb-mode{
   <div class="modal">
     <div class="modal-head"><h3>Hromadné přidání</h3><button class="btn btn--ghost" data-close>✕</button></div>
     <div class="modal-body">
-      <p style="margin-top:0;color:var(--ink-soft)">Jeden účastník na řádek. Formát <code>Jméno Příjmení</code> nebo <code>Jméno Příjmení | přezdívka</code>.</p>
+      <p style="margin-top:0;color:var(--ink-soft)">Jeden účastník na řádek. Formát <code>Jméno Příjmení</code> nebo <code>Jméno Příjmení | přezdívka</code>. Kdo má přezdívku, zobrazí se na leaderboardu pod ní.</p>
       <textarea id="bulkText" rows="9" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:.6rem" placeholder="Adam Šťovíček&#10;Petra Novotná | Peťa&#10;Hossein Ashrafi"></textarea>
     </div>
     <div class="modal-foot">
@@ -1058,7 +1058,7 @@ body.lb-mode{
           firstName: (r.firstName || '').trim(),
           lastName: (r.lastName || '').trim(),
           nickname: (r.nickname || '').trim(),
-          displayMode: r.nickname && !r.firstName ? 'nick' : 'name',
+          displayMode: r.nickname ? 'nick' : 'name',
           paid: false, tasksDone: [], games: games, places: places, manual: 0,
           createdAt: now() + added
         });
@@ -1383,7 +1383,7 @@ function initAdmin() {
           '<div><div class="name-main">' + esc(r.name) + '</div>' +
           (sub ? '<div class="name-sub">' + esc(sub) + '</div>' : '') + '</div>' +
           '<button class="name-toggle" data-act="toggleMode" title="Přepnout zobrazení jméno / přezdívka">' +
-            (p.displayMode === 'nick' ? 'přezdívka' : 'jméno') + '</button>' +
+            (p.displayMode === 'nick' && p.nickname.trim() ? 'přezdívka' : 'jméno') + '</button>' +
         '</div></td>' +
         '<td class="col-paid paid-box"><input type="checkbox" data-act="paid"' + (p.paid ? ' checked' : '') + ' title="Startovné"></td>' +
         '<td class="tasks-cell">' + tasksCell(p) + '</td>' +
@@ -1566,7 +1566,7 @@ function initAdmin() {
     $('#fFirst').value = p ? p.firstName : '';
     $('#fLast').value = p ? p.lastName : '';
     $('#fNick').value = p ? p.nickname : '';
-    $('#fMode').value = p ? p.displayMode : 'name';
+    $('#fMode').value = p ? p.displayMode : 'nick';
     $('#fPaid').checked = p ? p.paid : false;
     openModal('#mEdit');
     setTimeout(function () { $('#fFirst').focus(); }, 60);
