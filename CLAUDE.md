@@ -357,10 +357,15 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   a přepočítávají se jen jednou za 15 minut, aby se neměnily s každým zápisem.
   **Vyřazení (ELIMINATED):** tlačítko u řádku na Tabuli (s potvrzením; „↩ Vrátit do hry“
   vrací) nastaví `p.eliminated` + `eliminatedAt`; body zůstávají, hráč je zašedlý
-  a přeškrtnutý na Tabuli i leaderboardu. Hlášení (`announceElimination`) je **jen hlas,
-  žádné další zvuky** (klient gong/dron výslovně nechtěl): vysoký „dívčí“ anglický hlas přes
-  `speechSynthesis` (pitch 1.7, rate 0.9; preferuje dětský hlas „Ana“ z Edge, jinak ženské
-  Zira/Aria/Jenny/Samantha…) „The player number {ID} was eliminated.“
+  a přeškrtnutý. **Vyřazený není součástí pořadí**: `S.ranking()` dává aktivní hráče
+  s místy a vyřazené až na konec s `rank: null` (Tabule ukáže ✖ místo pořadí, leaderboard
+  je shodí do seznamu dolů, nejsou na bedně ani v trendech, CSV `poradi = vyrazen`).
+  Hlášení (`announceElimination`) je **jen hlas, žádné další zvuky** (klient gong/dron
+  výslovně nechtěl): vysoký „dívčí“ anglický hlas přes `speechSynthesis` (preferuje dětský
+  hlas „Ana“ z Edge, jinak ženské Zira/Aria/Jenny/Samantha…), čteno dramaticky ve dvou
+  větách: „Player number {ID}.“ (rate 0.72, pitch 1.6) → pauza 1,4 s → „Eliminated.“
+  (rate 0.55, pitch 1.4); druhá věta jede po `onend` první, s pojistkou 3,5 s.
+  Patička leaderboardu: „Kostka maraton her“ (bez tečky a bez „deskových“).
   Tabule hlásí hned po kliknutí (zap/vyp tlačítkem 🔊, `kostka-maraton-voice-tabule`);
   leaderboard ukáže červenou tabuli přes obrazovku a hlásí nová vyřazení mladší 5 min
   (při načtení stránky stará neohlašuje). Prohlížeč pustí zvuk až po kliknutí do stránky –

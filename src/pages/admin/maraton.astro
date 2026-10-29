@@ -389,8 +389,9 @@ body.lb-mode{
 .lb-sound.locked{opacity:1;border-color:var(--lb-live);color:var(--lb-live)}
 
 .rowx.elim,.pod.elim{opacity:.45}
+.rowx.elim .rk{opacity:1}
 .rowx.elim .nm,.pod.elim .name{text-decoration:line-through;text-decoration-thickness:.08em}
-.x-tag{font-family:var(--font-head);font-weight:700;letter-spacing:.08em;color:#B02A15;margin-right:.4em;text-decoration:none;display:inline-block}
+.x-tag{font-family:var(--font-head);font-weight:700;color:#B02A15;text-decoration:none;display:inline-block}
 body.lb-night .x-tag{color:#ff8a75}
 
 .elim-flash{position:fixed;inset:0;z-index:25;display:flex;align-items:center;justify-content:center;pointer-events:none;
@@ -793,7 +794,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
 
   <button type="button" class="lb-theme lb-sound" id="lbSound" title="Hlasové hlášení vyřazených hráčů"></button>
   <button type="button" class="lb-theme" id="lbTheme" title="Přepnout denní / noční režim (klávesa N). Automaticky noční 22:00–7:00."></button>
-  <footer class="lb-foot" id="lbFoot">Kostka · maraton deskových her</footer>
+  <footer class="lb-foot" id="lbFoot">Kostka maraton her</footer>
 </div>
 </div>
 
@@ -1342,12 +1343,16 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         if (b.points !== a.points) return b.points - a.points;
         return a.p.createdAt - b.p.createdAt;
       });
+      // Vyřazení hráči nejsou součástí pořadí: jdou na konec seznamu a nemají místo (rank null).
+      var active = list.filter(function (r) { return !r.p.eliminated; });
+      var out = list.filter(function (r) { return r.p.eliminated; });
       var rank = 0, prev = null;
-      list.forEach(function (row, i) {
+      active.forEach(function (row, i) {
         if (prev === null || row.points !== prev) rank = i + 1;
         row.rank = rank; prev = row.points;
       });
-      return list;
+      out.forEach(function (row) { row.rank = null; });
+      return active.concat(out);
     },
 
     _find: function (id) { return this.state.participants.find(function (p) { return p.id === id; }); },
@@ -1427,21 +1432,34 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       this._persist();
     },
 
-    /* Hlasové hlášení vyřazení (anglicky) – jen hlas, bez dalších zvuků. Vysoký dívčí
-       hlas: ženský hlas s výrazně zvýšenou výškou. Prohlížeč ho pustí až po první interakci. */
+    /* Hlasové hlášení vyřazení (anglicky) – jen hlas, bez dalších zvuků, vysoký dívčí hlas,
+       čteno pomalu a dramaticky: „Player number X“ … dramatická pauza … „Eliminated.“
+       Prohlížeč ho pustí až po první interakci se stránkou. */
     announceElimination: function (num) {
+      var PAUSE_MS = 1400;
       try {
         var synth = global.speechSynthesis;
         if (!synth || !global.SpeechSynthesisUtterance) return;
-        var u = new SpeechSynthesisUtterance('The player number ' + num + ' was eliminated.');
-        u.lang = 'en-US'; u.rate = 0.9; u.pitch = 1.7; u.volume = 1;
         var voices = synth.getVoices().filter(function (x) { return /^en/i.test(x.lang); });
         // Nejdřív dětský hlas „Ana“ (Edge), jinak ženský hlas, pokud je v systému (Windows/Chrome/macOS názvy).
         var v = voices.filter(function (x) { return /(^|\s)ana(\s|$)/i.test(x.name); })[0] ||
                 voices.filter(function (x) { return /zira|aria|jenny|samantha|google us english|female|susan|hazel|libby|sonia|emma|ava/i.test(x.name); })[0] ||
                 voices.filter(function (x) { return /^en[-_]US/i.test(x.lang); })[0] || voices[0];
-        if (v) u.voice = v;
-        synth.speak(u);
+        function say(text, rate, pitch) {
+          var u = new SpeechSynthesisUtterance(text);
+          u.lang = 'en-US'; u.rate = rate; u.pitch = pitch; u.volume = 1;
+          if (v) u.voice = v;
+          return u;
+        }
+        var first = say('Player number ' + num + '.', 0.72, 1.6);
+        var last = say('Eliminated.', 0.55, 1.4);
+        // Druhá část až po dozvučení první + pauza. Některé prohlížeče onend občas nepošlou –
+        // pojistka ji pak pustí podle odhadované délky první věty.
+        var done = false;
+        function finale() { if (done) return; done = true; setTimeout(function () { synth.speak(last); }, PAUSE_MS); }
+        first.onend = finale;
+        setTimeout(finale, 3500);
+        synth.speak(first);
       } catch (e) {}
     },
 
@@ -1621,7 +1639,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       this.ranking().forEach(function (r) {
         var p = r.p;
         var row = [
-          r.rank, p.num, (p.firstName + ' ' + p.lastName).trim(), p.nickname, r.name,
+          r.rank == null ? 'vyrazen' : r.rank, p.num, (p.firstName + ' ' + p.lastName).trim(), p.nickname, r.name,
           p.paid ? 'ano' : 'ne', p.payMethod === 'cash' ? 'hotove' : p.payMethod === 'qr' ? 'qr' : '',
           p.tasksDone.length
         ];
@@ -1811,7 +1829,7 @@ function initAdmin() {
 
     rowsEl.innerHTML = view.map(function (r) {
       var p = r.p, pts = r.points, rank = rankById[p.id].rank;
-      var medal = (pts > 0 && rank === 1) ? '🥇' : (pts > 0 && rank === 2) ? '🥈' : (pts > 0 && rank === 3) ? '🥉' : rank;
+      var medal = rank == null ? '✖' : (pts > 0 && rank === 1) ? '🥇' : (pts > 0 && rank === 2) ? '🥈' : (pts > 0 && rank === 3) ? '🥉' : rank;
       var sub = '';
       if (p.displayMode === 'nick' && p.nickname.trim()) sub = (p.firstName + ' ' + p.lastName).trim();
       else if (p.nickname.trim()) sub = '„' + p.nickname.trim() + '“';
@@ -1819,7 +1837,7 @@ function initAdmin() {
       var trCls = (flashIds[p.id] ? 'flash ' : '') + (p.eliminated ? 'is-elim' : '');
       return '<tr data-id="' + p.id + '"' + (trCls ? ' class="' + trCls.trim() + '"' : '') + '>' +
         '<td class="col-id"><span class="pid">' + p.num + '</span></td>' +
-        '<td class="col-rank"><span class="' + (pts > 0 && rank <= 3 ? 'rank-medal' : '') + '">' + medal + '</span></td>' +
+        '<td class="col-rank"><span class="' + (rank != null && pts > 0 && rank <= 3 ? 'rank-medal' : '') + '">' + medal + '</span></td>' +
         '<td class="col-name"><div class="name-cell">' +
           '<div><div class="name-main">' + esc(r.name) + '</div>' +
           (p.eliminated ? '<span class="elim-tag">VYŘAZEN</span>' : '') +
@@ -1852,7 +1870,7 @@ function initAdmin() {
     var qr = state.participants.filter(function (p) { return p.payMethod === 'qr'; }).length;
     var games = state.participants.reduce(function (s, p) { return s + S.tierGamesTotal(p); }, 0);
     var tasks = state.participants.reduce(function (s, p) { return s + p.tasksDone.length; }, 0);
-    var leader = ranking[0];
+    var leader = ranking[0] && ranking[0].rank != null ? ranking[0] : null;
     var cells = [
       ['Účastníci' + (function () {
         var n = state.participants.filter(function (p) { return p.eliminated; }).length;
@@ -2382,7 +2400,7 @@ function initLeaderboard() {
 
   // Pořadí podle uložených bodů (stejná pravidla jako S.ranking – shoda bodů = shodné místo).
   function ranksOf(pts) {
-    var list = S.state.participants.filter(function (p) { return pts[p.id] != null; });
+    var list = S.state.participants.filter(function (p) { return pts[p.id] != null && !p.eliminated; });
     list.sort(function (a, b) { return (pts[b.id] - pts[a.id]) || (a.createdAt - b.createdAt); });
     var out = {}, rank = 0, prev = null;
     list.forEach(function (p, i) {
@@ -2403,6 +2421,7 @@ function initLeaderboard() {
 
   function computeTrends(ranking) {
     var now = Date.now(), out = [];
+    ranking = ranking.filter(function (r) { return r.rank != null; });   // vyřazení v trendech nejsou
     var hist = S.state.history || [];
     var base = null;
     for (var i = hist.length - 1; i >= 0; i--) if (hist[i].ts <= now - 3600e3) { base = hist[i]; break; }
@@ -2464,7 +2483,7 @@ function initLeaderboard() {
   }
 
   function footText(state) {
-    return 'Kostka · maraton deskových her' + (state.settings.edition ? ' · ' + state.settings.edition : '') +
+    return 'Kostka maraton her' + (state.settings.edition ? ' · ' + state.settings.edition : '') +
       (trendCache.length ? ' · trendy k ' + hhmm(trendAt) : '');
   }
 
@@ -2554,15 +2573,16 @@ function initLeaderboard() {
     $('#lbEmpty').hidden = true;
     $('#list').hidden = false;
 
-    var top = ranking.slice(0, 3);
-    var rest = ranking.slice(3);
+    // Bedna jen z hráčů ve hře; vyřazení jsou v S.ranking() až na konci, takže spadnou do seznamu dolů.
+    var top = ranking.filter(function (r) { return r.rank != null; }).slice(0, 3);
+    var rest = ranking.slice(top.length);
 
     renderPodium(top);
     updateTrends(ranking);
     $('#lbFoot').textContent = footText(state);
     renderList(rest);
 
-    var leader = ranking[0] ? ranking[0].p.id : null;
+    var leader = top[0] ? top[0].p.id : null;
     if (!firstRender && leader && leader !== prevLeader) celebrate();
     prevLeader = leader;
 
@@ -2616,14 +2636,14 @@ function initLeaderboard() {
       }
       var oldRank = prevRank[r.p.id];
       var mv = 'flat', arrow = '•';
-      if (oldRank != null && oldRank !== r.rank) {
+      if (oldRank != null && r.rank != null && oldRank !== r.rank) {
         if (r.rank < oldRank) { mv = 'up'; arrow = '▲'; }
         else { mv = 'down'; arrow = '▼'; }
       }
       el.classList.toggle('elim', !!r.p.eliminated);
       el.innerHTML =
-        '<span class="rk">' + r.rank + '</span>' +
-        '<span class="nm">' + (r.p.eliminated ? '<span class="x-tag">✖</span>' : '') + esc(r.name) + '</span>' +
+        '<span class="rk">' + (r.rank == null ? '<span class="x-tag" title="Vyřazen">✖</span>' : r.rank) + '</span>' +
+        '<span class="nm">' + esc(r.name) + '</span>' +
         '<span class="ps"><span class="mv ' + mv + '">' + arrow + '</span>' + r.points + '</span>';
       listInner.appendChild(el);
     });
