@@ -329,3 +329,15 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   2px okraje) a **noční režim** (čistě černé pozadí, bílý text) – přepínač vpravo
   dole nebo klávesa N, volba se pamatuje v prohlížeči (`kostka-maraton-lb-theme`).
   Světle tyrkysovou `#00BBD6` nepoužívat pro text na světlém pozadí (málo kontrastu).
+  **Online synchronizace (2026-10-29):** stav se ukládá i do Supabase – tabulka
+  `marathon_state` (jeden řádek `main`, `state jsonb`, `rev`; migrace
+  `20261029000000_marathon_state.sql`, RLS bez policy, jen service role) přes
+  `src/pages/api/admin/maraton.ts` (GET `?since=rev` vrací stav jen při změně,
+  PUT `{state, baseRev}` = optimistický zámek, při nesouladu 409 + aktuální stav).
+  Tabule po každém zápisu PUTne celý stav (debounce 350 ms) a každé 3 s polluje;
+  Leaderboard polluje každé 2 s (na skryté záložce 3× méně), takže jde sledovat
+  z mobilu/iPadu přihlášeného do adminu. Offline: zápisy jdou dál do localStorage
+  s příznakem `kostka-maraton-dirty` a odešlou se po návratu spojení (i po reloadu).
+  Při konfliktu dvou Tabulí vyhraje server a zapisovatel dostane hlášku.
+  Stavy se porovnávají podle `updatedAt` (ne `rev`, ten je jen lokální počítadlo).
+  Pod 760 px šířky je leaderboard v jednom sloupci a stránka se posouvá.
