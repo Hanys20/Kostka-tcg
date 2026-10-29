@@ -308,3 +308,19 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   adminovi: `adminAuth.ts` nastavuje ne-httpOnly hint cookie `kostka_admin=1`
   (jen UI, nic neautorizuje) a inline skript v `Layout.astro` podle ní odkryje
   prvky `[data-admin-only]`.
+- **2026-10-29: Maraton deskových her (`/admin/maraton`)** – převzato z prototypu
+  (claude.ai artifact). Rozcestník → **Tabule** (`#/tabule`, zapisovatel: účastníci,
+  startovné, úkoly, hry + umístění podle obtížnosti DN/MP/KP, ruční body, undo,
+  historie, záloha JSON/CSV, snapshoty, odpočet maratonu) a **Leaderboard**
+  (`#/leaderboard`, jen čte: bedna, animované pořadí, konfety při změně lídra).
+  Výjimečně **vlastní design** v barvách tyrkysové kostky Klubu deskových her
+  (`#00BBD6`, fonty Oswald/Barlow) mimo `Layout.astro`; logo je **jen** nemodifikované
+  `public/images/maraton/kostka-tyrkys.png` (od klienta, needitovat).
+  Stav je v localStorage (`kostka-maraton-v1`) – okna Tabule a Leaderboardu se propojují
+  přes BroadcastChannel + `storage` event, takže **musí běžet ve stejném prohlížeči na
+  stejném počítači** (notebook + projektor). Žádná DB, mezi zařízeními se nesdílí.
+  Oproti prototypu: zapsané umístění automaticky přičte i odehranou hru (undo vrací
+  obojí, hra nejde pod počet umístění), snapshot max 1× za minutu (+ vždy před
+  obnovou/importem/nulováním), přepnutí Tabule ↔ Leaderboard v jednom okně = reload.
+  Stránka je za `getAdminSession`, `noindex`; odkaz „Maraton" v menu je
+  `[data-admin-only]` jako Coconut.

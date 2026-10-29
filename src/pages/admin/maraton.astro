@@ -1,0 +1,2034 @@
+---
+import { getAdminSession } from "../../lib/adminAuth";
+
+export const prerender = false;
+
+const session = await getAdminSession(Astro.cookies);
+if (!session) {
+  return Astro.redirect("/admin?next=/admin/maraton");
+}
+---
+
+<!--
+  Maraton deskových her – bodování (Tabule) + živý Leaderboard na projektor.
+  Převzato z prototypu (claude.ai artifact). Záměrně vlastní design v barvách
+  tyrkysové kostky Klubu deskových her, mimo hlavní Layout webu.
+  Stav je v localStorage (kostka-maraton-v1); okna Tabule a Leaderboardu ve
+  stejném prohlížeči se propojují přes BroadcastChannel + storage event.
+-->
+<html lang="cs">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>Maraton her · Kostka</title>
+    <link rel="icon" type="image/png" href="/images/maraton/kostka-tyrkys.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@400;500;600;700&family=Barlow:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <style is:inline>
+
+/* ============ base.css ============ */
+:root{
+  --brand:#00BBD6;
+  --brand-600:#00A0BC;
+  --brand-700:#0085A0;
+  --brand-050:#e6f8fb;
+
+  --gold:#FFC24B;
+  --silver:#CBD7DD;
+  --bronze:#E08A4B;
+
+  --ink:#0c1f24;
+  --ink-soft:#3d565d;
+  --line:#e2e9eb;
+  --bg:#f1f5f6;
+  --card:#ffffff;
+
+  --ok:#1FA971;
+  --danger:#E0503A;
+
+  --radius:14px;
+  --shadow-sm:0 1px 2px rgba(12,31,36,.06), 0 2px 8px rgba(12,31,36,.05);
+  --shadow-md:0 6px 24px rgba(12,31,36,.12);
+
+  --font-head:'Oswald', 'Bebas Neue', 'Arial Narrow', system-ui, sans-serif;
+  --font-body:'Barlow', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  color-scheme:light;
+}
+
+*,*::before,*::after{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0;padding:0}
+html{font-size:16px}
+body{
+  font-family:var(--font-body);
+  font-size:1rem;
+  color:var(--ink);
+  background:var(--bg);
+  -webkit-font-smoothing:antialiased;
+  text-rendering:optimizeLegibility;
+}
+h1,h2,h3,h4{font-family:var(--font-head);font-weight:600;margin:0;letter-spacing:.01em}
+button,input,select,textarea{font-family:inherit;font-size:inherit;color:inherit}
+button{cursor:pointer}
+a{color:var(--brand-700)}
+
+.headline{text-transform:uppercase;letter-spacing:.06em}
+.tnum{font-family:var(--font-head);font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+
+.btn{
+  display:inline-flex;align-items:center;gap:.5rem;justify-content:center;
+  border:1px solid var(--line);background:var(--card);color:var(--ink);
+  padding:.55rem .9rem;border-radius:10px;font-weight:600;line-height:1;
+  transition:background .12s ease, border-color .12s ease, transform .06s ease;
+}
+.btn:hover{background:#f7fafb}
+.btn:active{transform:translateY(1px)}
+.btn--primary{background:var(--brand);border-color:var(--brand);color:#04333b}
+.btn--primary:hover{background:var(--brand-600);border-color:var(--brand-600)}
+.btn--ghost{background:transparent;border-color:transparent}
+.btn--ghost:hover{background:rgba(12,31,36,.06)}
+.btn--danger{color:var(--danger);border-color:#f0cdc6}
+.btn--danger:hover{background:#fdf1ef}
+.btn--sm{padding:.4rem .6rem;border-radius:8px;font-size:.9rem}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible{
+  outline:2px solid var(--brand);outline-offset:2px}
+
+.chip{
+  display:inline-flex;align-items:center;gap:.4rem;
+  padding:.25rem .6rem;border-radius:999px;font-size:.8rem;font-weight:600;
+  background:var(--brand-050);color:var(--brand-700);
+}
+
+.modal-backdrop{
+  position:fixed;inset:0;background:rgba(9,22,26,.55);
+  display:flex;align-items:center;justify-content:center;padding:1.5rem;z-index:50;
+  opacity:0;pointer-events:none;transition:opacity .16s ease;
+}
+.modal-backdrop.open{opacity:1;pointer-events:auto}
+.modal{
+  background:var(--card);border-radius:16px;box-shadow:var(--shadow-md);
+  width:min(560px,100%);max-height:88vh;overflow:auto;transform:translateY(8px) scale(.98);
+  transition:transform .16s ease;
+}
+.modal-backdrop.open .modal{transform:none}
+.modal h3{font-size:1.3rem;text-transform:uppercase;letter-spacing:.04em}
+.modal-head{display:flex;align-items:center;justify-content:space-between;padding:1.1rem 1.3rem;border-bottom:1px solid var(--line)}
+.modal-body{padding:1.3rem}
+.modal-foot{padding:1rem 1.3rem;border-top:1px solid var(--line);display:flex;gap:.6rem;justify-content:flex-end}
+
+.field{display:flex;flex-direction:column;gap:.35rem;margin-bottom:1rem}
+.field label{font-weight:600;font-size:.85rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.04em}
+.field input,.field select,.field textarea{
+  border:1px solid var(--line);border-radius:9px;padding:.6rem .7rem;background:#fff;
+}
+.field input:focus,.field select:focus,.field textarea:focus{outline:2px solid var(--brand);outline-offset:0;border-color:var(--brand)}
+.field-row{display:flex;gap:.8rem}
+.field-row .field{flex:1}
+
+.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);border:0}
+
+/* ============ view switch ============ */
+#view-launch,#view-admin,#view-board{display:none}
+body.launch-mode #view-launch{display:block}
+body.admin-mode  #view-admin {display:block}
+body.lb-mode     #view-board {display:block}
+
+body.launch-mode{
+  min-height:100vh;display:flex;align-items:center;justify-content:center;
+  background:radial-gradient(1200px 700px at 70% -10%, #16333b 0%, #0b1a1f 55%, #081316 100%);
+}
+
+/* ============ launcher (rozcestník) ============ */
+.launch{width:min(880px,92vw);text-align:center;color:#eaf6f8;padding:2rem}
+.launch .brandmark{width:96px;margin:0 auto 1.2rem;display:block}
+.launch h1{font-size:clamp(2.6rem,7vw,4.6rem);line-height:.92;text-transform:uppercase;letter-spacing:.02em;text-wrap:balance}
+.launch h1 span{color:var(--brand)}
+.launch .sub{font-family:var(--font-head);text-transform:uppercase;letter-spacing:.35em;
+  font-size:clamp(.9rem,2.2vw,1.2rem);color:#9fc7cf;margin:.4rem 0 2.4rem}
+.launch .cards{display:grid;grid-template-columns:1fr 1fr;gap:1.1rem}
+@media(max-width:640px){.launch .cards{grid-template-columns:1fr}}
+.launch .pick{
+  display:block;text-decoration:none;color:#eaf6f8;text-align:left;
+  background:rgba(255,255,255,.05);border:1px solid rgba(255,255,255,.12);
+  border-radius:18px;padding:1.5rem 1.4rem;transition:transform .12s ease, background .12s ease, border-color .12s;
+}
+.launch .pick:hover{transform:translateY(-3px);background:rgba(0,187,214,.12);border-color:var(--brand)}
+.launch .pick .k{font-family:var(--font-head);text-transform:uppercase;letter-spacing:.08em;font-size:1.5rem}
+.launch .pick .d{color:#a9cdd4;margin-top:.4rem;font-size:.95rem;line-height:1.4}
+.launch .pick .ico{font-size:1.8rem}
+.launch .foot{margin-top:2rem;color:#7fa6ae;font-size:.85rem;line-height:1.6}
+.launch kbd{background:rgba(255,255,255,.12);border-radius:5px;padding:.1rem .4rem;font-family:var(--font-head)}
+
+/* ============ admin.css (Tabule) ============ */
+.app{max-width:1220px;margin:0 auto;padding:1rem 1.2rem 4rem}
+
+.top{display:flex;align-items:center;gap:1rem;padding:.6rem 0 1rem;flex-wrap:wrap}
+.top .mark{width:44px;height:44px;flex:none}
+.top .title{font-family:var(--font-head);text-transform:uppercase;line-height:1;letter-spacing:.03em}
+.top .title b{font-size:1.5rem;display:block;font-weight:700}
+.top .title span{font-size:.8rem;color:var(--ink-soft);letter-spacing:.22em}
+.top .spacer{flex:1}
+.top .status{display:flex;align-items:center;gap:.45rem;font-size:.82rem;color:var(--ink-soft)}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(31,169,113,.18)}
+.dot.remote{background:var(--brand);box-shadow:0 0 0 3px rgba(0,187,214,.18)}
+
+#btnRace{font-family:var(--font-head);font-weight:700;letter-spacing:.02em;font-variant-numeric:tabular-nums;white-space:nowrap}
+#btnRace.race-live{background:#0c1f24;border-color:#0c1f24;color:#fff}
+#btnRace.race-live::before{content:"";width:8px;height:8px;border-radius:50%;background:var(--brand);
+  box-shadow:0 0 0 3px rgba(0,187,214,.3);animation:pulse 1.4s ease-in-out infinite}
+#btnRace.race-done{background:var(--gold);border-color:var(--gold);color:#3a2c05}
+@keyframes pulse{50%{opacity:.35}}
+
+.toolbar{display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;margin-bottom:1rem}
+.toolbar .spacer{flex:1}
+.toolbar .search{position:relative}
+.toolbar .search input{border:1px solid var(--line);border-radius:10px;padding:.55rem .8rem .55rem 2rem;min-width:200px;background:#fff}
+.toolbar .search::before{content:"⌕";position:absolute;left:.6rem;top:50%;transform:translateY(-50%);color:var(--ink-soft)}
+
+.summary{display:grid;grid-template-columns:repeat(4,1fr);gap:.7rem;margin-bottom:1.1rem}
+@media(max-width:720px){.summary{grid-template-columns:repeat(2,1fr)}}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:.7rem .9rem}
+.stat .n{font-family:var(--font-head);font-size:1.6rem;font-weight:700;line-height:1}
+.stat .l{font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-top:.2rem}
+
+.table-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:auto}
+table.grid{border-collapse:collapse;width:100%;min-width:920px}
+.grid thead th{
+  position:sticky;top:0;z-index:2;background:#fff;
+  font-family:var(--font-head);text-transform:uppercase;letter-spacing:.05em;font-size:.72rem;color:var(--ink-soft);
+  font-weight:600;text-align:left;padding:.7rem .6rem;border-bottom:2px solid var(--line);white-space:nowrap;
+}
+.grid tbody td{padding:.45rem .6rem;border-bottom:1px solid var(--line);vertical-align:middle}
+.grid tbody tr:hover{background:#f8fbfc}
+.grid tbody tr.flash{animation:rowflash 1s ease}
+@keyframes rowflash{0%{background:rgba(0,187,214,.22)}100%{background:transparent}}
+
+.col-rank{width:44px;text-align:center;color:var(--ink-soft);font-family:var(--font-head);font-weight:700}
+.rank-medal{color:var(--brand-700)}
+.col-total{width:76px}
+
+.grid th.col-rank,.grid td.col-rank{position:sticky;left:0;z-index:3;background:#fff}
+.grid th.col-name,.grid td.col-name{position:sticky;left:44px;z-index:3;background:#fff;
+  box-shadow:6px 0 8px -6px rgba(12,31,36,.12)}
+.grid thead th.col-rank,.grid thead th.col-name{z-index:4}
+.grid tbody tr:hover td.col-rank,.grid tbody tr:hover td.col-name{background:#f8fbfc}
+.grid tbody tr.flash td.col-rank,.grid tbody tr.flash td.col-name{background:transparent}
+.total-badge{font-family:var(--font-head);font-weight:700;font-size:1.15rem;background:var(--brand-050);color:var(--brand-700);
+  border-radius:8px;padding:.2rem .5rem;display:inline-block;min-width:2.6ch;text-align:center}
+
+.name-cell{display:flex;align-items:center;gap:.55rem;min-width:180px}
+.name-main{font-weight:600}
+.name-sub{font-size:.75rem;color:var(--ink-soft)}
+.name-toggle{border:1px solid var(--line);background:#fff;border-radius:999px;font-size:.68rem;
+  text-transform:uppercase;letter-spacing:.04em;padding:.12rem .5rem;color:var(--ink-soft)}
+.name-toggle:hover{border-color:var(--brand);color:var(--brand-700)}
+.paid-box{display:flex;align-items:center;justify-content:center}
+.paid-box input{width:18px;height:18px;accent-color:var(--brand)}
+
+.stepper{display:inline-flex;align-items:center;border:1px solid var(--line);border-radius:9px;overflow:hidden;background:#fff}
+.stepper button{border:0;background:#fff;width:30px;height:30px;font-size:1.1rem;font-weight:700;color:var(--brand-700);line-height:1}
+.stepper button:hover{background:var(--brand-050)}
+.stepper button:disabled{color:#c4d0d3}
+.stepper .v{min-width:2.4ch;text-align:center;font-family:var(--font-head);font-weight:700;font-size:1rem;padding:0 .2rem}
+.stepper.mini button{width:26px;height:26px;font-size:.95rem}
+.stepper.mini .v{font-size:.9rem;min-width:1.8ch}
+
+.places{display:flex;gap:.35rem}
+.place-unit{display:flex;flex-direction:column;align-items:center;gap:.15rem}
+.place-unit .cap{font-size:.7rem}
+
+.tasks-cell{min-width:172px}
+.task-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px}
+.task-grid .tk{
+  width:24px;height:24px;border:1px solid var(--line);border-radius:6px;background:#fff;
+  font-family:var(--font-head);font-weight:700;font-size:.8rem;color:var(--ink-soft);
+  display:flex;align-items:center;justify-content:center;transition:background .1s,border-color .1s,color .1s;
+}
+.task-grid .tk:hover{border-color:var(--brand)}
+.task-grid .tk.done{background:var(--brand);border-color:var(--brand);color:#04333b}
+.task-count{display:inline-block;margin-top:.35rem;font-size:.72rem;color:var(--ink-soft);font-weight:600}
+.task-count b{font-family:var(--font-head);color:var(--brand-700)}
+
+.tiers-cell{min-width:360px}
+table.tiers{border-collapse:collapse}
+table.tiers th,table.tiers td{padding:1px 3px;text-align:center}
+table.tiers thead th{font-size:.64rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);font-weight:700}
+table.tiers tbody th{font-family:var(--font-head);font-weight:700;font-size:.72rem;color:var(--ink);text-align:right;padding-right:.4rem;white-space:nowrap}
+table.tiers .tier-play .v{color:var(--brand-700)}
+
+.manual-btn{border:1px dashed var(--line);background:#fff;border-radius:8px;padding:.32rem .55rem;font-weight:600;color:var(--ink-soft);font-size:.85rem}
+.manual-btn:hover{border-color:var(--brand);color:var(--brand-700)}
+.manual-btn.has{border-style:solid;color:var(--brand-700);background:var(--brand-050)}
+
+.row-menu{position:relative}
+.row-menu .dots{border:0;background:transparent;font-size:1.2rem;color:var(--ink-soft);padding:.2rem .4rem;border-radius:6px}
+.row-menu .dots:hover{background:rgba(12,31,36,.08)}
+.menu-pop{position:absolute;right:0;top:100%;background:#fff;border:1px solid var(--line);border-radius:10px;
+  box-shadow:var(--shadow-md);min-width:170px;padding:.3rem;z-index:5}
+.menu-pop button{display:flex;width:100%;text-align:left;border:0;background:transparent;padding:.5rem .6rem;border-radius:7px;gap:.5rem;font-weight:500}
+.menu-pop button:hover{background:#f4f7f8}
+.menu-pop button.danger{color:var(--danger)}
+
+.empty{padding:3rem 1rem;text-align:center;color:var(--ink-soft)}
+.empty .big{font-size:2.4rem;margin-bottom:.4rem}
+
+.pop-manual{position:fixed;background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow-md);
+  padding:.9rem;width:240px;z-index:40}
+.pop-manual h4{font-size:.8rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink-soft);margin-bottom:.5rem}
+.pop-manual .quick{display:flex;gap:.35rem;margin-bottom:.5rem;flex-wrap:wrap}
+.pop-manual .quick button{flex:1;min-width:44px;border:1px solid var(--line);background:#fff;border-radius:8px;padding:.35rem 0;font-weight:700;font-family:var(--font-head)}
+.pop-manual .quick button:hover{background:var(--brand-050);border-color:var(--brand)}
+.pop-manual input[type=number]{width:100%;border:1px solid var(--line);border-radius:8px;padding:.4rem .5rem;margin-bottom:.4rem}
+.pop-manual input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:.4rem .5rem;margin-bottom:.5rem}
+
+.logbox{margin-top:1.4rem;background:var(--card);border:1px solid var(--line);border-radius:var(--radius)}
+.logbox summary{padding:.8rem 1rem;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.05em;font-size:.85rem;cursor:pointer}
+.logbox .items{max-height:280px;overflow:auto;border-top:1px solid var(--line)}
+.logbox .li{display:flex;gap:.6rem;padding:.5rem 1rem;border-bottom:1px solid var(--line);font-size:.85rem}
+.logbox .li .t{color:var(--ink-soft);font-variant-numeric:tabular-nums;flex:none;width:56px}
+.logbox .li .d{flex:1}
+.logbox .li .p{font-family:var(--font-head);font-weight:700}
+.logbox .li .p.plus{color:var(--ok)}
+.logbox .li .p.minus{color:var(--danger)}
+
+.modal--wide{width:min(680px,100%)}
+.settings-grid{display:grid;grid-template-columns:1fr 1fr;gap:.8rem}
+.mini-field{display:flex;flex-direction:column;gap:.3rem}
+.mini-field label{font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);font-weight:600}
+.mini-field input,.mini-field select{border:1px solid var(--line);border-radius:8px;padding:.5rem .6rem}
+
+.set-h{font-size:.95rem;text-transform:uppercase;letter-spacing:.05em;color:var(--ink);margin:1.4rem 0 .6rem;
+  border-bottom:2px solid var(--line);padding-bottom:.3rem}
+.mini-lbl{display:block;font-size:.75rem;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-soft);font-weight:600;margin:.7rem 0 .3rem}
+.set-area{width:100%;border:1px solid var(--line);border-radius:9px;padding:.6rem;font-family:var(--font-body);resize:vertical}
+
+.diff-table{border-collapse:collapse;width:100%}
+.diff-table th{font-size:.7rem;text-transform:uppercase;letter-spacing:.03em;color:var(--ink-soft);font-weight:700;padding:.4rem .4rem;text-align:center}
+.diff-table th:first-child{text-align:left}
+.diff-table td{padding:.3rem .35rem}
+.diff-table input[type=text]{width:100%;border:1px solid var(--line);border-radius:7px;padding:.45rem .5rem;font-weight:600}
+.diff-table input[type=number]{width:64px;border:1px solid var(--line);border-radius:7px;padding:.45rem .4rem;text-align:center}
+
+.out-area{width:100%;border:1px solid var(--line);border-radius:9px;padding:.6rem;
+  font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.78rem;resize:vertical;background:#fbfdfd}
+
+/* ============ leaderboard.css ============ */
+:root{
+  --lb-bg-1:#123039; --lb-bg-2:#0b1a1f; --lb-bg-3:#081215;
+  --lb-ink:#eaf7f9; --lb-ink-dim:#8fb4bc;
+  --lb-card:rgba(255,255,255,.055);
+  --lb-line:rgba(255,255,255,.10);
+}
+body.lb-mode{
+  height:100%;
+  background:
+    radial-gradient(1400px 900px at 78% -12%, #16333b 0%, rgba(22,51,59,0) 60%),
+    linear-gradient(180deg, var(--lb-bg-1) 0%, var(--lb-bg-2) 45%, var(--lb-bg-3) 100%);
+  color:var(--lb-ink);
+  overflow:hidden;
+}
+body.lb-mode::before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.35;
+  background-image:radial-gradient(rgba(255,255,255,.05) 1.5px, transparent 1.6px);
+  background-size:46px 46px;
+}
+
+.board{position:fixed;inset:0;display:flex;flex-direction:column;padding:2.4vh 3vw}
+
+.lb-head{display:flex;align-items:center;gap:1.2rem;flex:none}
+.lb-head .mark{width:4.4vh;height:4.4vh;min-width:38px}
+.lb-head h1{
+  font-size:clamp(1.6rem,4.2vh,3rem);text-transform:uppercase;letter-spacing:.04em;line-height:1;
+}
+.lb-head h1 b{color:var(--brand)}
+.lb-head .edition{font-family:var(--font-head);color:var(--lb-ink-dim);letter-spacing:.3em;
+  text-transform:uppercase;font-size:clamp(.7rem,1.5vh,1rem);margin-top:.3rem}
+.lb-head .spacer{flex:1}
+.lb-clock{text-align:right;font-family:var(--font-head);line-height:1}
+.lb-clock .time{font-size:clamp(1.4rem,3.4vh,2.4rem);font-weight:700;font-variant-numeric:tabular-nums}
+.lb-clock .cd{color:var(--brand);font-size:clamp(.8rem,1.8vh,1.2rem);letter-spacing:.08em;margin-top:.2rem;font-variant-numeric:tabular-nums}
+.lb-clock .cd.live{color:var(--gold)}
+.lb-clock .cd.ready{color:var(--lb-ink-dim)}
+
+.podium{
+  flex:none;display:grid;grid-template-columns:1fr 1.25fr 1fr;gap:1.4vw;align-items:end;
+  margin:1.6vh 0 1.4vh;
+}
+.pod{
+  position:relative;background:var(--lb-card);border:1px solid var(--lb-line);border-radius:18px;
+  padding:1.6vh 1vw 1.4vh;text-align:center;backdrop-filter:blur(4px);
+  transition:transform .5s cubic-bezier(.22,1,.36,1), box-shadow .5s;
+}
+.pod .badge{
+  position:absolute;top:-2.4vh;left:50%;transform:translateX(-50%);
+  width:4.6vh;height:4.6vh;min-width:40px;min-height:40px;border-radius:14px;
+  display:flex;align-items:center;justify-content:center;font-family:var(--font-head);font-weight:700;
+  font-size:2.2vh;color:#04333b;box-shadow:0 6px 20px rgba(0,0,0,.35);
+}
+.pod--1{transform:translateY(-2.4vh)}
+.pod--1 .badge{background:var(--gold)}
+.pod--1{border-color:rgba(255,194,75,.5);box-shadow:0 0 60px rgba(255,194,75,.18)}
+.pod--2 .badge{background:var(--silver)}
+.pod--2{border-color:rgba(203,215,221,.4)}
+.pod--3 .badge{background:var(--bronze)}
+.pod--3{border-color:rgba(224,138,75,.4)}
+.pod .rank-word{font-family:var(--font-head);text-transform:uppercase;letter-spacing:.12em;
+  color:var(--lb-ink-dim);font-size:clamp(.65rem,1.4vh,.9rem);margin-top:1.2vh}
+.pod .name{font-family:var(--font-head);font-weight:700;text-transform:uppercase;
+  font-size:clamp(1.1rem,3.1vh,2.3rem);line-height:1.05;margin:.4vh 0;word-break:break-word}
+.pod--1 .name{font-size:clamp(1.3rem,3.8vh,2.9rem)}
+.pod .pts{font-family:var(--font-head);font-weight:700;color:var(--brand);
+  font-size:clamp(1.4rem,3.6vh,2.6rem);font-variant-numeric:tabular-nums}
+.pod .pts small{color:var(--lb-ink-dim);font-size:.5em;font-weight:600}
+.pod .bar{height:1vh;border-radius:999px;margin-top:1vh;background:linear-gradient(90deg,var(--brand),var(--brand-700))}
+.pod--2 .bar,.pod--3 .bar{opacity:.5}
+.pod.bumped{animation:podBump .6s ease}
+@keyframes podBump{0%{transform:translateY(var(--y,0)) scale(1)}30%{transform:translateY(var(--y,0)) scale(1.04)}100%{transform:translateY(var(--y,0)) scale(1)}}
+
+.list{flex:1;position:relative;overflow:hidden;--cols:1;--rows:10;--rh:1}
+.list-inner{position:absolute;inset:0;display:grid;
+  grid-template-columns:repeat(var(--cols),1fr);
+  grid-template-rows:repeat(var(--rows),min-content);
+  grid-auto-flow:column;
+  gap:calc(.9vh * var(--rh)) 1.6vw;align-content:start}
+
+.rowx{
+  display:grid;grid-template-columns:3.4vw 1fr auto;align-items:center;gap:1vw;
+  background:var(--lb-card);border:1px solid var(--lb-line);border-radius:12px;
+  padding:calc(1vh * var(--rh)) 1.3vw;
+  will-change:transform;
+}
+.rowx .rk{font-family:var(--font-head);font-weight:700;font-size:calc(clamp(1rem,2.5vh,1.8rem) * var(--rh));
+  color:var(--lb-ink-dim);text-align:center;font-variant-numeric:tabular-nums}
+.rowx .nm{font-family:var(--font-head);font-weight:600;text-transform:uppercase;
+  font-size:calc(clamp(1rem,2.6vh,1.9rem) * var(--rh));letter-spacing:.02em;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.rowx .ps{font-family:var(--font-head);font-weight:700;font-variant-numeric:tabular-nums;
+  font-size:calc(clamp(1.1rem,2.8vh,2rem) * var(--rh));color:var(--brand)}
+.rowx .mv{display:inline-block;width:1.4vw;min-width:12px;text-align:center;font-size:.75em}
+.mv.up{color:var(--gold)} .mv.down{color:var(--lb-ink-dim)} .mv.flat{opacity:0}
+.rowx.pts-bump{animation:ptsBump .8s ease}
+@keyframes ptsBump{0%{background:rgba(0,187,214,.28);border-color:var(--brand)}100%{background:var(--lb-card);border-color:var(--lb-line)}}
+
+.lb-empty{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;color:var(--lb-ink-dim);gap:1rem}
+.lb-empty .big{font-size:12vh}
+
+.lb-foot{flex:none;text-align:center;color:var(--lb-ink-dim);font-size:clamp(.7rem,1.5vh,.95rem);
+  padding-top:1.4vh;font-family:var(--font-head);letter-spacing:.14em;text-transform:uppercase}
+
+.confetti{position:fixed;inset:0;pointer-events:none;overflow:hidden;z-index:20}
+.confetti i{position:absolute;top:-5vh;width:.8vw;height:1.4vh;opacity:.9;animation:fall linear forwards}
+@keyframes fall{to{transform:translateY(110vh) rotate(720deg);opacity:.2}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}
+  .confetti{display:none}
+}
+
+.brandmark,.mark{object-fit:contain;aspect-ratio:1}
+.launch .brandmark{width:120px;height:auto}
+.top .mark{width:44px;height:44px}
+.lb-head .mark{width:5.4vh;height:5.4vh;min-width:44px;min-height:44px}
+.launch .links{margin-top:1.4rem;display:flex;gap:1.2rem;justify-content:center;flex-wrap:wrap}
+.launch .links a{color:#9fc7cf;text-decoration:none;font-family:var(--font-head);text-transform:uppercase;letter-spacing:.12em;font-size:.85rem}
+.launch .links a:hover{color:var(--brand)}
+.top .home{font-size:.82rem;color:var(--ink-soft);text-decoration:none;font-weight:600}
+.top .home:hover{color:var(--brand-700)}
+</style>
+  </head>
+  <body>
+<script is:inline>
+/* nastav režim co nejdřív, ať nebliká špatná obrazovka */
+(function(){
+  try{
+    var h=(location.hash||'').replace(/^#\/?/,'').toLowerCase();
+    var m = h.indexOf('tabule')===0 ? 'admin-mode'
+          : (h.indexOf('leaderboard')===0 || h.indexOf('board')===0) ? 'lb-mode'
+          : 'launch-mode';
+    if(document.body) document.body.className = m;
+    else document.addEventListener('DOMContentLoaded',function(){document.body.className=m;});
+  }catch(e){}
+})();
+</script>
+
+<!-- ===================== ROZCESTNÍK ===================== -->
+<main class="launch" id="view-launch">
+  <img class="brandmark" src="/images/maraton/kostka-tyrkys.png" alt="Kostka" width="1080" height="1080">
+  <h1>Kostka <span>·</span> maraton her</h1>
+  <div class="sub">průběžné bodování</div>
+
+  <div class="cards">
+    <a class="pick" href="#/tabule">
+      <div class="ico">✍️</div>
+      <div class="k">Tabule</div>
+      <div class="d">Zadávání bodů k jednotlivým jménům. Otevři na počítači, kde sedí zapisovatel. <b>Jen jedno okno Tabule</b> — tím se vyhneš přepisování hodnot.</div>
+    </a>
+    <a class="pick" href="#/leaderboard" id="pickBoard">
+      <div class="ico">🏆</div>
+      <div class="k">Leaderboard</div>
+      <div class="d">Živé pořadí s bednou vítězů a animací. Otevři v <b>druhém okně</b>, přetáhni ho na projektor / druhou obrazovku a dej fullscreen (<kbd>F11</kbd>). Každý zápis na Tabuli se tu ukáže okamžitě.</div>
+    </a>
+  </div>
+
+  <div class="foot">
+    Obě okna musí běžet <b>ve stejném prohlížeči na stejném počítači</b> (typicky notebook + projektor jako druhá obrazovka) –
+    propojují se přímo v prohlížeči. Data zůstávají v tomhle prohlížeči i po zavření okna.<br>
+    Průběžnou zálohu (JSON / CSV) uděláš na Tabuli tlačítkem <b>Záloha</b>.
+  </div>
+  <div class="links"><a href="/admin">← Admin</a><a href="/">Web Kostka TCG</a></div>
+</main>
+
+<!-- ===================== TABULE ===================== -->
+<div id="view-admin">
+<div class="app">
+  <header class="top">
+    <img class="mark" src="/images/maraton/kostka-tyrkys.png" alt="Kostka" width="1080" height="1080">
+    <div class="title"><b id="evtName">KOSTKA</b><span id="evtSub">MARATON HER · TABULE</span></div>
+    <div class="spacer"></div>
+    <a class="home" href="#/">⌂ Rozcestník</a>
+    <div class="status"><span class="dot" id="syncDot"></span><span id="syncText">Ukládá se automaticky</span></div>
+    <button class="btn" id="btnRace">▶ Spustit maraton</button>
+    <button class="btn btn--primary" id="btnBoard">🏆 Otevřít leaderboard</button>
+  </header>
+
+  <div class="summary" id="summary"></div>
+
+  <div class="toolbar">
+    <button class="btn btn--primary" id="btnAdd">+ Přidat účastníka</button>
+    <button class="btn" id="btnImport">Hromadně / import</button>
+    <button class="btn" id="btnUndo">↩︎ Zpět</button>
+    <div class="spacer"></div>
+    <div class="search"><input type="search" id="search" placeholder="Hledat jméno…" autocomplete="off"></div>
+    <select class="btn" id="sortMode" title="Řazení tabulky">
+      <option value="total">Řadit dle bodů</option>
+      <option value="name">Řadit dle jména</option>
+      <option value="added">Řadit dle přidání</option>
+    </select>
+    <button class="btn" id="btnBackup">⬇︎ Záloha</button>
+    <button class="btn" id="btnSettings">⚙︎ Nastavení</button>
+  </div>
+
+  <div class="table-wrap">
+    <table class="grid">
+      <thead>
+        <tr>
+          <th class="col-rank">#</th>
+          <th class="col-name">Účastník</th>
+          <th class="col-paid" title="Zaplaceno startovné">Start.</th>
+          <th class="col-tasks">Úkoly <small id="hTask"></small></th>
+          <th class="col-tiers">Hry a umístění <small id="hTiers"></small></th>
+          <th class="col-manual">Ruční</th>
+          <th class="col-total">Celkem</th>
+          <th class="col-menu"></th>
+        </tr>
+      </thead>
+      <tbody id="rows"></tbody>
+    </table>
+    <div class="empty" id="empty" hidden>
+      <div class="big">🎲</div>
+      <div>Zatím žádní účastníci. Přidej je tlačítkem <b>+ Přidat účastníka</b> nebo <b>Hromadně / import</b>.</div>
+    </div>
+  </div>
+
+  <details class="logbox">
+    <summary>Historie změn</summary>
+    <div class="items" id="logItems"></div>
+  </details>
+</div>
+
+<div class="modal-backdrop" id="mEdit">
+  <div class="modal">
+    <div class="modal-head"><h3 id="mEditTitle">Přidat účastníka</h3><button class="btn btn--ghost" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="field-row">
+        <div class="field"><label>Jméno</label><input id="fFirst" autocomplete="off"></div>
+        <div class="field"><label>Příjmení</label><input id="fLast" autocomplete="off"></div>
+      </div>
+      <div class="field"><label>Přezdívka (volitelné)</label><input id="fNick" autocomplete="off"></div>
+      <div class="field">
+        <label>Na leaderboardu zobrazit jako</label>
+        <select id="fMode">
+          <option value="name">Jméno + iniciála příjmení</option>
+          <option value="nick">Přezdívku</option>
+        </select>
+      </div>
+      <label style="display:flex;gap:.5rem;align-items:center;font-weight:600">
+        <input type="checkbox" id="fPaid" style="width:18px;height:18px;accent-color:var(--brand)"> Zaplaceno startovné
+      </label>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn--ghost" data-close>Zrušit</button>
+      <button class="btn btn--primary" id="mEditSave">Uložit</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="mBulk">
+  <div class="modal">
+    <div class="modal-head"><h3>Hromadné přidání</h3><button class="btn btn--ghost" data-close>✕</button></div>
+    <div class="modal-body">
+      <p style="margin-top:0;color:var(--ink-soft)">Jeden účastník na řádek. Formát <code>Jméno Příjmení</code> nebo <code>Jméno Příjmení | přezdívka</code>.</p>
+      <textarea id="bulkText" rows="9" style="width:100%;border:1px solid var(--line);border-radius:9px;padding:.6rem" placeholder="Adam Šťovíček&#10;Petra Novotná | Peťa&#10;Hossein Ashrafi"></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn--ghost" data-close>Zrušit</button>
+      <button class="btn btn--primary" id="bulkAdd">Přidat</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="mSettings">
+  <div class="modal modal--wide">
+    <div class="modal-head"><h3>Nastavení</h3><button class="btn btn--ghost" data-close>✕</button></div>
+    <div class="modal-body">
+      <div class="settings-grid">
+        <div class="mini-field"><label>Název akce</label><input id="sName"></div>
+        <div class="mini-field"><label>Podtitul</label><input id="sSub"></div>
+        <div class="mini-field"><label>Ročník</label><input id="sEdition"></div>
+        <div class="mini-field"><label>Délka maratonu (hodiny)</label><input id="sHours" type="number" min="1" step="1"></div>
+      </div>
+      <p class="mini-lbl" style="margin-top:.5rem">Odpočet spustíš tlačítkem <b>▶ Spustit maraton</b> nahoře. Tady jen nastavíš, jak je dlouhý.</p>
+
+      <h4 class="set-h">Úkoly</h4>
+      <div class="mini-field" style="max-width:180px">
+        <label>Body za splněný úkol</label><input id="sTask" type="number" min="0">
+      </div>
+      <label class="mini-lbl">Seznam úkolů — jeden na řádek (můžeš přejmenovat, přidat, ubrat)</label>
+      <textarea id="sTasks" rows="7" class="set-area" placeholder="Úkol 1&#10;Úkol 2&#10;…"></textarea>
+
+      <h4 class="set-h">Body za hry a umístění podle náročnosti</h4>
+      <table class="diff-table">
+        <thead><tr><th>Obtížnost</th><th>Zahrání hry<br><small>(účast)</small></th><th>1. místo</th><th>2. místo</th><th>3. místo<br><small>/ výhra co-op</small></th></tr></thead>
+        <tbody id="diffRows"></tbody>
+      </table>
+      <p class="mini-lbl">Zapsané umístění se hráči automaticky započítá i jako odehraná hra (body za účast + body za umístění).</p>
+
+      <hr style="border:0;border-top:1px solid var(--line);margin:1.4rem 0">
+      <div style="display:flex;gap:.5rem;flex-wrap:wrap">
+        <button class="btn" id="btnImportJSON">Načíst zálohu (JSON)</button>
+        <button class="btn" id="btnExportCSV">Export výsledků (CSV)</button>
+        <button class="btn" id="btnSnapshots">Obnovit ze snapshotu</button>
+        <button class="btn btn--danger" id="btnResetScores">Vynulovat body</button>
+      </div>
+      <input type="file" id="fileJSON" accept="application/json,.json" hidden>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn--ghost" data-close>Zavřít</button>
+      <button class="btn btn--primary" id="sSave">Uložit nastavení</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="mSnap">
+  <div class="modal">
+    <div class="modal-head"><h3>Obnovit ze snapshotu</h3><button class="btn btn--ghost" data-close>✕</button></div>
+    <div class="modal-body" id="snapList"></div>
+    <div class="modal-foot"><button class="btn btn--ghost" data-close>Zavřít</button></div>
+  </div>
+</div>
+
+<div class="modal-backdrop" id="mOut">
+  <div class="modal">
+    <div class="modal-head"><h3 id="mOutTitle">Záloha</h3><button class="btn btn--ghost" data-close>✕</button></div>
+    <div class="modal-body">
+      <p style="margin-top:0;color:var(--ink-soft)">Soubor <code id="mOutName">kostka.json</code> by se měl stáhnout sám. Pokud se nestáhl, zkopíruj text níže a ulož si ho ručně.</p>
+      <textarea id="mOutText" rows="12" class="out-area" readonly></textarea>
+    </div>
+    <div class="modal-foot">
+      <button class="btn btn--ghost" data-close>Zavřít</button>
+      <button class="btn btn--primary" id="mOutCopy">Kopírovat do schránky</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ===================== LEADERBOARD ===================== -->
+<div id="view-board">
+<div class="board">
+  <header class="lb-head">
+    <img class="mark" src="/images/maraton/kostka-tyrkys.png" alt="Kostka" width="1080" height="1080">
+    <div>
+      <h1 id="lbTitle">KOSTKA <b>·</b> MARATON HER</h1>
+      <div class="edition" id="lbEdition">Průběžné pořadí</div>
+    </div>
+    <div class="spacer"></div>
+    <div class="lb-clock">
+      <div class="time" id="lbClock">--:--</div>
+      <div class="cd" id="lbCountdown" hidden></div>
+    </div>
+  </header>
+
+  <section class="podium" id="podium" hidden></section>
+
+  <section class="list" id="list">
+    <div class="list-inner" id="listInner"></div>
+  </section>
+
+  <div class="lb-empty" id="lbEmpty" hidden>
+    <div class="big">🎲</div>
+    <div>Čeká se na první body…</div>
+  </div>
+
+  <footer class="lb-foot" id="lbFoot">Kostka · maraton deskových her</footer>
+</div>
+</div>
+
+<script is:inline>
+/* ============================================================
+ * store.js — sdílený stav (localStorage tohoto prohlížeče)
+ * ========================================================== */
+(function (global) {
+  'use strict';
+
+  var KEY = 'kostka-maraton-v1';
+  var SNAP_KEY = 'kostka-maraton-snapshots-v1';
+  var CH = 'kostka-maraton-sync-v1';
+
+  function defaultTasks() {
+    var a = [];
+    for (var i = 1; i <= 12; i++) a.push({ id: 't' + i, label: 'Úkol ' + i });
+    return a;
+  }
+  function defaultDifficulties() {
+    return [
+      { id: 'dn', name: 'Deskonoob',     play: 2,  p1: 5,  p2: 3,  p3: 2 },
+      { id: 'mp', name: 'Medium play',   play: 5,  p1: 10, p2: 5,  p3: 3 },
+      { id: 'kp', name: 'Kostka profík', play: 12, p1: 15, p2: 10, p3: 5 }
+    ];
+  }
+
+  var DEFAULT_STATE = {
+    version: 2,
+    rev: 0,
+    updatedAt: 0,
+    settings: {
+      eventName: 'KOSTKA',
+      subtitle: 'MARATON HER',
+      edition: String(new Date().getFullYear()),
+      pointsPerTask: 10,
+      tasks: defaultTasks(),
+      difficulties: defaultDifficulties(),
+      raceHours: 24,
+      raceStartAt: null,
+      sortMode: 'total'
+    },
+    participants: [],
+    log: []
+  };
+
+  function clone(o) { return JSON.parse(JSON.stringify(o)); }
+  function now() { return Date.now(); }
+  function uid() {
+    return 'p' + Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  }
+  function num(v, d) { var n = Number(v); return isFinite(n) ? n : (d || 0); }
+
+  function tierIds(s) { return (s.difficulties || []).map(function (d) { return d.id; }); }
+
+  function migrate(s) {
+    var d = clone(DEFAULT_STATE);
+    if (!s || typeof s !== 'object') return d;
+    d.rev = s.rev || 0;
+    d.updatedAt = s.updatedAt || 0;
+
+    var ss = s.settings || {};
+    d.settings.eventName = ss.eventName || d.settings.eventName;
+    d.settings.subtitle = ss.subtitle != null ? ss.subtitle : d.settings.subtitle;
+    d.settings.edition = ss.edition != null ? ss.edition : d.settings.edition;
+    d.settings.pointsPerTask = Math.max(0, num(ss.pointsPerTask, 10));
+    d.settings.raceHours = Math.max(1, num(ss.raceHours, 24));
+    d.settings.raceStartAt = ss.raceStartAt || null;
+    if (!d.settings.raceStartAt && ss.countdownTarget) {
+      var end = new Date(ss.countdownTarget).getTime();
+      if (isFinite(end)) d.settings.raceStartAt = end - d.settings.raceHours * 3600e3;
+    }
+    d.settings.sortMode = ss.sortMode || 'total';
+
+    if (Array.isArray(ss.tasks) && ss.tasks.length) {
+      d.settings.tasks = ss.tasks.map(function (t, i) {
+        if (typeof t === 'string') return { id: 't' + (i + 1), label: t };
+        return { id: t.id || ('t' + (i + 1)), label: t.label || ('Úkol ' + (i + 1)) };
+      });
+    }
+    if (Array.isArray(ss.difficulties) && ss.difficulties.length) {
+      var defmap = {}; defaultDifficulties().forEach(function (x) { defmap[x.id] = x; });
+      d.settings.difficulties = ss.difficulties.map(function (x, i) {
+        var base = defmap[x.id] || { id: x.id || ('d' + (i + 1)), name: 'Obtížnost ' + (i + 1), play: 0, p1: 0, p2: 0, p3: 0 };
+        return {
+          id: base.id, name: x.name || base.name,
+          play: Math.max(0, num(x.play, base.play)),
+          p1: Math.max(0, num(x.p1, base.p1)),
+          p2: Math.max(0, num(x.p2, base.p2)),
+          p3: Math.max(0, num(x.p3, base.p3))
+        };
+      });
+    }
+
+    var TIDS = tierIds(d.settings);
+    var TCOUNT = d.settings.tasks.length;
+
+    d.participants = (s.participants || []).map(function (p) {
+      var tasksDone;
+      if (Array.isArray(p.tasksDone)) {
+        tasksDone = p.tasksDone.filter(function (i) { return i >= 0 && i < TCOUNT; });
+      } else {
+        var oldN = Math.max(0, p.tasks | 0);
+        tasksDone = [];
+        for (var k = 0; k < Math.min(oldN, TCOUNT); k++) tasksDone.push(k);
+      }
+
+      var games = {}, places = {};
+      TIDS.forEach(function (t) { games[t] = 0; places[t] = [0, 0, 0]; });
+      if (p.games && typeof p.games === 'object') {
+        TIDS.forEach(function (t) { games[t] = Math.max(0, num(p.games[t], 0)); });
+      } else if (typeof p.games === 'number' && p.games > 0 && TIDS.length) {
+        games[TIDS[Math.min(1, TIDS.length - 1)]] = p.games;
+      }
+      if (p.places && !Array.isArray(p.places) && typeof p.places === 'object') {
+        TIDS.forEach(function (t) {
+          if (Array.isArray(p.places[t])) {
+            places[t] = [Math.max(0, p.places[t][0] | 0), Math.max(0, p.places[t][1] | 0), Math.max(0, p.places[t][2] | 0)];
+          }
+        });
+        if (('1' in p.places || 1 in p.places) && TIDS.length) {
+          var mid = TIDS[Math.min(1, TIDS.length - 1)];
+          places[mid] = [
+            Math.max(places[mid][0], (p.places[1] | 0)),
+            Math.max(places[mid][1], (p.places[2] | 0)),
+            Math.max(places[mid][2], (p.places[3] | 0))
+          ];
+        }
+      }
+
+      return {
+        id: p.id || uid(),
+        firstName: p.firstName || '',
+        lastName: p.lastName || '',
+        nickname: p.nickname || '',
+        displayMode: p.displayMode === 'nick' ? 'nick' : 'name',
+        paid: !!p.paid,
+        tasksDone: tasksDone,
+        games: games,
+        places: places,
+        manual: num(p.manual, 0),
+        createdAt: p.createdAt || now()
+      };
+    });
+
+    d.log = (s.log || []).slice(0, 400);
+    return d;
+  }
+
+  var Store = {
+    state: null,
+    _channel: null,
+    _listeners: [],
+    _writer: false,
+
+    init: function (opts) {
+      opts = opts || {};
+      this._writer = !!opts.writer;
+      if (this.state) return this;
+      this.state = this._read();
+      var self = this;
+
+      try {
+        this._channel = new BroadcastChannel(CH);
+        this._channel.onmessage = function (e) {
+          if (e.data && e.data.type === 'state' && e.data.rev > self.state.rev) {
+            self.state = migrate(e.data.state);
+            self._emit('remote');
+          }
+          if (e.data && e.data.type === 'ping' && self._writer) self._broadcast();
+        };
+      } catch (err) { /* fallback: 'storage' event */ }
+
+      global.addEventListener('storage', function (e) {
+        if (e.key === KEY && e.newValue) {
+          try {
+            var incoming = migrate(JSON.parse(e.newValue));
+            if (incoming.rev >= self.state.rev) { self.state = incoming; self._emit('remote'); }
+          } catch (x) {}
+        }
+      });
+
+      if (!this._writer && this._channel) {
+        try { this._channel.postMessage({ type: 'ping' }); } catch (x) {}
+      }
+      return this;
+    },
+
+    _read: function () {
+      try {
+        var raw = localStorage.getItem(KEY);
+        if (raw) return migrate(JSON.parse(raw));
+      } catch (e) {}
+      return clone(DEFAULT_STATE);
+    },
+
+    _persist: function () {
+      this.state.rev++;
+      this.state.updatedAt = now();
+      try { localStorage.setItem(KEY, JSON.stringify(this.state)); }
+      catch (e) { alert('Nepodařilo se uložit data (localStorage). Zkontroluj místo v prohlížeči.'); }
+      this._snapshot();
+      this._broadcast();
+      this._emit('local');
+    },
+
+    _broadcast: function () {
+      if (!this._channel) return;
+      try { this._channel.postMessage({ type: 'state', rev: this.state.rev, state: this.state }); } catch (e) {}
+    },
+
+    _lastSnap: 0,
+    _snapshot: function (force) {
+      // Plný stav ×25 by v localStorage zabral moc místa – snapshot nejvýš 1× za minutu.
+      if (!force && now() - this._lastSnap < 60e3) return;
+      this._lastSnap = now();
+      try {
+        var arr = JSON.parse(localStorage.getItem(SNAP_KEY) || '[]');
+        arr.unshift({ ts: now(), state: this.state });
+        localStorage.setItem(SNAP_KEY, JSON.stringify(arr.slice(0, 25)));
+      } catch (e) {}
+    },
+    reload: function () {
+      var fresh = this._read();
+      if (fresh.rev > this.state.rev) { this.state = fresh; this._emit('remote'); }
+    },
+    snapshots: function () {
+      try { return JSON.parse(localStorage.getItem(SNAP_KEY) || '[]'); } catch (e) { return []; }
+    },
+    restoreSnapshot: function (ts) {
+      var snap = this.snapshots().find(function (s) { return s.ts === ts; });
+      if (!snap) return false;
+      this._snapshot(true);
+      this.state = migrate(snap.state);
+      this._persist();
+      return true;
+    },
+
+    subscribe: function (fn) { this._listeners.push(fn); return fn; },
+    _emit: function (origin) {
+      var st = this.state;
+      this._listeners.forEach(function (fn) { try { fn(st, origin); } catch (e) { console.error(e); } });
+    },
+
+    diff: function (id) { return this.state.settings.difficulties.find(function (d) { return d.id === id; }); },
+
+    raceInfo: function () {
+      var s = this.state.settings;
+      var hours = Math.max(1, num(s.raceHours, 24));
+      var durMs = hours * 3600e3;
+      if (!s.raceStartAt) {
+        return { started: false, done: false, hours: hours, durationMs: durMs, remainingMs: durMs, elapsedMs: 0 };
+      }
+      var elapsed = Date.now() - s.raceStartAt;
+      var remaining = durMs - elapsed;
+      return {
+        started: true,
+        done: remaining <= 0,
+        hours: hours,
+        durationMs: durMs,
+        startAt: s.raceStartAt,
+        endAt: s.raceStartAt + durMs,
+        elapsedMs: Math.max(0, elapsed),
+        remainingMs: Math.max(0, remaining)
+      };
+    },
+
+    tierPoints: function (p, d) {
+      var g = (p.games && p.games[d.id]) || 0;
+      var pl = (p.places && p.places[d.id]) || [0, 0, 0];
+      return g * d.play + pl[0] * d.p1 + pl[1] * d.p2 + pl[2] * d.p3;
+    },
+    tierGamesTotal: function (p) {
+      var s = 0; (this.state.settings.difficulties).forEach(function (d) {
+        s += (p.games && p.games[d.id]) || 0;
+      });
+      return s;
+    },
+
+    pointsOf: function (p) {
+      var s = this.state.settings, self = this;
+      var pts = (p.tasksDone ? p.tasksDone.length : 0) * s.pointsPerTask;
+      s.difficulties.forEach(function (d) { pts += self.tierPoints(p, d); });
+      return pts + num(p.manual, 0);
+    },
+
+    taskPoints: function (p) {
+      return (p.tasksDone ? p.tasksDone.length : 0) * this.state.settings.pointsPerTask;
+    },
+
+    displayName: function (p) {
+      if (p.displayMode === 'nick' && p.nickname.trim()) return p.nickname.trim();
+      var fn = (p.firstName || '').trim();
+      var ln = (p.lastName || '').trim();
+      if (!ln) return fn || p.nickname || '—';
+      var base = fn ? fn + ' ' + ln.charAt(0).toUpperCase() + '.' : ln;
+      var clash = this.state.participants.filter(function (o) {
+        if (o.id === p.id) return false;
+        if (o.displayMode === 'nick' && o.nickname.trim()) return false;
+        var ofn = (o.firstName || '').trim(), oln = (o.lastName || '').trim();
+        return ofn.toLowerCase() === fn.toLowerCase() &&
+               oln.charAt(0).toLowerCase() === ln.charAt(0).toLowerCase();
+      });
+      if (clash.length && fn) {
+        for (var n = 2; n <= ln.length; n++) {
+          var cand = fn + ' ' + ln.slice(0, n) + '.';
+          var still = clash.some(function (o) {
+            return (fn + ' ' + (o.lastName || '').slice(0, n) + '.').toLowerCase() === cand.toLowerCase();
+          });
+          if (!still) return cand;
+        }
+        return fn + ' ' + ln;
+      }
+      return base;
+    },
+
+    ranking: function () {
+      var self = this;
+      var list = this.state.participants.map(function (p) {
+        return { p: p, points: self.pointsOf(p), name: self.displayName(p) };
+      });
+      list.sort(function (a, b) {
+        if (b.points !== a.points) return b.points - a.points;
+        return a.p.createdAt - b.p.createdAt;
+      });
+      var rank = 0, prev = null;
+      list.forEach(function (row, i) {
+        if (prev === null || row.points !== prev) rank = i + 1;
+        row.rank = rank; prev = row.points;
+      });
+      return list;
+    },
+
+    _find: function (id) { return this.state.participants.find(function (p) { return p.id === id; }); },
+    _pushLog: function (e) {
+      e.id = 'l' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      e.ts = now();
+      this.state.log.unshift(e);
+      this.state.log = this.state.log.slice(0, 400);
+    },
+
+    addParticipant: function (data) {
+      var s = this.state.settings, games = {}, places = {};
+      s.difficulties.forEach(function (d) { games[d.id] = 0; places[d.id] = [0, 0, 0]; });
+      var p = {
+        id: uid(),
+        firstName: (data.firstName || '').trim(),
+        lastName: (data.lastName || '').trim(),
+        nickname: (data.nickname || '').trim(),
+        displayMode: data.displayMode === 'nick' ? 'nick' : 'name',
+        paid: !!data.paid,
+        tasksDone: [], games: games, places: places, manual: 0,
+        createdAt: now()
+      };
+      this.state.participants.push(p);
+      this._pushLog({ type: 'add', participantId: p.id, label: this.displayName(p) });
+      this._persist();
+      return p;
+    },
+
+    addMany: function (rows) {
+      var self = this, s = this.state.settings, added = 0;
+      rows.forEach(function (r) {
+        if (!r.firstName && !r.lastName && !r.nickname) return;
+        var games = {}, places = {};
+        s.difficulties.forEach(function (d) { games[d.id] = 0; places[d.id] = [0, 0, 0]; });
+        self.state.participants.push({
+          id: uid(),
+          firstName: (r.firstName || '').trim(),
+          lastName: (r.lastName || '').trim(),
+          nickname: (r.nickname || '').trim(),
+          displayMode: r.nickname && !r.firstName ? 'nick' : 'name',
+          paid: false, tasksDone: [], games: games, places: places, manual: 0,
+          createdAt: now() + added
+        });
+        added++;
+      });
+      if (added) { this._pushLog({ type: 'import', count: added }); this._persist(); }
+      return added;
+    },
+
+    updateParticipant: function (id, patch) {
+      var p = this._find(id); if (!p) return;
+      ['firstName', 'lastName', 'nickname'].forEach(function (k) {
+        if (k in patch) p[k] = (patch[k] || '').trim();
+      });
+      if ('displayMode' in patch) p.displayMode = patch.displayMode === 'nick' ? 'nick' : 'name';
+      if ('paid' in patch) p.paid = !!patch.paid;
+      this._persist();
+    },
+
+    removeParticipant: function (id) {
+      var p = this._find(id); if (!p) return;
+      var label = this.displayName(p);
+      this.state.participants = this.state.participants.filter(function (x) { return x.id !== id; });
+      this._pushLog({ type: 'remove', label: label });
+      this._persist();
+    },
+
+    toggleTask: function (id, index) {
+      var p = this._find(id); if (!p) return;
+      var i = p.tasksDone.indexOf(index);
+      var done;
+      if (i >= 0) { p.tasksDone.splice(i, 1); done = false; }
+      else { p.tasksDone.push(index); p.tasksDone.sort(function (a, b) { return a - b; }); done = true; }
+      var task = this.state.settings.tasks[index];
+      this._pushLog({
+        type: 'task', participantId: p.id, label: this.displayName(p),
+        index: index, taskLabel: task ? task.label : ('Úkol ' + (index + 1)),
+        done: done, deltaPts: (done ? 1 : -1) * this.state.settings.pointsPerTask
+      });
+      this._persist();
+    },
+
+    bump: function (id, kind, dir, opts) {
+      var p = this._find(id); if (!p) return;
+      opts = opts || {};
+      var applied = 0, gameApplied = 0, deltaPts = 0, parts = kind.split(':');
+
+      if (parts[0] === 'game') {
+        var tG = parts[1], dG = this.diff(tG); if (!dG) return;
+        var plG = (p.places && p.places[tG]) || [0, 0, 0];
+        var minG = (plG[0] || 0) + (plG[1] || 0) + (plG[2] || 0);
+        var nv = Math.max(minG, (p.games[tG] || 0) + dir); applied = nv - (p.games[tG] || 0);
+        p.games[tG] = nv; deltaPts = applied * dG.play;
+      } else if (parts[0] === 'place') {
+        var tP = parts[1], slot = parseInt(parts[2], 10), dP = this.diff(tP); if (!dP) return;
+        if (!p.places[tP]) p.places[tP] = [0, 0, 0];
+        var cur = p.places[tP][slot] || 0;
+        var np = Math.max(0, cur + dir); applied = np - cur;
+        p.places[tP][slot] = np;
+        gameApplied = Math.max(-(p.games[tP] || 0), applied);
+        p.games[tP] = (p.games[tP] || 0) + gameApplied;
+        deltaPts = applied * [dP.p1, dP.p2, dP.p3][slot] + gameApplied * dP.play;
+      } else if (parts[0] === 'manual') {
+        applied = dir; p.manual = num(p.manual, 0) + dir; deltaPts = dir;
+      } else return;
+
+      if (applied === 0 && parts[0] !== 'manual') return;
+      this._pushLog({
+        type: 'bump', participantId: p.id, label: this.displayName(p),
+        kind: kind, applied: applied, gameApplied: gameApplied, deltaPts: deltaPts, note: opts.note || ''
+      });
+      this._persist();
+    },
+
+    undoLast: function () {
+      var entry = this.state.log.find(function (e) {
+        return !e.undone && (e.type === 'bump' || e.type === 'task');
+      });
+      if (!entry) return false;
+      var p = this._find(entry.participantId);
+      if (p) {
+        if (entry.type === 'task') {
+          var i = p.tasksDone.indexOf(entry.index);
+          if (entry.done && i >= 0) p.tasksDone.splice(i, 1);
+          else if (!entry.done && i < 0) { p.tasksDone.push(entry.index); p.tasksDone.sort(function (a, b) { return a - b; }); }
+        } else {
+          var parts = entry.kind.split(':');
+          if (parts[0] === 'game') p.games[parts[1]] = Math.max(0, (p.games[parts[1]] || 0) - entry.applied);
+          else if (parts[0] === 'place') {
+            var slot = parseInt(parts[2], 10);
+            if (!p.places[parts[1]]) p.places[parts[1]] = [0, 0, 0];
+            p.places[parts[1]][slot] = Math.max(0, (p.places[parts[1]][slot] || 0) - entry.applied);
+            if (entry.gameApplied) p.games[parts[1]] = Math.max(0, (p.games[parts[1]] || 0) - entry.gameApplied);
+          } else if (parts[0] === 'manual') p.manual = num(p.manual, 0) - entry.applied;
+        }
+      }
+      entry.undone = true;
+      this._pushLog({ type: 'undo', label: entry.label, ref: entry.id });
+      this._persist();
+      return true;
+    },
+
+    startRace: function () {
+      this.state.settings.raceStartAt = now();
+      this._pushLog({ type: 'race-start', hours: this.state.settings.raceHours });
+      this._persist();
+    },
+    restartRace: function () {
+      this.state.settings.raceStartAt = now();
+      this._pushLog({ type: 'race-restart', hours: this.state.settings.raceHours });
+      this._persist();
+    },
+    cancelRace: function () {
+      this.state.settings.raceStartAt = null;
+      this._pushLog({ type: 'race-cancel' });
+      this._persist();
+    },
+
+    updateSettings: function (patch) {
+      var s = this.state.settings;
+      ['eventName', 'subtitle', 'edition', 'pointsPerTask', 'sortMode'].forEach(function (k) {
+        if (k in patch) s[k] = patch[k];
+      });
+      if ('raceHours' in patch) s.raceHours = Math.max(1, num(patch.raceHours, 24));
+      if (patch.difficulties) {
+        s.difficulties = patch.difficulties.map(function (d, i) {
+          var old = s.difficulties[i] || {};
+          return {
+            id: old.id || d.id || ('d' + (i + 1)),
+            name: d.name || old.name,
+            play: Math.max(0, num(d.play, 0)),
+            p1: Math.max(0, num(d.p1, 0)),
+            p2: Math.max(0, num(d.p2, 0)),
+            p3: Math.max(0, num(d.p3, 0))
+          };
+        });
+      }
+      if (patch.tasks) {
+        var newTasks = patch.tasks.map(function (label, i) {
+          return { id: (s.tasks[i] && s.tasks[i].id) || ('t' + (i + 1) + '_' + Math.random().toString(36).slice(2, 5)), label: label };
+        });
+        var oldLen = s.tasks.length, newLen = newTasks.length;
+        s.tasks = newTasks;
+        if (newLen < oldLen) {
+          this.state.participants.forEach(function (p) {
+            p.tasksDone = p.tasksDone.filter(function (idx) { return idx < newLen; });
+          });
+        }
+      }
+      this._persist();
+    },
+
+    resetScores: function () {
+      this._snapshot(true);
+      var s = this.state.settings;
+      this.state.participants.forEach(function (p) {
+        p.tasksDone = [];
+        p.games = {}; p.places = {};
+        s.difficulties.forEach(function (d) { p.games[d.id] = 0; p.places[d.id] = [0, 0, 0]; });
+        p.manual = 0;
+      });
+      this._pushLog({ type: 'reset-scores' });
+      this._persist();
+    },
+
+    replaceState: function (obj) { this._snapshot(true); this.state = migrate(obj); this._persist(); },
+
+    exportJSON: function () { return JSON.stringify(this.state, null, 2); },
+
+    exportCSV: function () {
+      var self = this, diffs = this.state.settings.difficulties;
+      var head = ['poradi', 'jmeno', 'prezdivka', 'zobrazeno', 'startovne', 'ukoly_splneno'];
+      diffs.forEach(function (d) {
+        head.push(d.id + '_ucast', d.id + '_1', d.id + '_2', d.id + '_3');
+      });
+      head.push('rucni', 'celkem');
+      var rows = [head];
+      this.ranking().forEach(function (r) {
+        var p = r.p;
+        var row = [
+          r.rank, (p.firstName + ' ' + p.lastName).trim(), p.nickname, r.name,
+          p.paid ? 'ano' : 'ne', p.tasksDone.length
+        ];
+        diffs.forEach(function (d) {
+          var pl = p.places[d.id] || [0, 0, 0];
+          row.push(p.games[d.id] || 0, pl[0], pl[1], pl[2]);
+        });
+        row.push(p.manual, r.points);
+        rows.push(row);
+      });
+      return rows.map(function (r) {
+        return r.map(function (c) {
+          c = String(c);
+          return /[";\n]/.test(c) ? '"' + c.replace(/"/g, '""') + '"' : c;
+        }).join(';');
+      }).join('\n');
+    }
+  };
+
+  Store.parseBulk = function (text) {
+    return text.split(/\r?\n/).map(function (line) {
+      line = line.trim();
+      if (!line) return null;
+      var nick = '', parts = line.split('|');
+      var namePart = parts[0].trim();
+      if (parts.length > 1) nick = parts.slice(1).join('|').trim();
+      var tokens = namePart.split(/\s+/);
+      if (tokens.length === 1) return { firstName: tokens[0], lastName: '', nickname: nick };
+      return { firstName: tokens.slice(0, -1).join(' '), lastName: tokens[tokens.length - 1], nickname: nick };
+    }).filter(Boolean);
+  };
+
+  global.KMH = Store;
+})(window);
+</script>
+
+<script is:inline>
+/* ============================================================
+ * initAdmin() — obrazovka "Tabule" (jediné zapisující místo)
+ * ========================================================== */
+function initAdmin() {
+  'use strict';
+  if (initAdmin._done) return; initAdmin._done = true;
+  var S = window.KMH.init({ writer: true });
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+  var rowsEl = $('#rows'), emptyEl = $('#empty');
+  var editing = null;
+  var search = '';
+  var flashIds = {};
+
+  function fmtTime(ts) {
+    var d = new Date(ts);
+    return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2);
+  }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  }); }
+
+  function stepper(id, kind, val, mini) {
+    return '<span class="stepper' + (mini ? ' mini' : '') + '" data-id="' + id + '" data-kind="' + kind + '">' +
+      '<button data-dir="-1" aria-label="odebrat"' + (val <= 0 ? ' disabled' : '') + '>−</button>' +
+      '<span class="v">' + val + '</span>' +
+      '<button data-dir="1" aria-label="přidat">+</button></span>';
+  }
+
+  function tasksCell(p) {
+    var tasks = S.state.settings.tasks;
+    var doneSet = {};
+    p.tasksDone.forEach(function (i) { doneSet[i] = true; });
+    var cells = tasks.map(function (t, i) {
+      return '<button class="tk' + (doneSet[i] ? ' done' : '') + '" data-act="task" data-idx="' + i + '" ' +
+        'title="' + esc(t.label) + (doneSet[i] ? ' — splněno' : '') + '">' + (i + 1) + '</button>';
+    }).join('');
+    return '<div class="task-grid">' + cells + '</div>' +
+      '<span class="task-count"><b>' + p.tasksDone.length + '</b>/' + tasks.length +
+      ' · ' + S.taskPoints(p) + ' b</span>';
+  }
+
+  function tiersCell(p) {
+    var diffs = S.state.settings.difficulties;
+    var head = '<thead><tr><th></th><th>hra</th><th>🥇</th><th>🥈</th><th>🥉</th></tr></thead>';
+    var body = diffs.map(function (d) {
+      var pl = p.places[d.id] || [0, 0, 0];
+      return '<tr><th title="' + esc(d.name) + '">' + esc(shortName(d)) + '</th>' +
+        '<td class="tier-play">' + stepper(p.id, 'game:' + d.id, p.games[d.id] || 0, true) + '</td>' +
+        '<td>' + stepper(p.id, 'place:' + d.id + ':0', pl[0], true) + '</td>' +
+        '<td>' + stepper(p.id, 'place:' + d.id + ':1', pl[1], true) + '</td>' +
+        '<td>' + stepper(p.id, 'place:' + d.id + ':2', pl[2], true) + '</td></tr>';
+    }).join('');
+    return '<table class="tiers">' + head + '<tbody>' + body + '</tbody></table>';
+  }
+
+  function shortName(d) {
+    if (d.id && d.id.length <= 3) return d.id.toUpperCase();
+    var w = (d.name || '').trim().split(/\s+/);
+    if (w.length >= 2) return (w[0][0] + w[1][0]).toUpperCase();
+    return (d.name || '').slice(0, 3).toUpperCase();
+  }
+
+  function render(state, origin) {
+    $('#evtName').textContent = state.settings.eventName || 'KOSTKA';
+    $('#evtSub').textContent = (state.settings.subtitle || '') + ' · TABULE';
+    document.title = 'Tabule · ' + (state.settings.eventName || 'Kostka') + ' maraton';
+    $('#hTask').textContent = '(' + state.settings.pointsPerTask + ' b/kus)';
+    $('#hTiers').textContent = state.settings.difficulties.map(function (d) {
+      return shortName(d) + ' ' + d.play + '·' + d.p1 + '/' + d.p2 + '/' + d.p3;
+    }).join('   ·   ');
+    $('#sortMode').value = state.settings.sortMode || 'total';
+
+    var ranking = S.ranking();
+    var rankById = {};
+    ranking.forEach(function (r) { rankById[r.p.id] = r; });
+
+    var view = ranking.slice();
+    var mode = state.settings.sortMode || 'total';
+    if (mode === 'name') view.sort(function (a, b) { return a.name.localeCompare(b.name, 'cs'); });
+    else if (mode === 'added') view.sort(function (a, b) { return a.p.createdAt - b.p.createdAt; });
+
+    if (search) {
+      var q = search.toLowerCase();
+      view = view.filter(function (r) {
+        var p = r.p;
+        return (p.firstName + ' ' + p.lastName + ' ' + p.nickname + ' ' + r.name).toLowerCase().indexOf(q) >= 0;
+      });
+    }
+
+    emptyEl.hidden = state.participants.length > 0;
+    $('.grid').style.display = state.participants.length ? '' : 'none';
+
+    rowsEl.innerHTML = view.map(function (r) {
+      var p = r.p, pts = r.points, rank = rankById[p.id].rank;
+      var medal = (pts > 0 && rank === 1) ? '🥇' : (pts > 0 && rank === 2) ? '🥈' : (pts > 0 && rank === 3) ? '🥉' : rank;
+      var sub = '';
+      if (p.displayMode === 'nick' && p.nickname.trim()) sub = (p.firstName + ' ' + p.lastName).trim();
+      else if (p.nickname.trim()) sub = '„' + p.nickname.trim() + '“';
+
+      return '<tr data-id="' + p.id + '"' + (flashIds[p.id] ? ' class="flash"' : '') + '>' +
+        '<td class="col-rank"><span class="' + (pts > 0 && rank <= 3 ? 'rank-medal' : '') + '">' + medal + '</span></td>' +
+        '<td class="col-name"><div class="name-cell">' +
+          '<div><div class="name-main">' + esc(r.name) + '</div>' +
+          (sub ? '<div class="name-sub">' + esc(sub) + '</div>' : '') + '</div>' +
+          '<button class="name-toggle" data-act="toggleMode" title="Přepnout zobrazení jméno / přezdívka">' +
+            (p.displayMode === 'nick' ? 'přezdívka' : 'jméno') + '</button>' +
+        '</div></td>' +
+        '<td class="col-paid paid-box"><input type="checkbox" data-act="paid"' + (p.paid ? ' checked' : '') + ' title="Startovné"></td>' +
+        '<td class="tasks-cell">' + tasksCell(p) + '</td>' +
+        '<td class="tiers-cell">' + tiersCell(p) + '</td>' +
+        '<td class="col-manual"><button class="manual-btn' + (p.manual ? ' has' : '') + '" data-act="manual">' +
+          (p.manual ? (p.manual > 0 ? '+' : '') + p.manual + ' b' : '+ body') + '</button></td>' +
+        '<td class="col-total"><span class="total-badge">' + pts + '</span></td>' +
+        '<td class="col-menu"><div class="row-menu"><button class="dots" data-act="menu" aria-label="Možnosti">⋯</button></div></td>' +
+      '</tr>';
+    }).join('');
+
+    flashIds = {};
+    renderSummary(state, ranking);
+    renderLog(state);
+  }
+
+  function renderSummary(state, ranking) {
+    var paid = state.participants.filter(function (p) { return p.paid; }).length;
+    var games = state.participants.reduce(function (s, p) { return s + S.tierGamesTotal(p); }, 0);
+    var tasks = state.participants.reduce(function (s, p) { return s + p.tasksDone.length; }, 0);
+    var leader = ranking[0];
+    var cells = [
+      ['Účastníci', state.participants.length],
+      ['Zaplaceno startovné', paid + ' / ' + state.participants.length],
+      ['Odehrané hry / splněné úkoly', games + ' / ' + tasks],
+      ['Vede', leader && leader.points > 0 ? S.displayName(leader.p) + ' · ' + leader.points + ' b' : '—']
+    ];
+    $('#summary').innerHTML = cells.map(function (c) {
+      return '<div class="stat"><div class="n">' + esc(String(c[1])) + '</div><div class="l">' + c[0] + '</div></div>';
+    }).join('');
+  }
+
+  function renderLog(state) {
+    var box = $('#logItems');
+    if (!state.log.length) { box.innerHTML = '<div class="li"><div class="d" style="color:var(--ink-soft)">Zatím žádné změny.</div></div>'; return; }
+    box.innerHTML = state.log.slice(0, 120).map(function (e) {
+      var d = '';
+      if (e.type === 'bump') {
+        var sign = e.deltaPts > 0 ? 'plus' : (e.deltaPts < 0 ? 'minus' : '');
+        d = esc(e.label) + ' — ' + kindLabel(e.kind) +
+          ' <span class="p ' + sign + '">' + (e.deltaPts > 0 ? '+' : '') + e.deltaPts + ' b</span>' +
+          (e.note ? ' <span style="color:var(--ink-soft)">(' + esc(e.note) + ')</span>' : '') +
+          (e.undone ? ' <s style="color:var(--ink-soft)">vzato zpět</s>' : '');
+      } else if (e.type === 'task') {
+        var s2 = e.done ? 'plus' : 'minus';
+        d = esc(e.label) + ' — ' + esc(e.taskLabel) + ' ' + (e.done ? 'splněn' : 'odškrtnut') +
+          ' <span class="p ' + s2 + '">' + (e.deltaPts > 0 ? '+' : '') + e.deltaPts + ' b</span>' +
+          (e.undone ? ' <s style="color:var(--ink-soft)">vzato zpět</s>' : '');
+      }
+      else if (e.type === 'add') d = 'Přidán ' + esc(e.label);
+      else if (e.type === 'remove') d = 'Odebrán ' + esc(e.label);
+      else if (e.type === 'import') d = 'Import ' + e.count + ' účastníků';
+      else if (e.type === 'undo') d = '↩︎ Vráceno zpět: ' + esc(e.label || '');
+      else if (e.type === 'reset-scores') d = 'Body vynulovány';
+      else d = e.type;
+      return '<div class="li"><div class="t">' + fmtTime(e.ts) + '</div><div class="d">' + d + '</div></div>';
+    }).join('');
+  }
+
+  function kindLabel(kind) {
+    var parts = kind.split(':');
+    var d = S.diff(parts[1]);
+    var dn = d ? d.name : parts[1];
+    if (parts[0] === 'game') return 'zahraná hra (' + dn + ')';
+    if (parts[0] === 'place') return ['1.', '2.', '3.'][+parts[2]] + ' místo (' + dn + ', vč. hry)';
+    if (parts[0] === 'manual') return 'ruční';
+    return kind;
+  }
+
+  rowsEl.addEventListener('click', function (e) {
+    var tk = e.target.closest('.tk[data-act="task"]');
+    if (tk) {
+      var tr0 = tk.closest('tr');
+      flashIds[tr0.getAttribute('data-id')] = true;
+      S.toggleTask(tr0.getAttribute('data-id'), parseInt(tk.getAttribute('data-idx'), 10));
+      return;
+    }
+    var stepEl = e.target.closest('.stepper');
+    if (stepEl && e.target.matches('button[data-dir]')) {
+      var dir = parseInt(e.target.getAttribute('data-dir'), 10);
+      flashIds[stepEl.getAttribute('data-id')] = true;
+      S.bump(stepEl.getAttribute('data-id'), stepEl.getAttribute('data-kind'), dir);
+      return;
+    }
+    var act = e.target.getAttribute('data-act');
+    if (!act) return;
+    var tr = e.target.closest('tr'); var id = tr && tr.getAttribute('data-id');
+    if (act === 'toggleMode') {
+      var p = S.state.participants.find(function (x) { return x.id === id; });
+      S.updateParticipant(id, { displayMode: p.displayMode === 'nick' ? 'name' : 'nick' });
+    } else if (act === 'manual') openManualPop(e.target, id);
+    else if (act === 'menu') openRowMenu(e.target, id);
+  });
+
+  rowsEl.addEventListener('change', function (e) {
+    if (e.target.getAttribute('data-act') === 'paid') {
+      var tr = e.target.closest('tr');
+      S.updateParticipant(tr.getAttribute('data-id'), { paid: e.target.checked });
+    }
+  });
+
+  function closePops() { $$('.menu-pop, .pop-manual').forEach(function (x) { x.remove(); }); }
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('.menu-pop') && !e.target.closest('.pop-manual') &&
+        !e.target.closest('#btnRace') &&
+        !e.target.matches('[data-act="menu"]') && !e.target.matches('[data-act="manual"]')) closePops();
+  });
+
+  function openRowMenu(btn, id) {
+    closePops();
+    var pop = document.createElement('div');
+    pop.className = 'menu-pop';
+    pop.innerHTML =
+      '<button data-m="edit">✎ Upravit jméno</button>' +
+      '<button data-m="up">▲ Přesunout nahoru (dřív přidán)</button>' +
+      '<button class="danger" data-m="del">🗑 Smazat účastníka</button>';
+    btn.parentNode.appendChild(pop);
+    pop.addEventListener('click', function (e) {
+      var m = e.target.getAttribute('data-m'); if (!m) return;
+      if (m === 'edit') openEdit(id);
+      if (m === 'del') {
+        var p = S.state.participants.find(function (x) { return x.id === id; });
+        if (confirm('Smazat účastníka „' + S.displayName(p) + '“? Body budou ztraceny.')) S.removeParticipant(id);
+      }
+      if (m === 'up') {
+        var pp = S.state.participants.find(function (x) { return x.id === id; });
+        pp.createdAt = Math.min.apply(null, S.state.participants.map(function (x) { return x.createdAt; })) - 1;
+        S.updateParticipant(id, {});
+      }
+      closePops();
+    });
+  }
+
+  function openManualPop(btn, id) {
+    closePops();
+    var rect = btn.getBoundingClientRect();
+    var pop = document.createElement('div');
+    pop.className = 'pop-manual';
+    pop.innerHTML =
+      '<h4>Ruční úprava bodů</h4>' +
+      '<div class="quick">' +
+        '<button data-q="1">+1</button><button data-q="5">+5</button>' +
+        '<button data-q="10">+10</button><button data-q="-5">−5</button>' +
+      '</div>' +
+      '<input type="number" placeholder="vlastní ± body" id="mNum">' +
+      '<input type="text" placeholder="poznámka (volitelné)" id="mNote">' +
+      '<button class="btn btn--primary" style="width:100%" id="mApply">Přičíst</button>';
+    document.body.appendChild(pop);
+    var top = Math.min(rect.bottom + 6, window.innerHeight - pop.offsetHeight - 8);
+    var left = Math.min(rect.left, window.innerWidth - pop.offsetWidth - 8);
+    pop.style.top = top + 'px'; pop.style.left = Math.max(8, left) + 'px';
+    function apply(val) {
+      val = Math.round(Number(val) || 0);
+      if (!val) return;
+      S.bump(id, 'manual', val, { note: $('#mNote', pop).value.trim() });
+      flashIds[id] = true; closePops();
+    }
+    $$('.quick button', pop).forEach(function (b) { b.addEventListener('click', function () { apply(b.getAttribute('data-q')); }); });
+    $('#mApply', pop).addEventListener('click', function () { apply($('#mNum', pop).value); });
+    $('#mNum', pop).addEventListener('keydown', function (e) { if (e.key === 'Enter') apply(e.target.value); });
+    $('#mNum', pop).focus();
+  }
+
+  function openModal(sel) { $(sel).classList.add('open'); }
+  function closeModal(sel) { $(sel).classList.remove('open'); }
+  $$('[data-close]').forEach(function (b) {
+    b.addEventListener('click', function () { b.closest('.modal-backdrop').classList.remove('open'); });
+  });
+  $$('.modal-backdrop').forEach(function (bd) {
+    bd.addEventListener('click', function (e) { if (e.target === bd) bd.classList.remove('open'); });
+  });
+  document.addEventListener('keydown', function (e) {
+    if (e.key === 'Escape') $$('.modal-backdrop.open').forEach(function (m) { m.classList.remove('open'); });
+  });
+
+  function openEdit(id) {
+    editing = id || null;
+    var p = id ? S.state.participants.find(function (x) { return x.id === id; }) : null;
+    $('#mEditTitle').textContent = id ? 'Upravit účastníka' : 'Přidat účastníka';
+    $('#fFirst').value = p ? p.firstName : '';
+    $('#fLast').value = p ? p.lastName : '';
+    $('#fNick').value = p ? p.nickname : '';
+    $('#fMode').value = p ? p.displayMode : 'name';
+    $('#fPaid').checked = p ? p.paid : false;
+    openModal('#mEdit');
+    setTimeout(function () { $('#fFirst').focus(); }, 60);
+  }
+  $('#mEditSave').addEventListener('click', function () {
+    var data = {
+      firstName: $('#fFirst').value, lastName: $('#fLast').value,
+      nickname: $('#fNick').value, displayMode: $('#fMode').value, paid: $('#fPaid').checked
+    };
+    if (!data.firstName && !data.lastName && !data.nickname) { alert('Vyplň aspoň jméno nebo přezdívku.'); return; }
+    if (editing) S.updateParticipant(editing, data);
+    else S.addParticipant(data);
+    closeModal('#mEdit');
+  });
+  $('#mEdit').addEventListener('keydown', function (e) { if (e.key === 'Enter' && e.target.tagName === 'INPUT') $('#mEditSave').click(); });
+
+  $('#btnAdd').addEventListener('click', function () { openEdit(null); });
+  $('#btnImport').addEventListener('click', function () { $('#bulkText').value = ''; openModal('#mBulk'); });
+  $('#bulkAdd').addEventListener('click', function () {
+    var rows = window.KMH.parseBulk($('#bulkText').value);
+    if (!rows.length) { alert('Nic k přidání.'); return; }
+    var n = S.addMany(rows);
+    closeModal('#mBulk');
+    toast(n + ' účastníků přidáno');
+  });
+
+  $('#btnUndo').addEventListener('click', function () { if (!S.undoLast()) toast('Není co vrátit'); });
+  $('#search').addEventListener('input', function (e) { search = e.target.value; render(S.state); });
+  $('#sortMode').addEventListener('change', function (e) { S.updateSettings({ sortMode: e.target.value }); });
+  $('#btnBoard').addEventListener('click', function () {
+    var url = location.pathname + '#/leaderboard';
+    var w = null;
+    try { w = window.open(url, 'kmh_leaderboard'); } catch (e) {}
+    if (w) return;
+    // Vyskakovací okna blokovaná (typicky uvnitř Artifactu) — otevři leaderboard v tomto okně
+    if (confirm('Prohlížeč zablokoval nové okno. Povol pro tuhle stránku vyskakovací okna, nebo otevři Leaderboard ručně v nové záložce.\n\nOtevřít ho místo toho tady?')) {
+      location.hash = '#/leaderboard';
+    }
+  });
+
+  function hms(ms) {
+    var t = Math.max(0, Math.floor(ms / 1000));
+    var h = Math.floor(t / 3600), m = Math.floor(t % 3600 / 60), s = t % 60;
+    var p = function (n) { return ('0' + n).slice(-2); };
+    return p(h) + ':' + p(m) + ':' + p(s);
+  }
+  function renderRaceBtn() {
+    var b = $('#btnRace'); if (!b) return;
+    var r = S.raceInfo();
+    b.classList.remove('btn--primary', 'btn--danger', 'race-live', 'race-done');
+    if (!r.started) {
+      b.textContent = '▶ Spustit maraton (' + r.hours + ' h)';
+      b.classList.add('btn--primary');
+      b.title = 'Spustí ' + r.hours + 'h odpočet na leaderboardu';
+    } else if (!r.done) {
+      b.textContent = '⏱ ' + hms(r.remainingMs) + ' do konce';
+      b.classList.add('race-live');
+      b.title = 'Klikni pro restart / zrušení odpočtu';
+    } else {
+      b.textContent = '⏱ Maraton dohrán';
+      b.classList.add('race-done');
+      b.title = 'Klikni pro nový start / zrušení';
+    }
+  }
+  $('#btnRace').addEventListener('click', function (e) {
+    var r = S.raceInfo();
+    if (!r.started) {
+      if (confirm('Spustit ' + r.hours + 'hodinový maraton? Od teď běží odpočet na leaderboardu.')) {
+        S.startRace(); toast('Maraton spuštěn — odpočet běží');
+      }
+      return;
+    }
+    closePops();
+    var pop = document.createElement('div');
+    pop.className = 'menu-pop';
+    pop.style.left = 'auto'; pop.style.right = '0';
+    pop.innerHTML =
+      '<button data-m="restart">↻ Restartovat odpočet (' + r.hours + ' h)</button>' +
+      '<button class="danger" data-m="cancel">✕ Zrušit odpočet</button>';
+    e.target.parentNode.style.position = 'relative';
+    e.target.parentNode.appendChild(pop);
+    pop.addEventListener('click', function (ev) {
+      var m = ev.target.getAttribute('data-m'); if (!m) return;
+      if (m === 'restart' && confirm('Restartovat odpočet od teď?')) { S.restartRace(); toast('Odpočet restartován'); }
+      if (m === 'cancel' && confirm('Zrušit odpočet? Leaderboard přestane odpočítávat.')) { S.cancelRace(); toast('Odpočet zrušen'); }
+      closePops();
+    });
+  });
+  setInterval(renderRaceBtn, 1000);
+
+  $('#btnSettings').addEventListener('click', function () {
+    var s = S.state.settings;
+    $('#sName').value = s.eventName; $('#sSub').value = s.subtitle; $('#sEdition').value = s.edition;
+    $('#sTask').value = s.pointsPerTask;
+    $('#sTasks').value = s.tasks.map(function (t) { return t.label; }).join('\n');
+    $('#sHours').value = s.raceHours;
+    $('#diffRows').innerHTML = s.difficulties.map(function (d, i) {
+      return '<tr data-i="' + i + '">' +
+        '<td><input type="text" class="d-name" value="' + esc(d.name) + '"></td>' +
+        '<td><input type="number" min="0" class="d-play" value="' + d.play + '"></td>' +
+        '<td><input type="number" min="0" class="d-p1" value="' + d.p1 + '"></td>' +
+        '<td><input type="number" min="0" class="d-p2" value="' + d.p2 + '"></td>' +
+        '<td><input type="number" min="0" class="d-p3" value="' + d.p3 + '"></td></tr>';
+    }).join('');
+    openModal('#mSettings');
+  });
+  $('#sSave').addEventListener('click', function () {
+    var tasks = $('#sTasks').value.split(/\r?\n/).map(function (x) { return x.trim(); }).filter(Boolean);
+    if (!tasks.length) { alert('Musí zůstat aspoň jeden úkol.'); return; }
+    var diffs = $$('#diffRows tr').map(function (tr) {
+      return {
+        name: $('.d-name', tr).value.trim() || 'Obtížnost',
+        play: parseInt($('.d-play', tr).value, 10) || 0,
+        p1: parseInt($('.d-p1', tr).value, 10) || 0,
+        p2: parseInt($('.d-p2', tr).value, 10) || 0,
+        p3: parseInt($('.d-p3', tr).value, 10) || 0
+      };
+    });
+    var shrinking = tasks.length < S.state.settings.tasks.length;
+    if (shrinking && !confirm('Zkracuješ seznam úkolů. U účastníků se odškrtnou úkoly nad nový počet. Pokračovat?')) return;
+    S.updateSettings({
+      eventName: $('#sName').value.trim() || 'KOSTKA',
+      subtitle: $('#sSub').value.trim(),
+      edition: $('#sEdition').value.trim(),
+      pointsPerTask: Math.max(0, parseInt($('#sTask').value, 10) || 0),
+      tasks: tasks,
+      difficulties: diffs,
+      raceHours: Math.max(1, parseInt($('#sHours').value, 10) || 24)
+    });
+    closeModal('#mSettings');
+    toast('Nastavení uloženo');
+  });
+
+  function saveOut(name, text) {
+    try {
+      var blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob); a.download = name;
+      document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+    } catch (e) {}
+    $('#mOutTitle').textContent = name;
+    $('#mOutName').textContent = name;
+    $('#mOutText').value = text;
+    openModal('#mOut');
+    setTimeout(function () { $('#mOutText').focus(); $('#mOutText').select(); }, 60);
+  }
+  $('#mOutCopy').addEventListener('click', function () {
+    var ta = $('#mOutText');
+    ta.focus(); ta.select();
+    var done = function () { toast('Zkopírováno do schránky'); };
+    var fail = function () { try { document.execCommand('copy'); done(); } catch (e) { toast('Zkopíruj ručně: Ctrl/Cmd + C'); } };
+    if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(ta.value).then(done, fail);
+    else fail();
+  });
+  function stamp() {
+    var d = new Date(), p = function (n) { return ('0' + n).slice(-2); };
+    return d.getFullYear() + p(d.getMonth() + 1) + p(d.getDate()) + '-' + p(d.getHours()) + p(d.getMinutes());
+  }
+  $('#btnBackup').addEventListener('click', function () {
+    saveOut('kostka-zaloha-' + stamp() + '.json', S.exportJSON());
+    toast('Záloha připravena ke zkopírování');
+  });
+  $('#btnExportCSV').addEventListener('click', function () {
+    saveOut('kostka-vysledky-' + stamp() + '.csv', '﻿' + S.exportCSV());
+  });
+  $('#btnImportJSON').addEventListener('click', function () { $('#fileJSON').click(); });
+  $('#fileJSON').addEventListener('change', function (e) {
+    var f = e.target.files[0]; if (!f) return;
+    var r = new FileReader();
+    r.onload = function () {
+      try {
+        var obj = JSON.parse(r.result);
+        if (!confirm('Nahradit současná data obsahem zálohy? Aktuální stav se uloží jako snapshot.')) return;
+        S.replaceState(obj);
+        closeModal('#mSettings');
+        toast('Záloha načtena');
+      } catch (x) { alert('Soubor se nepodařilo načíst: ' + x.message); }
+    };
+    r.readAsText(f);
+    e.target.value = '';
+  });
+  $('#btnResetScores').addEventListener('click', function () {
+    if (confirm('Vynulovat VŠECHNY body všem účastníkům? Jména zůstanou. (Uloží se snapshot.)')) {
+      S.resetScores(); toast('Body vynulovány');
+    }
+  });
+  $('#btnSnapshots').addEventListener('click', function () {
+    var list = S.snapshots();
+    $('#snapList').innerHTML = list.length ? list.map(function (s) {
+      var d = new Date(s.ts);
+      var cnt = (s.state.participants || []).length;
+      return '<div class="li" style="display:flex;justify-content:space-between;align-items:center;padding:.5rem 0;border-bottom:1px solid var(--line)">' +
+        '<span>' + d.toLocaleString('cs') + ' · ' + cnt + ' účastníků</span>' +
+        '<button class="btn btn--sm" data-ts="' + s.ts + '">Obnovit</button></div>';
+    }).join('') : '<p style="color:var(--ink-soft)">Zatím žádné snapshoty.</p>';
+    openModal('#mSnap');
+  });
+  $('#snapList').addEventListener('click', function (e) {
+    var ts = e.target.getAttribute('data-ts'); if (!ts) return;
+    if (confirm('Obnovit stav z tohoto snapshotu?')) {
+      S.restoreSnapshot(parseInt(ts, 10));
+      closeModal('#mSnap'); closeModal('#mSettings');
+      toast('Obnoveno ze snapshotu');
+    }
+  });
+
+  var toastT;
+  function toast(msg) {
+    var t = $('#toast');
+    if (!t) { t = document.createElement('div'); t.id = 'toast';
+      t.style.cssText = 'position:fixed;left:50%;bottom:24px;transform:translateX(-50%);background:#0c1f24;color:#fff;padding:.7rem 1.1rem;border-radius:10px;font-weight:600;z-index:99;box-shadow:var(--shadow-md);opacity:0;transition:opacity .15s';
+      document.body.appendChild(t);
+    }
+    t.textContent = msg; t.style.opacity = '1';
+    clearTimeout(toastT); toastT = setTimeout(function () { t.style.opacity = '0'; }, 1800);
+  }
+
+  (function writerLock() {
+    var LOCK = 'kostka-maraton-writer-lock';
+    var myId = 'w' + Math.random().toString(36).slice(2);
+    function beat() {
+      var raw;
+      try { raw = JSON.parse(localStorage.getItem(LOCK) || 'null'); } catch (e) { raw = null; }
+      var loser = raw && (Date.now() - raw.ts < 6000) && raw.id !== myId && raw.id < myId;
+      var banner = $('#lockWarn');
+      if (loser) {
+        if (!banner) {
+          banner = document.createElement('div');
+          banner.id = 'lockWarn';
+          banner.style.cssText = 'position:sticky;top:0;z-index:30;background:#E0503A;color:#fff;padding:.6rem 1rem;border-radius:10px;margin-bottom:1rem;font-weight:600;text-align:center';
+          banner.textContent = '⚠︎ Zdá se, že Tabule je otevřená ve více oknech. Zapisuj jen v jednom — jinak hrozí přepisování bodů (jako loni). Ostatní okna s Tabulí zavři (Leaderboard nevadí).';
+          $('.app').insertBefore(banner, $('.summary'));
+        }
+      } else {
+        if (banner) banner.remove();
+        try { localStorage.setItem(LOCK, JSON.stringify({ id: myId, ts: Date.now() })); } catch (e) {}
+      }
+    }
+    beat();
+    setInterval(beat, 2000);
+  })();
+
+  S.subscribe(function (state, origin) {
+    render(state, origin);
+    renderRaceBtn();
+    var dot = $('#syncDot'), txt = $('#syncText');
+    if (origin === 'remote') { dot.classList.add('remote'); txt.textContent = 'Aktualizováno z jiného okna'; }
+    else { dot.classList.remove('remote'); txt.textContent = 'Uloženo · ' + fmtTime(Date.now()); }
+  });
+
+  render(S.state);
+  renderRaceBtn();
+}
+
+/* ============================================================
+ * initLeaderboard() — zobrazovací obrazovka (jen čte stav)
+ * ========================================================== */
+function initLeaderboard() {
+  'use strict';
+  if (initLeaderboard._done) return; initLeaderboard._done = true;
+  var S = window.KMH.init({ writer: false });
+
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var listInner = $('#listInner');
+  var podiumEl = $('#podium');
+  var rowMap = {};
+  var prevPoints = {};
+  var prevRank = {};
+  var prevLeader = null;
+  var firstRender = true;
+  var RANK_WORD = { 1: '1. místo', 2: '2. místo', 3: '3. místo' };
+
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  }); }
+
+  function tick() {
+    var d = new Date();
+    var p = function (n) { return ('0' + n).slice(-2); };
+    $('#lbClock').textContent = p(d.getHours()) + ':' + p(d.getMinutes()) + ':' + p(d.getSeconds());
+
+    var r = S.raceInfo();
+    var cd = $('#lbCountdown');
+    var fmt = function (ms) {
+      return p(Math.floor(ms / 3.6e6)) + ':' + p(Math.floor(ms % 3.6e6 / 6e4)) + ':' + p(Math.floor(ms % 6e4 / 1e3));
+    };
+    cd.hidden = false;
+    cd.classList.remove('live', 'ready');
+    if (!r.started) {
+      cd.textContent = '⏱ ' + fmt(r.durationMs) + ' · čeká na start';
+      cd.classList.add('ready');
+    } else if (r.done) {
+      cd.textContent = '⏱ DOHRÁNO';
+      cd.classList.add('live');
+    } else {
+      cd.textContent = '⏱ zbývá ' + fmt(r.remainingMs);
+      cd.classList.toggle('live', r.remainingMs < 36e5);
+    }
+  }
+  setInterval(tick, 1000); tick();
+
+  function render(state) {
+    $('#lbTitle').innerHTML = esc(state.settings.eventName || 'KOSTKA') +
+      ' <b>·</b> ' + esc(state.settings.subtitle || '');
+    $('#lbEdition').textContent = (state.settings.edition ? state.settings.edition + ' · ' : '') + 'Průběžné pořadí';
+    $('#lbFoot').textContent = 'Kostka · maraton deskových her' + (state.settings.edition ? ' · ' + state.settings.edition : '');
+
+    var ranking = S.ranking();
+    var hasScores = ranking.some(function (r) { return r.points > 0; });
+
+    if (!ranking.length || !hasScores) {
+      podiumEl.hidden = true;
+      $('#list').hidden = true;
+      $('#lbEmpty').hidden = false;
+      rowMap = {};
+      listInner.innerHTML = '';
+      prevPoints = {}; prevRank = {};
+      ranking.forEach(function (r) { prevPoints[r.p.id] = r.points; });
+      firstRender = false;
+      return;
+    }
+    $('#lbEmpty').hidden = true;
+    $('#list').hidden = false;
+
+    var top = ranking.slice(0, 3);
+    var rest = ranking.slice(3);
+
+    renderPodium(top);
+    renderList(rest);
+
+    var leader = ranking[0] ? ranking[0].p.id : null;
+    if (!firstRender && leader && leader !== prevLeader) celebrate();
+    prevLeader = leader;
+
+    prevPoints = {}; prevRank = {};
+    ranking.forEach(function (r) { prevPoints[r.p.id] = r.points; prevRank[r.p.id] = r.rank; });
+    firstRender = false;
+  }
+
+  function renderPodium(top) {
+    podiumEl.hidden = false;
+    var order = [top[1], top[0], top[2]];
+    var slotClass = ['pod--2', 'pod--1', 'pod--3'];
+    podiumEl.innerHTML = order.map(function (r, i) {
+      if (!r) return '<div class="pod ' + slotClass[i] + '" style="visibility:hidden"></div>';
+      var rank = r.rank;
+      var bumped = prevPoints[r.p.id] != null && prevPoints[r.p.id] !== r.points && !firstRender;
+      return '<div class="pod ' + slotClass[i] + (bumped ? ' bumped' : '') + '" data-id="' + r.p.id + '">' +
+        '<div class="badge">' + rank + '</div>' +
+        '<div class="rank-word">' + (RANK_WORD[rank] || rank + '. místo') + '</div>' +
+        '<div class="name">' + esc(r.name) + '</div>' +
+        '<div class="pts">' + r.points + ' <small>b</small></div>' +
+        '<div class="bar"></div>' +
+      '</div>';
+    }).join('');
+  }
+
+  function renderList(rows) {
+    var listEl = $('#list');
+    var cols = rows.length > 24 ? 3 : rows.length > 12 ? 2 : 1;
+    var perCol = Math.ceil(rows.length / cols);
+    var rh = perCol <= 8 ? 1 : Math.max(0.5, 8 / perCol);
+    listEl.style.setProperty('--cols', cols);
+    listEl.style.setProperty('--rows', perCol);
+    listEl.style.setProperty('--rh', rh.toFixed(3));
+
+    var firstRects = {};
+    Object.keys(rowMap).forEach(function (id) {
+      firstRects[id] = rowMap[id].getBoundingClientRect();
+    });
+
+    var seen = {};
+    rows.forEach(function (r) {
+      seen[r.p.id] = true;
+      var el = rowMap[r.p.id];
+      if (!el) {
+        el = document.createElement('div');
+        el.className = 'rowx';
+        el.dataset.id = r.p.id;
+        rowMap[r.p.id] = el;
+      }
+      var oldRank = prevRank[r.p.id];
+      var mv = 'flat', arrow = '•';
+      if (oldRank != null && oldRank !== r.rank) {
+        if (r.rank < oldRank) { mv = 'up'; arrow = '▲'; }
+        else { mv = 'down'; arrow = '▼'; }
+      }
+      el.innerHTML =
+        '<span class="rk">' + r.rank + '</span>' +
+        '<span class="nm">' + esc(r.name) + '</span>' +
+        '<span class="ps"><span class="mv ' + mv + '">' + arrow + '</span>' + r.points + '</span>';
+      listInner.appendChild(el);
+    });
+
+    Object.keys(rowMap).forEach(function (id) {
+      if (!seen[id]) {
+        var el = rowMap[id];
+        el.style.transition = 'opacity .3s, transform .3s';
+        el.style.opacity = '0';
+        el.style.transform = 'scale(.9)';
+        setTimeout(function () { el.remove(); }, 320);
+        delete rowMap[id];
+      }
+    });
+
+    rows.forEach(function (r) {
+      var el = rowMap[r.p.id];
+      var last = el.getBoundingClientRect();
+      var first = firstRects[r.p.id];
+      if (first) {
+        var dx = first.left - last.left;
+        var dy = first.top - last.top;
+        if (dx || dy) {
+          el.style.transition = 'none';
+          el.style.transform = 'translate(' + dx + 'px,' + dy + 'px)';
+          el.getBoundingClientRect();
+          el.style.transition = 'transform .55s cubic-bezier(.22,1,.36,1)';
+          el.style.transform = '';
+        }
+      } else {
+        el.style.transition = 'none';
+        el.style.opacity = '0';
+        el.style.transform = 'translateY(10px)';
+        el.getBoundingClientRect();
+        el.style.transition = 'opacity .4s, transform .4s';
+        el.style.opacity = ''; el.style.transform = '';
+      }
+      if (prevPoints[r.p.id] != null && prevPoints[r.p.id] !== r.points && !firstRender) {
+        el.classList.remove('pts-bump'); void el.offsetWidth; el.classList.add('pts-bump');
+      }
+    });
+  }
+
+  function celebrate() {
+    var wrap = document.createElement('div');
+    wrap.className = 'confetti';
+    var colors = ['#00BBD6', '#FFC24B', '#ffffff', '#CBD7DD'];
+    for (var i = 0; i < 70; i++) {
+      var s = document.createElement('i');
+      s.style.left = Math.random() * 100 + 'vw';
+      s.style.background = colors[i % colors.length];
+      s.style.animationDuration = (1.6 + Math.random() * 1.8) + 's';
+      s.style.animationDelay = (Math.random() * .5) + 's';
+      wrap.appendChild(s);
+    }
+    document.body.appendChild(wrap);
+    setTimeout(function () { wrap.remove(); }, 3800);
+  }
+
+  S.subscribe(function (state) { render(state); });
+  render(S.state);
+
+  setInterval(function () {
+    try { S.reload(); } catch (e) {}
+  }, 2000);
+}
+
+/* ============================================================
+ * router
+ * ========================================================== */
+(function boot() {
+  function route() {
+    var h = (location.hash || '').replace(/^#\/?/, '').toLowerCase();
+    if (h.indexOf('tabule') === 0) { document.body.className = 'admin-mode'; initAdmin(); }
+    else if (h.indexOf('leaderboard') === 0 || h.indexOf('board') === 0) { document.body.className = 'lb-mode'; initLeaderboard(); }
+    else { document.body.className = 'launch-mode'; }
+  }
+  route();
+  /* Tabule (zapisovatel) a Leaderboard (jen čte) nesmí běžet v jednom okně zároveň –
+     když už jeden z nich běží, přepnutí pohledu znamená čisté načtení stránky. */
+  window.addEventListener('hashchange', function () {
+    if (initAdmin._done || initLeaderboard._done) { location.reload(); return; }
+    route(); window.scrollTo(0, 0);
+  });
+})();
+</script>
+  </body>
+</html>
