@@ -199,7 +199,7 @@ body.launch-mode{
 .stat .l{font-size:.75rem;color:var(--ink-soft);text-transform:uppercase;letter-spacing:.06em;margin-top:.2rem}
 
 .table-wrap{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow-sm);overflow:auto}
-table.grid{border-collapse:collapse;width:100%;min-width:920px}
+table.grid{border-collapse:collapse;width:100%;min-width:1080px}
 .grid thead th{
   position:sticky;top:0;z-index:2;background:#fff;
   font-family:var(--font-head);text-transform:uppercase;letter-spacing:.05em;font-size:.72rem;color:var(--ink-soft);
@@ -214,12 +214,34 @@ table.grid{border-collapse:collapse;width:100%;min-width:920px}
 .rank-medal{color:var(--brand-700)}
 .col-total{width:76px}
 
-.grid th.col-rank,.grid td.col-rank{position:sticky;left:0;z-index:3;background:#fff}
-.grid th.col-name,.grid td.col-name{position:sticky;left:44px;z-index:3;background:#fff;
+.grid th.col-id,.grid td.col-id{position:sticky;left:0;z-index:3;background:#fff;width:56px;min-width:56px;max-width:56px;text-align:center}
+.grid th.col-rank,.grid td.col-rank{position:sticky;left:56px;z-index:3;background:#fff;min-width:44px;max-width:44px}
+.grid th.col-name,.grid td.col-name{position:sticky;left:100px;z-index:3;background:#fff;
   box-shadow:6px 0 8px -6px rgba(12,31,36,.12)}
-.grid thead th.col-rank,.grid thead th.col-name{z-index:4}
-.grid tbody tr:hover td.col-rank,.grid tbody tr:hover td.col-name{background:#f8fbfc}
-.grid tbody tr.flash td.col-rank,.grid tbody tr.flash td.col-name{background:transparent}
+.grid thead th.col-id,.grid thead th.col-rank,.grid thead th.col-name{z-index:4}
+.grid tbody tr:hover td.col-id,.grid tbody tr:hover td.col-rank,.grid tbody tr:hover td.col-name{background:#f8fbfc}
+.grid tbody tr.flash td.col-id,.grid tbody tr.flash td.col-rank,.grid tbody tr.flash td.col-name{background:transparent}
+.pid{font-family:var(--font-head);font-weight:700;font-size:1rem;color:var(--ink)}
+
+.sort-h{border:0;background:none;padding:0;font:inherit;color:inherit;text-transform:inherit;letter-spacing:inherit;
+  display:inline-flex;align-items:center;gap:.3rem}
+.sort-h:hover{color:var(--brand-700)}
+.sort-h i{font-style:normal;font-size:.85em;opacity:.4}
+.sort-h.on{color:var(--ink)}
+.sort-h.on i{opacity:1;color:var(--brand-700)}
+
+.pay-seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff}
+.pay-seg button{border:0;background:#fff;padding:.32rem .5rem;font-size:.78rem;font-weight:600;color:var(--ink-soft);white-space:nowrap}
+.pay-seg button+button{border-left:1px solid var(--line)}
+.pay-seg button:hover{background:var(--brand-050)}
+.pay-seg button.on{background:var(--brand);color:#00171c}
+
+.coop-tg{display:inline-flex;align-items:center;gap:.3rem;font-size:.7rem;font-weight:700;text-transform:uppercase;
+  letter-spacing:.04em;color:var(--ink-soft);margin-bottom:.25rem;cursor:pointer;user-select:none}
+.coop-tg input{width:15px;height:15px;margin:0;accent-color:var(--brand)}
+.coop-tg.on{color:var(--brand-700)}
+.coop-n{background:var(--brand-050);color:var(--brand-700);border-radius:999px;padding:0 .4rem;font-family:var(--font-head);text-transform:none}
+table.tiers .tier-coop .v{color:var(--brand-700)}
 .total-badge{font-family:var(--font-head);font-weight:700;font-size:1.15rem;background:var(--brand-050);color:var(--brand-700);
   border-radius:8px;padding:.2rem .5rem;display:inline-block;min-width:2.6ch;text-align:center}
 
@@ -405,6 +427,18 @@ body.lb-mode{
 .pod.bumped{animation:podBump .6s ease}
 @keyframes podBump{0%{transform:translateY(var(--y,0)) scale(1)}30%{transform:translateY(var(--y,0)) scale(1.04)}100%{transform:translateY(var(--y,0)) scale(1)}}
 
+.trends{flex:none;display:grid;grid-template-columns:repeat(var(--n,3),minmax(0,1fr));gap:1.2vw;margin:0 0 1.4vh}
+.trend{display:flex;align-items:center;gap:.9vw;background:var(--lb-card);border:2px solid var(--lb-line);
+  border-radius:12px;padding:.9vh 1vw;min-width:0}
+.trend > div{min-width:0}
+.trend .ti{font-size:clamp(1.2rem,3.2vh,2.2rem);flex:none;line-height:1}
+.trend .tt{font-family:var(--font-head);font-weight:600;text-transform:uppercase;letter-spacing:.1em;
+  color:var(--lb-ink-dim);font-size:clamp(.6rem,1.3vh,.85rem);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.trend .tn{font-family:var(--font-head);font-weight:700;text-transform:uppercase;font-size:clamp(.9rem,2.2vh,1.5rem);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.15}
+.trend .tv{font-family:var(--font-head);font-weight:600;color:var(--lb-accent);font-size:clamp(.75rem,1.8vh,1.2rem);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-variant-numeric:tabular-nums}
+
 .list{flex:1;position:relative;overflow:hidden;--cols:1;--rows:10;--rh:1}
 .list-inner{position:absolute;inset:0;display:grid;
   grid-template-columns:repeat(var(--cols),1fr);
@@ -459,6 +493,12 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
   .rowx .nm{font-size:1.05rem}
   .rowx .ps{font-size:1.2rem}
   .rowx .mv{width:1rem}
+  .trends{grid-template-columns:1fr 1fr;gap:8px;margin-bottom:1rem}
+  .trend{padding:8px 10px;gap:8px;border-radius:10px}
+  .trend .ti{font-size:1.3rem}
+  .trend .tt{font-size:.6rem;letter-spacing:.06em}
+  .trend .tn{font-size:.95rem}
+  .trend .tv{font-size:.8rem}
   .lb-foot{padding-top:1rem;font-size:.7rem}
   .lb-theme{font-size:.75rem}
 }
@@ -544,12 +584,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     <button class="btn" id="btnImport">Hromadně / import</button>
     <button class="btn" id="btnUndo">↩︎ Zpět</button>
     <div class="spacer"></div>
-    <div class="search"><input type="search" id="search" placeholder="Hledat jméno…" autocomplete="off"></div>
-    <select class="btn" id="sortMode" title="Řazení tabulky">
-      <option value="total">Řadit dle bodů</option>
-      <option value="name">Řadit dle jména</option>
-      <option value="added">Řadit dle přidání</option>
-    </select>
+    <div class="search"><input type="search" id="search" placeholder="Hledat jméno nebo ID…" autocomplete="off"></div>
     <button class="btn" id="btnBackup">⬇︎ Záloha</button>
     <button class="btn" id="btnSettings">⚙︎ Nastavení</button>
   </div>
@@ -558,13 +593,15 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     <table class="grid">
       <thead>
         <tr>
-          <th class="col-rank">#</th>
-          <th class="col-name">Účastník</th>
+          <th class="col-id"><button type="button" class="sort-h" data-sort="id" title="Řadit podle ID">ID<i></i></button></th>
+          <th class="col-rank" title="Pořadí podle bodů">#</th>
+          <th class="col-name"><button type="button" class="sort-h" data-sort="name" title="Řadit abecedně podle jména / přezdívky">Účastník<i></i></button></th>
           <th class="col-paid" title="Zaplaceno startovné">Start.</th>
+          <th class="col-pay" title="Způsob platby startovného">Platba</th>
           <th class="col-tasks">Úkoly <small id="hTask"></small></th>
           <th class="col-tiers">Hry a umístění <small id="hTiers"></small></th>
           <th class="col-manual">Ruční</th>
-          <th class="col-total">Celkem</th>
+          <th class="col-total"><button type="button" class="sort-h" data-sort="total" title="Řadit podle bodů celkem">Celkem<i></i></button></th>
           <th class="col-menu"></th>
         </tr>
       </thead>
@@ -598,9 +635,18 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
           <option value="name">Jméno + iniciála příjmení</option>
         </select>
       </div>
-      <label style="display:flex;gap:.5rem;align-items:center;font-weight:600">
-        <input type="checkbox" id="fPaid" style="width:18px;height:18px;accent-color:var(--brand)"> Zaplaceno startovné
-      </label>
+      <div class="field-row">
+        <div class="field" style="max-width:120px;flex:none"><label>ID</label><input id="fNum" type="number" min="1" step="1"></div>
+        <div class="field">
+          <label>Startovné</label>
+          <select id="fPay">
+            <option value="none">Nezaplaceno</option>
+            <option value="cash">Zaplaceno hotově</option>
+            <option value="qr">Zaplaceno QR kódem</option>
+            <option value="paid">Zaplaceno (způsob neuveden)</option>
+          </select>
+        </div>
+      </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn--ghost" data-close>Zrušit</button>
@@ -648,6 +694,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         <tbody id="diffRows"></tbody>
       </table>
       <p class="mini-lbl">Zapsané umístění se hráči automaticky započítá i jako odehraná hra (body za účast + body za umístění).</p>
+      <p class="mini-lbl">Co-op hra: u účastníka zaškrtni <b>co-op hra</b> – výhra v co-op hře dostane body ze sloupce „3. místo / výhra co-op“ (+ účast), prohra jen body za účast.</p>
 
       <hr style="border:0;border-top:1px solid var(--line);margin:1.4rem 0">
       <div style="display:flex;gap:.5rem;flex-wrap:wrap">
@@ -694,7 +741,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
   <header class="lb-head">
     <img class="mark" src="/images/maraton/kostka-tyrkys.png" alt="Kostka" width="1080" height="1080">
     <div>
-      <h1 id="lbTitle">KOSTKA <b>·</b> MARATON HER</h1>
+      <h1 id="lbTitle">KOSTKA MARATON HER</h1>
       <div class="edition" id="lbEdition">Průběžné pořadí</div>
     </div>
     <div class="spacer"></div>
@@ -706,6 +753,8 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
 
   <section class="podium" id="podium" hidden></section>
 
+  <section class="trends" id="trends" hidden></section>
+
   <section class="list" id="list">
     <div class="list-inner" id="listInner"></div>
   </section>
@@ -715,7 +764,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     <div>Čeká se na první body…</div>
   </div>
 
-  <button type="button" class="lb-theme" id="lbTheme" title="Přepnout denní / noční režim (klávesa N)"></button>
+  <button type="button" class="lb-theme" id="lbTheme" title="Přepnout denní / noční režim (klávesa N). Automaticky noční 22:00–7:00."></button>
   <footer class="lb-foot" id="lbFoot">Kostka · maraton deskových her</footer>
 </div>
 </div>
@@ -736,13 +785,18 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     for (var i = 1; i <= 12; i++) a.push({ id: 't' + i, label: 'Úkol ' + i });
     return a;
   }
+  // p3 = 3. místo i výhra v co-op hře.
   function defaultDifficulties() {
     return [
-      { id: 'dn', name: 'Deskonoob',     play: 2,  p1: 5,  p2: 3,  p3: 2 },
-      { id: 'mp', name: 'Medium play',   play: 5,  p1: 10, p2: 5,  p3: 3 },
-      { id: 'kp', name: 'Kostka profík', play: 12, p1: 15, p2: 10, p3: 5 }
+      { id: 'dn', name: 'Deskonoob',     play: 1,  p1: 3,  p2: 2,  p3: 1 },
+      { id: 'mp', name: 'Medium play',   play: 4,  p1: 8,  p2: 5,  p3: 2 },
+      { id: 'kp', name: 'Kostka profík', play: 15, p1: 20, p2: 12, p3: 6 }
     ];
   }
+  // Původní výchozí bodování – pokud ho stav pořád má beze změny, převede se na nové.
+  var OLD_SCORING = { dn: [2, 5, 3, 2], mp: [5, 10, 5, 3], kp: [12, 15, 10, 5] };
+  var HISTORY_EVERY = 5 * 60e3;
+  var HISTORY_KEEP = 3 * 3600e3;
 
   var DEFAULT_STATE = {
     version: 2,
@@ -757,10 +811,13 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       difficulties: defaultDifficulties(),
       raceHours: 24,
       raceStartAt: null,
-      sortMode: 'total'
+      sortMode: 'total',
+      scoring: 2
     },
     participants: [],
-    log: []
+    log: [],
+    // Body všech účastníků po ~5 minutách za poslední ~3 h – podklad pro trendy na leaderboardu.
+    history: []
   };
 
   function clone(o) { return JSON.parse(JSON.stringify(o)); }
@@ -797,7 +854,12 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         return { id: t.id || ('t' + (i + 1)), label: t.label || ('Úkol ' + (i + 1)) };
       });
     }
-    if (Array.isArray(ss.difficulties) && ss.difficulties.length) {
+    var oldScoring = ss.scoring !== 2 && Array.isArray(ss.difficulties) && ss.difficulties.length === 3 &&
+      ss.difficulties.every(function (x) {
+        var o = OLD_SCORING[x.id];
+        return o && num(x.play) === o[0] && num(x.p1) === o[1] && num(x.p2) === o[2] && num(x.p3) === o[3];
+      });
+    if (!oldScoring && Array.isArray(ss.difficulties) && ss.difficulties.length) {
       var defmap = {}; defaultDifficulties().forEach(function (x) { defmap[x.id] = x; });
       d.settings.difficulties = ss.difficulties.map(function (x, i) {
         var base = defmap[x.id] || { id: x.id || ('d' + (i + 1)), name: 'Obtížnost ' + (i + 1), play: 0, p1: 0, p2: 0, p3: 0 };
@@ -824,8 +886,11 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         for (var k = 0; k < Math.min(oldN, TCOUNT); k++) tasksDone.push(k);
       }
 
-      var games = {}, places = {};
-      TIDS.forEach(function (t) { games[t] = 0; places[t] = [0, 0, 0]; });
+      var games = {}, places = {}, coop = {};
+      TIDS.forEach(function (t) { games[t] = 0; places[t] = [0, 0, 0]; coop[t] = 0; });
+      if (p.coop && typeof p.coop === 'object') {
+        TIDS.forEach(function (t) { coop[t] = Math.max(0, num(p.coop[t], 0)); });
+      }
       if (p.games && typeof p.games === 'object') {
         TIDS.forEach(function (t) { games[t] = Math.max(0, num(p.games[t], 0)); });
       } else if (typeof p.games === 'number' && p.games > 0 && TIDS.length) {
@@ -847,22 +912,36 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         }
       }
 
+      var payMethod = p.payMethod === 'cash' || p.payMethod === 'qr' ? p.payMethod : '';
       return {
         id: p.id || uid(),
+        num: Math.max(0, num(p.num, 0) | 0),
         firstName: p.firstName || '',
         lastName: p.lastName || '',
         nickname: p.nickname || '',
         displayMode: p.displayMode === 'nick' ? 'nick' : 'name',
-        paid: !!p.paid,
+        paid: !!p.paid || !!payMethod,
+        payMethod: payMethod,
         tasksDone: tasksDone,
         games: games,
         places: places,
+        coop: coop,
         manual: num(p.manual, 0),
         createdAt: p.createdAt || now()
       };
     });
 
+    // Účastníci bez ID (starší data) dostanou další volná čísla podle pořadí přidání.
+    var maxNum = 0;
+    d.participants.forEach(function (p) { maxNum = Math.max(maxNum, p.num); });
+    d.participants.filter(function (p) { return !p.num; })
+      .sort(function (a, b) { return a.createdAt - b.createdAt; })
+      .forEach(function (p) { p.num = ++maxNum; });
+
     d.log = (s.log || []).slice(0, 400);
+    d.history = (Array.isArray(s.history) ? s.history : []).filter(function (h) {
+      return h && isFinite(h.ts) && h.p && typeof h.p === 'object';
+    }).slice(-120);
     return d;
   }
 
@@ -924,9 +1003,24 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       return clone(DEFAULT_STATE);
     },
 
+    // Jeden záznam bodů na 5min okno (přepisuje se posledním zápisem v okně), starší než 3 h
+    // se zahodí – kromě nejnovějšího z nich, ať je vždy s čím porovnat „před hodinou".
+    _recordHistory: function () {
+      var self = this, t = now(), h = this.state.history || (this.state.history = []);
+      var pts = {};
+      this.state.participants.forEach(function (p) { pts[p.id] = self.pointsOf(p); });
+      var last = h[h.length - 1];
+      if (last && Math.floor(last.ts / HISTORY_EVERY) === Math.floor(t / HISTORY_EVERY)) { last.ts = t; last.p = pts; }
+      else h.push({ ts: t, p: pts });
+      var cut = 0;
+      while (cut + 1 < h.length && h[cut + 1].ts < t - HISTORY_KEEP) cut++;
+      if (cut) h.splice(0, cut);
+    },
+
     _persist: function () {
       this.state.rev++;
       this.state.updatedAt = now();
+      if (this._writer) this._recordHistory();
       try { localStorage.setItem(KEY, JSON.stringify(this.state)); }
       catch (e) { alert('Nepodařilo se uložit data (localStorage). Zkontroluj místo v prohlížeči.'); }
       this._snapshot();
@@ -1153,7 +1247,17 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     tierPoints: function (p, d) {
       var g = (p.games && p.games[d.id]) || 0;
       var pl = (p.places && p.places[d.id]) || [0, 0, 0];
-      return g * d.play + pl[0] * d.p1 + pl[1] * d.p2 + pl[2] * d.p3;
+      var c = (p.coop && p.coop[d.id]) || 0;
+      return g * d.play + pl[0] * d.p1 + pl[1] * d.p2 + (pl[2] + c) * d.p3;
+    },
+    coopTotal: function (p) {
+      var s = 0; (this.state.settings.difficulties).forEach(function (d) {
+        s += (p.coop && p.coop[d.id]) || 0;
+      });
+      return s;
+    },
+    nextNum: function () {
+      return this.state.participants.reduce(function (m, p) { return Math.max(m, p.num || 0); }, 0) + 1;
     },
     tierGamesTotal: function (p) {
       var s = 0; (this.state.settings.difficulties).forEach(function (d) {
@@ -1225,16 +1329,18 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     },
 
     addParticipant: function (data) {
-      var s = this.state.settings, games = {}, places = {};
-      s.difficulties.forEach(function (d) { games[d.id] = 0; places[d.id] = [0, 0, 0]; });
+      var s = this.state.settings, games = {}, places = {}, coop = {};
+      s.difficulties.forEach(function (d) { games[d.id] = 0; places[d.id] = [0, 0, 0]; coop[d.id] = 0; });
+      var pay = data.payMethod === 'cash' || data.payMethod === 'qr' ? data.payMethod : '';
       var p = {
         id: uid(),
+        num: (data.num | 0) > 0 ? data.num | 0 : this.nextNum(),
         firstName: (data.firstName || '').trim(),
         lastName: (data.lastName || '').trim(),
         nickname: (data.nickname || '').trim(),
         displayMode: data.displayMode === 'nick' ? 'nick' : 'name',
-        paid: !!data.paid,
-        tasksDone: [], games: games, places: places, manual: 0,
+        paid: !!data.paid || !!pay, payMethod: pay,
+        tasksDone: [], games: games, places: places, coop: coop, manual: 0,
         createdAt: now()
       };
       this.state.participants.push(p);
@@ -1244,18 +1350,19 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
     },
 
     addMany: function (rows) {
-      var self = this, s = this.state.settings, added = 0;
+      var self = this, s = this.state.settings, added = 0, next = this.nextNum();
       rows.forEach(function (r) {
         if (!r.firstName && !r.lastName && !r.nickname) return;
-        var games = {}, places = {};
-        s.difficulties.forEach(function (d) { games[d.id] = 0; places[d.id] = [0, 0, 0]; });
+        var games = {}, places = {}, coop = {};
+        s.difficulties.forEach(function (d) { games[d.id] = 0; places[d.id] = [0, 0, 0]; coop[d.id] = 0; });
         self.state.participants.push({
           id: uid(),
+          num: next + added,
           firstName: (r.firstName || '').trim(),
           lastName: (r.lastName || '').trim(),
           nickname: (r.nickname || '').trim(),
           displayMode: r.nickname ? 'nick' : 'name',
-          paid: false, tasksDone: [], games: games, places: places, manual: 0,
+          paid: false, payMethod: '', tasksDone: [], games: games, places: places, coop: coop, manual: 0,
           createdAt: now() + added
         });
         added++;
@@ -1270,7 +1377,15 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         if (k in patch) p[k] = (patch[k] || '').trim();
       });
       if ('displayMode' in patch) p.displayMode = patch.displayMode === 'nick' ? 'nick' : 'name';
-      if ('paid' in patch) p.paid = !!patch.paid;
+      if ('num' in patch && (patch.num | 0) > 0) p.num = patch.num | 0;
+      if ('payMethod' in patch) {
+        p.payMethod = patch.payMethod === 'cash' || patch.payMethod === 'qr' ? patch.payMethod : '';
+        if (p.payMethod) p.paid = true;
+      }
+      if ('paid' in patch) {
+        p.paid = !!patch.paid;
+        if (!p.paid) p.payMethod = '';
+      }
       this._persist();
     },
 
@@ -1305,7 +1420,7 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       if (parts[0] === 'game') {
         var tG = parts[1], dG = this.diff(tG); if (!dG) return;
         var plG = (p.places && p.places[tG]) || [0, 0, 0];
-        var minG = (plG[0] || 0) + (plG[1] || 0) + (plG[2] || 0);
+        var minG = (plG[0] || 0) + (plG[1] || 0) + (plG[2] || 0) + ((p.coop && p.coop[tG]) || 0);
         var nv = Math.max(minG, (p.games[tG] || 0) + dir); applied = nv - (p.games[tG] || 0);
         p.games[tG] = nv; deltaPts = applied * dG.play;
       } else if (parts[0] === 'place') {
@@ -1317,6 +1432,16 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
         gameApplied = Math.max(-(p.games[tP] || 0), applied);
         p.games[tP] = (p.games[tP] || 0) + gameApplied;
         deltaPts = applied * [dP.p1, dP.p2, dP.p3][slot] + gameApplied * dP.play;
+      } else if (parts[0] === 'coop') {
+        // Výhra v co-op hře = body za 3. místo, stejně jako umístění se počítá i jako odehraná hra.
+        var tC = parts[1], dC = this.diff(tC); if (!dC) return;
+        if (!p.coop) p.coop = {};
+        var cc = p.coop[tC] || 0;
+        var nc = Math.max(0, cc + dir); applied = nc - cc;
+        p.coop[tC] = nc;
+        gameApplied = Math.max(-(p.games[tC] || 0), applied);
+        p.games[tC] = (p.games[tC] || 0) + gameApplied;
+        deltaPts = applied * dC.p3 + gameApplied * dC.play;
       } else if (parts[0] === 'manual') {
         applied = dir; p.manual = num(p.manual, 0) + dir; deltaPts = dir;
       } else return;
@@ -1347,6 +1472,10 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
             var slot = parseInt(parts[2], 10);
             if (!p.places[parts[1]]) p.places[parts[1]] = [0, 0, 0];
             p.places[parts[1]][slot] = Math.max(0, (p.places[parts[1]][slot] || 0) - entry.applied);
+            if (entry.gameApplied) p.games[parts[1]] = Math.max(0, (p.games[parts[1]] || 0) - entry.gameApplied);
+          } else if (parts[0] === 'coop') {
+            if (!p.coop) p.coop = {};
+            p.coop[parts[1]] = Math.max(0, (p.coop[parts[1]] || 0) - entry.applied);
             if (entry.gameApplied) p.games[parts[1]] = Math.max(0, (p.games[parts[1]] || 0) - entry.gameApplied);
           } else if (parts[0] === 'manual') p.manual = num(p.manual, 0) - entry.applied;
         }
@@ -1412,10 +1541,11 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
       var s = this.state.settings;
       this.state.participants.forEach(function (p) {
         p.tasksDone = [];
-        p.games = {}; p.places = {};
-        s.difficulties.forEach(function (d) { p.games[d.id] = 0; p.places[d.id] = [0, 0, 0]; });
+        p.games = {}; p.places = {}; p.coop = {};
+        s.difficulties.forEach(function (d) { p.games[d.id] = 0; p.places[d.id] = [0, 0, 0]; p.coop[d.id] = 0; });
         p.manual = 0;
       });
+      this.state.history = [];
       this._pushLog({ type: 'reset-scores' });
       this._persist();
     },
@@ -1426,21 +1556,22 @@ body.lb-night .lb-foot.lb-offline::after{color:#ff8a75}
 
     exportCSV: function () {
       var self = this, diffs = this.state.settings.difficulties;
-      var head = ['poradi', 'jmeno', 'prezdivka', 'zobrazeno', 'startovne', 'ukoly_splneno'];
+      var head = ['poradi', 'id', 'jmeno', 'prezdivka', 'zobrazeno', 'startovne', 'platba', 'ukoly_splneno'];
       diffs.forEach(function (d) {
-        head.push(d.id + '_ucast', d.id + '_1', d.id + '_2', d.id + '_3');
+        head.push(d.id + '_ucast', d.id + '_1', d.id + '_2', d.id + '_3', d.id + '_coop');
       });
       head.push('rucni', 'celkem');
       var rows = [head];
       this.ranking().forEach(function (r) {
         var p = r.p;
         var row = [
-          r.rank, (p.firstName + ' ' + p.lastName).trim(), p.nickname, r.name,
-          p.paid ? 'ano' : 'ne', p.tasksDone.length
+          r.rank, p.num, (p.firstName + ' ' + p.lastName).trim(), p.nickname, r.name,
+          p.paid ? 'ano' : 'ne', p.payMethod === 'cash' ? 'hotove' : p.payMethod === 'qr' ? 'qr' : '',
+          p.tasksDone.length
         ];
         diffs.forEach(function (d) {
           var pl = p.places[d.id] || [0, 0, 0];
-          row.push(p.games[d.id] || 0, pl[0], pl[1], pl[2]);
+          row.push(p.games[d.id] || 0, pl[0], pl[1], pl[2], (p.coop && p.coop[d.id]) || 0);
         });
         row.push(p.manual, r.points);
         rows.push(row);
@@ -1486,6 +1617,16 @@ function initAdmin() {
   var editing = null;
   var search = '';
   var flashIds = {};
+  var coopRows = {};   // u kterých účastníků je zaškrtnuté „co-op hra" (jen tohle okno)
+
+  // Řazení tabulky si pamatuje jen tohle zařízení – leaderboard ani ostatní okna neovlivní.
+  var SORT_KEY = 'kostka-maraton-sort';
+  var SORT_DEFAULT_DIR = { id: 'asc', name: 'asc', total: 'desc' };
+  var sort = { key: 'id', dir: 'asc' };
+  try {
+    var savedSort = JSON.parse(localStorage.getItem(SORT_KEY) || 'null');
+    if (savedSort && SORT_DEFAULT_DIR[savedSort.key] && (savedSort.dir === 'asc' || savedSort.dir === 'desc')) sort = savedSort;
+  } catch (e) {}
 
   function fmtTime(ts) {
     var d = new Date(ts);
@@ -1517,16 +1658,42 @@ function initAdmin() {
 
   function tiersCell(p) {
     var diffs = S.state.settings.difficulties;
-    var head = '<thead><tr><th></th><th>hra</th><th>🥇</th><th>🥈</th><th>🥉</th></tr></thead>';
+    var coopOn = !!coopRows[p.id];
+    var coopN = S.coopTotal(p);
+    var toggle = '<label class="coop-tg' + (coopOn ? ' on' : '') + '" title="Zapisuješ co-op hru – výhra dostane body za 3. místo / co-op">' +
+      '<input type="checkbox" data-act="coop"' + (coopOn ? ' checked' : '') + '> co-op hra' +
+      (coopN ? ' <span class="coop-n" title="Výher v co-op hrách">🤝 ' + coopN + '</span>' : '') + '</label>';
+    var head = coopOn
+      ? '<thead><tr><th></th><th>hra</th><th colspan="3">🤝 výhra co-op</th></tr></thead>'
+      : '<thead><tr><th></th><th>hra</th><th>🥇</th><th>🥈</th><th>🥉</th></tr></thead>';
     var body = diffs.map(function (d) {
       var pl = p.places[d.id] || [0, 0, 0];
-      return '<tr><th title="' + esc(d.name) + '">' + esc(shortName(d)) + '</th>' +
-        '<td class="tier-play">' + stepper(p.id, 'game:' + d.id, p.games[d.id] || 0, true) + '</td>' +
+      var row = '<tr><th title="' + esc(d.name) + '">' + esc(shortName(d)) + '</th>' +
+        '<td class="tier-play">' + stepper(p.id, 'game:' + d.id, p.games[d.id] || 0, true) + '</td>';
+      if (coopOn) {
+        return row + '<td colspan="3" class="tier-coop">' + stepper(p.id, 'coop:' + d.id, (p.coop && p.coop[d.id]) || 0, true) + '</td></tr>';
+      }
+      return row +
         '<td>' + stepper(p.id, 'place:' + d.id + ':0', pl[0], true) + '</td>' +
         '<td>' + stepper(p.id, 'place:' + d.id + ':1', pl[1], true) + '</td>' +
         '<td>' + stepper(p.id, 'place:' + d.id + ':2', pl[2], true) + '</td></tr>';
     }).join('');
-    return '<table class="tiers">' + head + '<tbody>' + body + '</tbody></table>';
+    return toggle + '<table class="tiers">' + head + '<tbody>' + body + '</tbody></table>';
+  }
+
+  function payCell(p) {
+    return '<div class="pay-seg">' +
+      '<button type="button" data-act="pay" data-v="cash" class="' + (p.payMethod === 'cash' ? 'on' : '') + '">💵 Hotově</button>' +
+      '<button type="button" data-act="pay" data-v="qr" class="' + (p.payMethod === 'qr' ? 'on' : '') + '">QR kód</button>' +
+      '</div>';
+  }
+
+  function renderSortHeads() {
+    $$('.grid thead .sort-h').forEach(function (b) {
+      var on = b.getAttribute('data-sort') === sort.key;
+      b.classList.toggle('on', on);
+      b.querySelector('i').textContent = on ? (sort.dir === 'asc' ? '▲' : '▼') : '↕';
+    });
   }
 
   function shortName(d) {
@@ -1544,23 +1711,29 @@ function initAdmin() {
     $('#hTiers').textContent = state.settings.difficulties.map(function (d) {
       return shortName(d) + ' ' + d.play + '·' + d.p1 + '/' + d.p2 + '/' + d.p3;
     }).join('   ·   ');
-    $('#sortMode').value = state.settings.sortMode || 'total';
+    renderSortHeads();
 
     var ranking = S.ranking();
     var rankById = {};
     ranking.forEach(function (r) { rankById[r.p.id] = r; });
 
     var view = ranking.slice();
-    var mode = state.settings.sortMode || 'total';
-    if (mode === 'name') view.sort(function (a, b) { return a.name.localeCompare(b.name, 'cs'); });
-    else if (mode === 'added') view.sort(function (a, b) { return a.p.createdAt - b.p.createdAt; });
+    view.sort(function (a, b) {
+      var c = sort.key === 'id' ? a.p.num - b.p.num
+        : sort.key === 'name' ? a.name.localeCompare(b.name, 'cs', { sensitivity: 'base' })
+        : a.points - b.points;
+      if (c) return sort.dir === 'desc' ? -c : c;
+      return a.p.num - b.p.num;
+    });
 
     if (search) {
-      var q = search.toLowerCase();
-      view = view.filter(function (r) {
-        var p = r.p;
-        return (p.firstName + ' ' + p.lastName + ' ' + p.nickname + ' ' + r.name).toLowerCase().indexOf(q) >= 0;
-      });
+      var q = search.trim().toLowerCase().replace(/^#/, '');
+      view = /^\d+$/.test(q)
+        ? view.filter(function (r) { return r.p.num === parseInt(q, 10); })
+        : view.filter(function (r) {
+            var p = r.p;
+            return (p.firstName + ' ' + p.lastName + ' ' + p.nickname + ' ' + r.name).toLowerCase().indexOf(q) >= 0;
+          });
     }
 
     emptyEl.hidden = state.participants.length > 0;
@@ -1574,6 +1747,7 @@ function initAdmin() {
       else if (p.nickname.trim()) sub = '„' + p.nickname.trim() + '“';
 
       return '<tr data-id="' + p.id + '"' + (flashIds[p.id] ? ' class="flash"' : '') + '>' +
+        '<td class="col-id"><span class="pid">' + p.num + '</span></td>' +
         '<td class="col-rank"><span class="' + (pts > 0 && rank <= 3 ? 'rank-medal' : '') + '">' + medal + '</span></td>' +
         '<td class="col-name"><div class="name-cell">' +
           '<div><div class="name-main">' + esc(r.name) + '</div>' +
@@ -1582,6 +1756,7 @@ function initAdmin() {
             (p.displayMode === 'nick' && p.nickname.trim() ? 'přezdívka' : 'jméno') + '</button>' +
         '</div></td>' +
         '<td class="col-paid paid-box"><input type="checkbox" data-act="paid"' + (p.paid ? ' checked' : '') + ' title="Startovné"></td>' +
+        '<td class="col-pay">' + payCell(p) + '</td>' +
         '<td class="tasks-cell">' + tasksCell(p) + '</td>' +
         '<td class="tiers-cell">' + tiersCell(p) + '</td>' +
         '<td class="col-manual"><button class="manual-btn' + (p.manual ? ' has' : '') + '" data-act="manual">' +
@@ -1598,12 +1773,14 @@ function initAdmin() {
 
   function renderSummary(state, ranking) {
     var paid = state.participants.filter(function (p) { return p.paid; }).length;
+    var cash = state.participants.filter(function (p) { return p.payMethod === 'cash'; }).length;
+    var qr = state.participants.filter(function (p) { return p.payMethod === 'qr'; }).length;
     var games = state.participants.reduce(function (s, p) { return s + S.tierGamesTotal(p); }, 0);
     var tasks = state.participants.reduce(function (s, p) { return s + p.tasksDone.length; }, 0);
     var leader = ranking[0];
     var cells = [
       ['Účastníci', state.participants.length],
-      ['Zaplaceno startovné', paid + ' / ' + state.participants.length],
+      ['Zaplaceno startovné · hotově ' + cash + ' · QR ' + qr, paid + ' / ' + state.participants.length],
       ['Odehrané hry / splněné úkoly', games + ' / ' + tasks],
       ['Vede', leader && leader.points > 0 ? S.displayName(leader.p) + ' · ' + leader.points + ' b' : '—']
     ];
@@ -1645,6 +1822,7 @@ function initAdmin() {
     var dn = d ? d.name : parts[1];
     if (parts[0] === 'game') return 'zahraná hra (' + dn + ')';
     if (parts[0] === 'place') return ['1.', '2.', '3.'][+parts[2]] + ' místo (' + dn + ', vč. hry)';
+    if (parts[0] === 'coop') return 'výhra co-op (' + dn + ', vč. hry)';
     if (parts[0] === 'manual') return 'ruční';
     return kind;
   }
@@ -1670,15 +1848,34 @@ function initAdmin() {
     if (act === 'toggleMode') {
       var p = S.state.participants.find(function (x) { return x.id === id; });
       S.updateParticipant(id, { displayMode: p.displayMode === 'nick' ? 'name' : 'nick' });
+    } else if (act === 'pay') {
+      var pp = S.state.participants.find(function (x) { return x.id === id; });
+      var v = e.target.getAttribute('data-v');
+      // Druhý klik na vybraný způsob = zpět na nezaplaceno.
+      S.updateParticipant(id, pp.payMethod === v ? { payMethod: '', paid: false } : { payMethod: v });
     } else if (act === 'manual') openManualPop(e.target, id);
     else if (act === 'menu') openRowMenu(e.target, id);
   });
 
   rowsEl.addEventListener('change', function (e) {
-    if (e.target.getAttribute('data-act') === 'paid') {
-      var tr = e.target.closest('tr');
+    var act = e.target.getAttribute('data-act');
+    var tr = e.target.closest('tr');
+    if (act === 'paid') {
       S.updateParticipant(tr.getAttribute('data-id'), { paid: e.target.checked });
+    } else if (act === 'coop') {
+      coopRows[tr.getAttribute('data-id')] = e.target.checked;
+      render(S.state);
     }
+  });
+
+  $('.grid thead').addEventListener('click', function (e) {
+    var b = e.target.closest('.sort-h'); if (!b) return;
+    var key = b.getAttribute('data-sort');
+    sort = key === sort.key
+      ? { key: key, dir: sort.dir === 'asc' ? 'desc' : 'asc' }
+      : { key: key, dir: SORT_DEFAULT_DIR[key] };
+    try { localStorage.setItem(SORT_KEY, JSON.stringify(sort)); } catch (x) {}
+    render(S.state);
   });
 
   function closePops() { $$('.menu-pop, .pop-manual').forEach(function (x) { x.remove(); }); }
@@ -1763,16 +1960,24 @@ function initAdmin() {
     $('#fLast').value = p ? p.lastName : '';
     $('#fNick').value = p ? p.nickname : '';
     $('#fMode').value = p ? p.displayMode : 'nick';
-    $('#fPaid').checked = p ? p.paid : false;
+    $('#fNum').value = p ? p.num : S.nextNum();
+    $('#fPay').value = !p ? 'none' : p.payMethod || (p.paid ? 'paid' : 'none');
     openModal('#mEdit');
     setTimeout(function () { $('#fFirst').focus(); }, 60);
   }
   $('#mEditSave').addEventListener('click', function () {
+    var pay = $('#fPay').value;
     var data = {
       firstName: $('#fFirst').value, lastName: $('#fLast').value,
-      nickname: $('#fNick').value, displayMode: $('#fMode').value, paid: $('#fPaid').checked
+      nickname: $('#fNick').value, displayMode: $('#fMode').value,
+      num: parseInt($('#fNum').value, 10) || 0,
+      payMethod: pay === 'cash' || pay === 'qr' ? pay : '',
+      paid: pay !== 'none'
     };
     if (!data.firstName && !data.lastName && !data.nickname) { alert('Vyplň aspoň jméno nebo přezdívku.'); return; }
+    if (data.num < 1) { alert('ID musí být kladné celé číslo.'); return; }
+    var clash = S.state.participants.find(function (x) { return x.num === data.num && x.id !== editing; });
+    if (clash) { alert('ID ' + data.num + ' už má ' + S.displayName(clash) + '. Zvol jiné.'); return; }
     if (editing) S.updateParticipant(editing, data);
     else S.addParticipant(data);
     closeModal('#mEdit');
@@ -1791,7 +1996,6 @@ function initAdmin() {
 
   $('#btnUndo').addEventListener('click', function () { if (!S.undoLast()) toast('Není co vrátit'); });
   $('#search').addEventListener('input', function (e) { search = e.target.value; render(S.state); });
-  $('#sortMode').addEventListener('change', function (e) { S.updateSettings({ sortMode: e.target.value }); });
   $('#btnBoard').addEventListener('click', function () {
     var url = location.pathname + '#/leaderboard';
     var w = null;
@@ -2081,16 +2285,121 @@ function initLeaderboard() {
   }
   setInterval(tick, 1000); tick();
 
+  /* ---------- trendy ----------
+   * Počítají se z historie bodů (state.history, zapisuje Tabule) a přepočítávají se
+   * jen jednou za 15 minut – mezi tím zůstávají stejné, ať se neprohazují při každém zápisu. */
+  var TREND_EVERY = 15 * 60e3;
+  var trendSlot = null, trendCache = [], trendAt = 0;
+  var trendsEl = $('#trends');
+
+  function plural(n, one, few, many) { return n === 1 ? one : (n >= 2 && n <= 4) ? few : many; }
+  function hhmm(ts) { var d = new Date(ts); return ('0' + d.getHours()).slice(-2) + ':' + ('0' + d.getMinutes()).slice(-2); }
+
+  // Pořadí podle uložených bodů (stejná pravidla jako S.ranking – shoda bodů = shodné místo).
+  function ranksOf(pts) {
+    var list = S.state.participants.filter(function (p) { return pts[p.id] != null; });
+    list.sort(function (a, b) { return (pts[b.id] - pts[a.id]) || (a.createdAt - b.createdAt); });
+    var out = {}, rank = 0, prev = null;
+    list.forEach(function (p, i) {
+      if (prev === null || pts[p.id] !== prev) rank = i + 1;
+      out[p.id] = rank; prev = pts[p.id];
+    });
+    return out;
+  }
+
+  function bestBy(ranking, fn, min) {
+    var best = null;
+    ranking.forEach(function (r) {
+      var v = fn(r);
+      if (v >= min && (!best || v > best.v)) best = { r: r, v: v };
+    });
+    return best;
+  }
+
+  function computeTrends(ranking) {
+    var now = Date.now(), out = [];
+    var hist = S.state.history || [];
+    var base = null;
+    for (var i = hist.length - 1; i >= 0; i--) if (hist[i].ts <= now - 3600e3) { base = hist[i]; break; }
+    if (!base && hist.length && now - hist[0].ts >= 30 * 60e3) base = hist[0];
+
+    if (base) {
+      var mins = Math.round((now - base.ts) / 6e4);
+      var win = mins >= 55 ? 'za hodinu' : 'za ' + mins + ' min';
+      var baseRank = ranksOf(base.p);
+      var climb = bestBy(ranking, function (r) {
+        return base.p[r.p.id] > 0 && baseRank[r.p.id] ? baseRank[r.p.id] - r.rank : 0;
+      }, 2);
+      if (climb) out.push({ icon: '🚀', title: 'Skok ' + win, name: climb.r.name,
+        val: '▲ o ' + climb.v + ' ' + plural(climb.v, 'místo', 'místa', 'míst') + ' (teď ' + climb.r.rank + '.)' });
+      var hot = bestBy(ranking.filter(function (r) { return !climb || r.p.id !== climb.r.p.id; }), function (r) {
+        return base.p[r.p.id] != null ? r.points - base.p[r.p.id] : 0;
+      }, 1);
+      if (hot) out.push({ icon: '🔥', title: 'Nejvíc bodů ' + win, name: hot.r.name, val: '+' + hot.v + ' b' });
+    }
+
+    var r1 = ranking[0], r2 = ranking[1], r3 = ranking[2], r4 = ranking[3];
+    if (r3 && r4 && r4.points > 0) {
+      var gap3 = r3.points - r4.points;
+      if (gap3 > 0 && gap3 <= Math.max(5, Math.round(r3.points * 0.1))) {
+        out.push({ icon: '🎯', title: 'Útok na bednu', name: r4.name, val: 'na 3. místo chybí ' + gap3 + ' b' });
+      }
+    }
+    if (r1 && r2 && r1.points > 0) {
+      var gap1 = r1.points - r2.points;
+      if (gap1 === 0) out.push({ icon: '⚔️', title: 'Souboj o 1. místo', name: r1.name + ' × ' + r2.name, val: 'stejně bodů' });
+      else if (gap1 <= Math.max(5, Math.round(r1.points * 0.05))) out.push({ icon: '⚔️', title: 'Těsně v čele', name: r1.name, val: 'náskok jen ' + gap1 + ' b' });
+      else out.push({ icon: '👑', title: 'V čele', name: r1.name, val: 'náskok ' + gap1 + ' b' });
+    }
+
+    var games = bestBy(ranking, function (r) { return S.tierGamesTotal(r.p); }, 3);
+    if (games) out.push({ icon: '🎲', title: 'Nejvíc odehraných her', name: games.r.name, val: games.v + ' ' + plural(games.v, 'hra', 'hry', 'her') });
+    var coop = bestBy(ranking, function (r) { return S.coopTotal(r.p); }, 2);
+    if (coop) out.push({ icon: '🤝', title: 'Co-op parťák', name: coop.r.name, val: coop.v + ' ' + plural(coop.v, 'výhra', 'výhry', 'výher') + ' v co-op' });
+    var tasks = bestBy(ranking, function (r) { return r.p.tasksDone.length; }, 2);
+    if (tasks) out.push({ icon: '✅', title: 'Úkolový mistr', name: tasks.r.name, val: tasks.v + ' / ' + S.state.settings.tasks.length + ' úkolů' });
+
+    return out.slice(0, 4);
+  }
+
+  function updateTrends(ranking) {
+    var slot = Math.floor(Date.now() / TREND_EVERY);
+    // Dokud žádný trend není, zkouší se při každé změně; pak drží do dalšího čtvrthodinového okna.
+    if (slot !== trendSlot || !trendCache.length) {
+      trendCache = computeTrends(ranking); trendSlot = slot; trendAt = Date.now();
+    }
+    trendsEl.hidden = !trendCache.length;
+    trendsEl.style.setProperty('--n', trendCache.length || 1);
+    trendsEl.innerHTML = trendCache.map(function (t) {
+      return '<div class="trend"><span class="ti">' + t.icon + '</span><div>' +
+        '<div class="tt">' + esc(t.title) + '</div>' +
+        '<div class="tn">' + esc(t.name) + '</div>' +
+        '<div class="tv">' + esc(t.val) + '</div></div></div>';
+    }).join('');
+  }
+
+  function footText(state) {
+    return 'Kostka · maraton deskových her' + (state.settings.edition ? ' · ' + state.settings.edition : '') +
+      (trendCache.length ? ' · trendy k ' + hhmm(trendAt) : '');
+  }
+
+  setInterval(function () {
+    if (trendSlot !== null && Math.floor(Date.now() / TREND_EVERY) !== trendSlot && !$('#list').hidden) {
+      updateTrends(S.ranking());
+      $('#lbFoot').textContent = footText(S.state);
+    }
+  }, 20e3);
+
   function render(state) {
-    $('#lbTitle').innerHTML = esc(state.settings.eventName || 'KOSTKA') +
-      ' <b>·</b> ' + esc(state.settings.subtitle || '');
+    $('#lbTitle').textContent = (state.settings.eventName || 'KOSTKA') + ' ' + (state.settings.subtitle || '');
     $('#lbEdition').textContent = (state.settings.edition ? state.settings.edition + ' · ' : '') + 'Průběžné pořadí';
-    $('#lbFoot').textContent = 'Kostka · maraton deskových her' + (state.settings.edition ? ' · ' + state.settings.edition : '');
 
     var ranking = S.ranking();
     var hasScores = ranking.some(function (r) { return r.points > 0; });
 
     if (!ranking.length || !hasScores) {
+      $('#lbFoot').textContent = footText(state);
+      trendsEl.hidden = true;
       podiumEl.hidden = true;
       $('#list').hidden = true;
       $('#lbEmpty').hidden = false;
@@ -2108,6 +2417,8 @@ function initLeaderboard() {
     var rest = ranking.slice(3);
 
     renderPodium(top);
+    updateTrends(ranking);
+    $('#lbFoot').textContent = footText(state);
     renderList(rest);
 
     var leader = ranking[0] ? ranking[0].p.id : null;
@@ -2230,21 +2541,38 @@ function initLeaderboard() {
     setTimeout(function () { wrap.remove(); }, 3800);
   }
 
+  /* Noční režim se sám zapne ve 22:00 a vypne v 7:00. Ruční přepnutí platí jen do
+     nejbližší z těchto hranic – pak se zase řídí časem. */
   (function themeToggle() {
     var KEY_T = 'kostka-maraton-lb-theme';
     var night = false;
-    try { night = localStorage.getItem(KEY_T) === 'night'; } catch (e) {}
+    function autoNight(d) { var h = d.getHours(); return h >= 22 || h < 7; }
+    // Identifikátor aktuální denní/noční periody (noc po půlnoci patří k předchozímu dni).
+    function period(d) {
+      var x = new Date(d.getTime());
+      if (x.getHours() < 7) x.setDate(x.getDate() - 1);
+      return x.getFullYear() + '-' + (x.getMonth() + 1) + '-' + x.getDate() + (autoNight(d) ? 'N' : 'D');
+    }
+    function stored() {
+      try { return JSON.parse(localStorage.getItem(KEY_T) || 'null'); } catch (e) { return null; }
+    }
+    function sync() {
+      var d = new Date(), o = stored();
+      var want = o && o.period === period(d) ? o.mode === 'night' : autoNight(d);
+      if (want !== night || !$('#lbTheme').textContent) { night = want; apply(); }
+    }
     function apply() {
       document.body.classList.toggle('lb-night', night);
       $('#lbTheme').textContent = night ? '☀ Denní režim' : '☾ Noční režim';
     }
     function flip() {
       night = !night; apply();
-      try { localStorage.setItem(KEY_T, night ? 'night' : 'day'); } catch (e) {}
+      try { localStorage.setItem(KEY_T, JSON.stringify({ mode: night ? 'night' : 'day', period: period(new Date()) })); } catch (e) {}
     }
     $('#lbTheme').addEventListener('click', flip);
     document.addEventListener('keydown', function (e) { if (e.key === 'n' || e.key === 'N') flip(); });
-    apply();
+    sync();
+    setInterval(sync, 30e3);
   })();
 
   S.subscribe(function (state) { render(state); });

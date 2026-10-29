@@ -341,3 +341,17 @@ workers/playhub-refresh/                   – samostatný Cloudflare Worker (Cr
   Při konfliktu dvou Tabulí vyhraje server a zapisovatel dostane hlášku.
   Stavy se porovnávají podle `updatedAt` (ne `rev`, ten je jen lokální počítadlo).
   Pod 760 px šířky je leaderboard v jednom sloupci a stránka se posouvá.
+  **Úpravy 2026-10-29 (2):** účastník má číselné **ID** (`num`, auto další volné,
+  editovatelné, unikátní; starší data se dočíslují podle `createdAt`) a **způsob platby**
+  (`payMethod` `cash`/`qr` – volba nastaví `paid`, druhý klik / odškrtnutí startovného
+  vrací na nezaplaceno). Tabule se už neřadí podle pořadí: klik na hlavičku **ID /
+  Účastník / Celkem** přepíná řazení ▲/▼ (jen lokálně, `kostka-maraton-sort`, výchozí
+  ID ▲). **Co-op**: zaškrtnutí „co-op hra“ u řádku (jen UI stav okna) přepne umístění
+  na stepper „výhra co-op“ (`p.coop[tier]`, body = sloupec p3 + účast, undo funguje).
+  Nové výchozí bodování DN 1·3/2/1, MP 4·8/5/2, KP 15·20/12/6 – stav s nezměněným
+  starým výchozím bodováním se při načtení převede (`settings.scoring = 2`).
+  Leaderboard: titulek bez tečky, **noční režim automaticky 22:00–7:00** (ruční
+  přepnutí platí jen do nejbližší hranice), **trendy** (skok o ≥2 místa / nejvíc bodů
+  za hodinu, útok na bednu, souboj o čelo, nejvíc her / co-op výher / úkolů, max 4)
+  – počítají se z `state.history` (body po 5min oknech za ~3 h, zapisuje Tabule)
+  a přepočítávají se jen jednou za 15 minut, aby se neměnily s každým zápisem.
